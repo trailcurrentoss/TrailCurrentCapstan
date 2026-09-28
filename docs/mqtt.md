@@ -99,7 +99,8 @@ connects to.
 
 `containers/backend/src/services/can-bridge.js` publishes **every** sensor and
 status topic **without the retain flag**. Only `local/config/*`,
-`local/playbill/…/status`, `os/timezone/current` and device LWTs are retained.
+`local/mode/current`, `local/playbill/…/status`, `os/timezone/current` and
+device LWTs are retained.
 
 A freshly-booted display therefore shows nothing until the next periodic frame
 arrives. The `--` empty-value convention is not decoration — it is the boot
@@ -137,6 +138,9 @@ local/config/pdm_channels        (retained — friendly names and icons)
 local/config/relay_channels      (retained)
 local/config/capstan/<esp32-XXXXXX>/controls
                                  (retained — this dial's device controls)
+local/config/panel/<esp32-XXXXXX>/alarms
+                                 (retained — this panel's alarms)
+local/mode/current               (retained — camping | driving | storage)
 local/gps/time                   (clock fallback when there is no SNTP)
 os/timezone/current              (retained — IANA TZ string)
 local/discovery/trigger
@@ -292,6 +296,116 @@ At most `CAPSTAN_MAX_CONTROLS` (8) entries are kept. That ceiling is the
 message buffer, not the screen — see the sizing note on `MSG_DATA_MAX` in
 `components/capstan_mqtt/src/capstan_mqtt.c`. It is mirrored in the backend
 (`MAX_CONTROLS`) and the PWA (`MAX_CAPSTAN_CONTROLS`); all three move together.
+
+**`local/mode/current`** — retained.
+
+What the rig is currently doing. Set from the PWA's segmented control and
+persisted in `system_config.mode`.
+
+```json
+{ "mode": "camping" }
+```
+
+This used to live only in the PWA's `localStorage`, which made it a
+per-browser view preference. It is rig state now because panels act on it —
+see the alarms topic below. An unknown mode string leaves the panel on
+whatever it had, rather than falling back to `camping`: a newer Headwaters
+adding a fourth mode must not silently re-interpret every alarm on an older
+panel.
+
+**`local/config/panel/<esp32-XXXXXX>/alarms`** — retained, per device.
+
+Which Picket reed switches and Switchback digital inputs this panel watches,
+and **what each one means in each mode**.
+
+```json
+{ "alarms": [ { "key": "picket:0:3", "name": "Fridge", "icon": "snowflake",
+                "modes": { "camping": "none",
+                           "driving": "low",
+                           "storage": "high" } } ] }
+```
+
+Keyed on `panel`, not `capstan`: Milepost and Fireside are the same kind of
+consumer and should adopt this contract rather than each growing its own. (The
+controls topic is still capstan-scoped and should migrate when they do.)
+
+### Nothing on the bus is an alarm
+
+Picket publishes a bitmask. Torrent publishes channel state. Whether a given
+status event *constitutes* an alarm is an interpretation, and the
+interpretation differs by panel and by mode — which is why this is a verdict
+per mode rather than an armed flag plus a polarity.
+
+The fridge above is the worked example:
+
+| Mode | Verdict | Why |
+|---|---|---|
+| `storage` | `high` | Voltage present. Something switched it on. |
+| `driving` | `low` | Voltage absent. It lost power on the road. |
+| `camping` | `none` | Neither. It is supposed to cycle. |
+
+And the same sensor can be `none` in every mode on a dial by the bed, while
+the kitchen panel handles it. That is the point of the config being per panel.
+
+| Verdict | Meaning |
+|---|---|
+| `none` | This mode does not care. Not quite "disarmed" — the sensor is usually live in another mode. |
+| `high` | Alarm while the input is asserted. |
+| `low` | Alarm while the input is not asserted. |
+
+Every mode is spelled out, including the `none` ones. The panel should not
+have to infer a missing key, and a payload whose size depends on how many
+modes happen to be configured is a payload that fits in testing and overflows
+in the field. A mode the payload omits, or a verdict this firmware does not
+recognise, resolves to `none` — quiet. The alternative is an alarm that cannot
+be switched off from the PWA because the PWA does not believe it exists.
+
+`capstan_alarm_is_active()` in `capstan_config.h` is the only place the rule
+is implemented; callers pass the raw input word and the current mode, and
+never shift or mask it themselves.
+
+### Why the source is always a digital input
+
+Never a relay or PDM channel's reported state. **A relay can report ON while a
+failed contact passes no voltage** — which is exactly the fault the alarm
+exists to catch. A Picket DI wired to the load's supply sees what the load
+sees, so it stays correct when the relay lies.
+
+Do not "improve" this by adding `local/lights/<id>/status` as an alarm source.
+That alarms on commanded state rather than on reality, and it would have
+missed the failure the sense line was installed for.
+
+### Keys and sizing
+
+`key` is `<source>:<addr>:<sensor>` — byte-for-byte the identifier
+`system_config.alarms.sensors` uses in Mongo and the PWA uses in **Settings →
+Alarms**, so one string names one input across the whole platform.
+
+**Sensor numbers are 1-based**, as everywhere else on the platform. The input
+bitmasks are 0-based, so the bit to test is `sensor - 1`:
+
+| `key` source | Input topic | Bits | Sensors |
+|---|---|---|---|
+| `picket` | `local/picket/<addr>/inputs` | 12 | 1..12 |
+| `switchback` | `local/spoor/<addr>/inputs` | 8 | 1..8 |
+
+Note a `switchback` alarm reads the **`spoor`** topic. The two names are not
+interchangeable anywhere else, and this is the one place they meet.
+
+Unlike a control, the **name and icon are carried in the payload rather than
+derived**. A control points at a Torrent or Switchback channel that already
+has both; a sensor has neither — `system_config.alarms.sensors` holds an armed
+flag and a name and nothing else. The PWA seeds the name from the rig-wide one
+when you pick a sensor, and the entry owns it from then on.
+
+Stored in NVS, replaced whole on every message, and an empty array disarms the
+panel. At most `CAPSTAN_MAX_ALARMS` — **six**, not eight like the controls.
+A worst-case entry (longest key, 24-character name, 16-character icon, all
+three modes spelled out) is 149 bytes, so six plus the wrapper is 906, inside
+`MSG_DATA_MAX`. Eight would be 1204, and an oversized message is dropped
+whole: the panel would have no alarms at all and one log line saying so. If
+six is too few, the lever is `MSG_QUEUE_DEPTH` against `MSG_DATA_MAX` in
+`capstan_mqtt.c`, which are deliberately traded against each other there.
 
 **`local/gps/time`** — the rig's only clock source. Fields are **UTC**, from
 Milepost's GNSS fix, republished at ~1 Hz. All six are required; a partial
@@ -467,9 +581,11 @@ any other channel, and identified at runtime from the retained
 No `local/doors/*` topic. Doors and hatches are reed switches on Picket,
 arriving as a 12-bit mask in `local/picket/<addr>/inputs`.
 
-**Status: implemented** against the bitmask. Labels and armed state live in
-Mongo (`system_config.alarms.sensors`, keyed `"picket:0:5"`), so the display
-needs its own labelling until a config topic exposes them.
+**Status: implemented** against the bitmask, and labelled since
+`local/config/capstan/<hostname>/alarms` landed — the dial no longer needs its
+own labelling. Armed state is now implicit: a sensor a user added to this
+Capstan's alarm list is armed on this Capstan, independently of the rig-wide
+`system_config.alarms.sensors` arm flags.
 
 ### Alerts — WebSocket only
 
@@ -478,9 +594,16 @@ topics and `local/energy/status` and emits `alarms_update` over **WebSocket**,
 not MQTT. There is no MQTT alert topic.
 
 **Status: derived on-device**, mirroring Fireside's `main/alarms.c` — Capstan
-applies its own armed/label configuration to the raw Picket and Spoor bitmasks.
-This keeps the alert overlay working when the Headwaters backend is down, at the
-cost of duplicating the threshold logic.
+applies its own configuration to the raw Picket and Spoor bitmasks. That
+configuration is no longer entered on the panel: it arrives on
+`local/config/panel/<hostname>/alarms` and is stored in NVS, so the alert
+overlay keeps working when the Headwaters backend is down, at the cost of
+duplicating the evaluation logic.
+
+A future `local/alarms/active` topic would **not** replace this. The whole
+point of the per-panel, per-mode config is that the rig has no single answer
+to "is this an alarm" to publish — the nightstand dial and the kitchen panel
+disagree, correctly, about the same input.
 
 A future `local/alarms/active` topic would remove that duplication and is worth
 proposing, but it does not exist today.

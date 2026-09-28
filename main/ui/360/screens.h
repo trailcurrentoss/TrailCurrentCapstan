@@ -106,6 +106,13 @@ typedef struct _objects_t {
     lv_obj_t *devices_dot5;
     lv_obj_t *devices_dot6;
     lv_obj_t *devices_dot7;
+    lv_obj_t *devices_dot8;
+    lv_obj_t *devices_dot9;
+    lv_obj_t *devices_dot10;
+    lv_obj_t *devices_dot11;
+    lv_obj_t *devices_dot12;
+    lv_obj_t *devices_dot13;
+    lv_obj_t *devices_dot14;
     lv_obj_t *devices_back;
     lv_obj_t *devices_back_icon;
     lv_obj_t *heater_arc;

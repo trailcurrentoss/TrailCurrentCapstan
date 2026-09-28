@@ -47,6 +47,8 @@ static const char *TAG = "config";
 #define K_TCAL_YO    "t_yo"
 #define K_TCAL_OK    "t_ok"
 #define K_CONTROLS   "ctrls"
+#define K_ALARMS     "alarms"
+#define K_MODE       "mode"
 
 static SemaphoreHandle_t      s_lock;
 static capstan_wifi_cfg_t     s_wifi;
@@ -54,6 +56,8 @@ static capstan_mqtt_cfg_t     s_mqtt;
 static capstan_display_cfg_t  s_display;
 static capstan_touch_cal_t    s_tcal;
 static capstan_controls_t     s_controls;
+static capstan_alarms_t       s_alarms;
+static capstan_mode_t         s_mode;
 
 static const char *const s_sec_names[CAPSTAN_WIFI_SEC_COUNT] = {
     [CAPSTAN_WIFI_SEC_OPEN]          = "Open",
@@ -64,6 +68,64 @@ static const char *const s_sec_names[CAPSTAN_WIFI_SEC_COUNT] = {
     [CAPSTAN_WIFI_SEC_WPA3_PSK]      = "WPA3",
     [CAPSTAN_WIFI_SEC_WPA2_WPA3_PSK] = "WPA2/WPA3",
 };
+
+static const char *const s_mode_names[CAPSTAN_MODE_COUNT] = {
+    [CAPSTAN_MODE_CAMPING] = "camping",
+    [CAPSTAN_MODE_DRIVING] = "driving",
+    [CAPSTAN_MODE_STORAGE] = "storage",
+};
+
+const char *capstan_mode_name(capstan_mode_t mode)
+{
+    if (mode < 0 || mode >= CAPSTAN_MODE_COUNT || !s_mode_names[mode]) {
+        return "camping";
+    }
+    return s_mode_names[mode];
+}
+
+capstan_mode_t capstan_mode_from_name(const char *name, capstan_mode_t fallback)
+{
+    if (!name) {
+        return fallback;
+    }
+    for (int i = 0; i < CAPSTAN_MODE_COUNT; i++) {
+        if (s_mode_names[i] && strcmp(name, s_mode_names[i]) == 0) {
+            return (capstan_mode_t)i;
+        }
+    }
+    /* An unknown mode keeps whatever we had rather than silently becoming
+     * camping. A newer Headwaters adding a fourth mode should not quietly
+     * re-interpret every alarm on an older panel. */
+    return fallback;
+}
+
+static const char *const s_verdict_names[] = {
+    [CAPSTAN_VERDICT_NONE] = "none",
+    [CAPSTAN_VERDICT_HIGH] = "high",
+    [CAPSTAN_VERDICT_LOW]  = "low",
+};
+
+const char *capstan_verdict_name(capstan_verdict_t v)
+{
+    if (v < 0 || v > CAPSTAN_VERDICT_LOW || !s_verdict_names[v]) {
+        return "none";
+    }
+    return s_verdict_names[v];
+}
+
+capstan_verdict_t capstan_verdict_from_name(const char *name)
+{
+    if (name) {
+        for (int i = 0; i <= CAPSTAN_VERDICT_LOW; i++) {
+            if (s_verdict_names[i] && strcmp(name, s_verdict_names[i]) == 0) {
+                return (capstan_verdict_t)i;
+            }
+        }
+    }
+    /* Unknown means quiet. A verdict this firmware does not understand must
+     * not become an alarm that cannot be turned off from the PWA. */
+    return CAPSTAN_VERDICT_NONE;
+}
 
 const char *capstan_wifi_sec_name(capstan_wifi_sec_t sec)
 {
@@ -103,9 +165,12 @@ static void load_defaults(void)
     s_display.backlight_percent = 100;
     s_display.idle_timeout_s    = CONFIG_CAPSTAN_IDLE_TIMEOUT_S;
 
-    /* No controls until Headwaters sends some. An empty dial is a correct
-     * first-boot state, not a fault. */
+    /* No controls and no alarms until Headwaters sends some. An empty dial is
+     * a correct first-boot state, not a fault -- and disarmed is the only
+     * safe default, since an alarm invented locally would be a false one. */
     memset(&s_controls, 0, sizeof(s_controls));
+    memset(&s_alarms, 0, sizeof(s_alarms));
+    s_mode = CAPSTAN_MODE_CAMPING;
 
     /* Identity until calibrated -- raw coordinates pass through. */
     s_tcal.x_scale = 1.0f;  s_tcal.x_offset = 0.0f;
@@ -203,6 +268,20 @@ static esp_err_t load_from_nvs(void)
         s_controls = ctrls;
     }
 
+    size_t alarm_len = sizeof(s_alarms);
+    capstan_alarms_t alarms;
+    if (nvs_get_blob(h, K_ALARMS, &alarms, &alarm_len) == ESP_OK &&
+        alarm_len == sizeof(s_alarms) &&
+        alarms.count <= CAPSTAN_MAX_ALARMS) {
+        s_alarms = alarms;
+    }
+
+    uint8_t mode = (uint8_t)s_mode;
+    read_u8(h, K_MODE, &mode);
+    if (mode < CAPSTAN_MODE_COUNT) {
+        s_mode = (capstan_mode_t)mode;
+    }
+
     read_bool(h, K_DISP_C,    &s_display.celsius);
     read_bool(h, K_DISP_DARK, &s_display.dark_theme);
     read_u8(h,   K_DISP_BL,   &s_display.backlight_percent);
@@ -227,7 +306,9 @@ esp_err_t capstan_config_init(void)
      * serial log outlives the session it was captured in.
      */
     ESP_LOGI(TAG, "touch cal: %s", s_tcal.valid ? "present" : "NONE (raw)");
-    ESP_LOGI(TAG, "device controls: %u", (unsigned)s_controls.count);
+    ESP_LOGI(TAG, "device controls: %u, alarms: %u, mode: %s",
+             (unsigned)s_controls.count, (unsigned)s_alarms.count,
+             capstan_mode_name(s_mode));
     ESP_LOGI(TAG, "wifi: %s (%s), mqtt: %s:%u %s",
              s_wifi.configured ? s_wifi.ssid : "<unset>",
              capstan_wifi_sec_name(s_wifi.security),
@@ -317,6 +398,90 @@ esp_err_t capstan_config_set_controls(const capstan_controls_t *controls)
 
     WITH_LOCK(s_controls = want);
     ESP_LOGI(TAG, "device controls saved: %u", (unsigned)want.count);
+    return ESP_OK;
+}
+
+void capstan_config_get_alarms(capstan_alarms_t *out)
+{
+    if (!out) { return; }
+    WITH_LOCK(*out = s_alarms);
+}
+
+esp_err_t capstan_config_set_alarms(const capstan_alarms_t *alarms)
+{
+    ESP_RETURN_ON_FALSE(alarms, ESP_ERR_INVALID_ARG, TAG, "null alarms");
+    ESP_RETURN_ON_FALSE(alarms->count <= CAPSTAN_MAX_ALARMS,
+                        ESP_ERR_INVALID_ARG, TAG, "too many alarms (%u)",
+                        (unsigned)alarms->count);
+
+    /* Normalised before comparing, exactly as the controls are: the caller
+     * fills only `count` entries, and an unzeroed tail would report a change
+     * on every retained redelivery and rewrite flash for nothing. */
+    capstan_alarms_t want;
+    memset(&want, 0, sizeof(want));
+    want.count = alarms->count;
+    for (uint8_t i = 0; i < alarms->count; i++) {
+        want.items[i].src    = alarms->items[i].src;
+        want.items[i].addr   = alarms->items[i].addr;
+        want.items[i].sensor = alarms->items[i].sensor;
+        for (int m = 0; m < CAPSTAN_MODE_COUNT; m++) {
+            want.items[i].modes[m] = alarms->items[i].modes[m];
+        }
+        strncpy(want.items[i].name, alarms->items[i].name,
+                CAPSTAN_ALARM_NAME_MAX - 1);
+        strncpy(want.items[i].icon, alarms->items[i].icon,
+                CAPSTAN_ALARM_ICON_MAX - 1);
+    }
+
+    bool unchanged;
+    WITH_LOCK(unchanged = (memcmp(&want, &s_alarms, sizeof(want)) == 0));
+    if (unchanged) {
+        return ESP_OK;
+    }
+
+    nvs_handle_t h;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &h), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_blob(h, K_ALARMS, &want, sizeof(want));
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    ESP_RETURN_ON_ERROR(err, TAG, "alarm save failed");
+
+    WITH_LOCK(s_alarms = want);
+    ESP_LOGI(TAG, "alarms saved: %u", (unsigned)want.count);
+    return ESP_OK;
+}
+
+capstan_mode_t capstan_config_get_mode(void)
+{
+    capstan_mode_t m;
+    WITH_LOCK(m = s_mode);
+    return m;
+}
+
+esp_err_t capstan_config_set_mode(capstan_mode_t mode)
+{
+    ESP_RETURN_ON_FALSE(mode >= 0 && mode < CAPSTAN_MODE_COUNT,
+                        ESP_ERR_INVALID_ARG, TAG, "bad mode %d", (int)mode);
+
+    bool unchanged;
+    WITH_LOCK(unchanged = (s_mode == mode));
+    if (unchanged) {
+        return ESP_OK;
+    }
+
+    nvs_handle_t h;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &h), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_u8(h, K_MODE, (uint8_t)mode);
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    ESP_RETURN_ON_ERROR(err, TAG, "mode save failed");
+
+    WITH_LOCK(s_mode = mode);
+    ESP_LOGI(TAG, "rig mode: %s", capstan_mode_name(mode));
     return ESP_OK;
 }
 

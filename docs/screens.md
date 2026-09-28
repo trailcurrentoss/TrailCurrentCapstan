@@ -88,6 +88,10 @@ dots, so the wrap is visible rather than silent. The overshoot is still never
 stored: two turns past the end then one detent back moves by exactly one. See
 [architecture.md](architecture.md#2-the-ring-reports-direction-never-position).
 
+Its row of page dots is authored in pixels rather than percent, for the reason
+described under [Devices](#devices) — in percent the gaps came out uneven and
+the arc stair-stepped.
+
 **Horizontal carousel, identical on all three panels.** The selected app sits
 in a circular tile in the middle with its name and a live summary under it,
 its two neighbours flank it as muted glyphs, and a row of dots across the
@@ -195,10 +199,46 @@ Friendly names and icons come from the retained controls payload, per device.
 round 240 px face has no free band for one, and authoring it over the tile
 would make the canvas show the message and the carousel at once.
 
-**The dot row is authored at `CAPSTAN_MAX_CONTROLS`** and the surplus is
-hidden from the outside in, keeping the visible run centred. The ceiling is
-the MQTT buffer limit, mirrored from Headwaters' own `MAX_CONTROLS`; the
-generator refuses to build a project where the two disagree.
+**The dots are one per device, on an arc at 12 o'clock.** They answer two
+questions at a glance — how many devices this dial has, and which one you are
+on — so the number shown is the device count and the lit one is the selection.
+The run grows outwards from the top and stays centred there.
+
+**It is the menu's dot row, moved to the top**: same 44.6% radius, same 6°
+spacing, same 2.1% dot. Only the centre differs — 12 o'clock here, 6 o'clock
+there, because the Back chip owns the bottom of this screen. Thirty degrees
+apart was tried first, because that is what "12, then 11 and 1, then 10 and 2"
+implies, and it was wrong: eight dots a clock hour apart read as eight separate
+marks rather than a row you can count.
+
+The rim rather than a row under the labels, because a row is bounded by the
+width of the face — enough devices and its dots either run off the glass or
+shrink until they stop being countable. An arc is not bounded that way.
+
+The widgets cannot move to keep the run centred, so the arc is
+`2 * CAPSTAN_MAX_CONTROLS - 1` slots at **half** the visible spacing, and *n*
+devices light every other slot starting at slot `MAX - n`. An odd count sits
+one dot on 12 o'clock with the rest either side; an even count straddles it.
+One slot per device can only ever centre one of those two cases. The
+interstitial slots are authored hidden, so the canvas shows the eight-dot full
+house — a state the device really renders.
+
+**Both dot rows are authored in pixels, not percent.** This is the one place
+in the GUI where percent is the wrong unit, and it is worth knowing why: EEZ
+Studio exports positions as whole-number `LV_PCT`, so a dot authored at 30.417%
+ships as `LV_PCT(30)`. On a 240 px panel one percent is 2.4 px — half the
+diameter of a 5 px dot — so the menu's row came out with gaps alternating
+9.6 px and 12 px, and the arc's vertical sag, a fraction of a pixel between
+neighbours near the centre, collapsed into 2.4 px stair-steps. The dots were
+always authored on a true circle; the unit was throwing the curve away. In
+pixels the 240's full house has uniform 11 px gaps and a smooth sag of
+18, 14, 12, 11, 11, 12, 14, 18. See `dot()` in `GUI/tmp/layout.py`, and
+[gui.md](gui.md#percent-positions-are-exported-as-whole-numbers).
+
+The ceiling is the MQTT buffer limit, mirrored from Headwaters' own
+`MAX_CONTROLS`; the generator refuses to build a project where the two
+disagree, and there is a `_Static_assert` in `ui_devices.c` for the case it
+cannot see.
 
 ## Heater
 
@@ -217,7 +257,26 @@ the bottom. No cards, no borders, no knob, and the ring is read-only — touch
 cannot move it.
 
 Inside, top to bottom: a small tracked `AIR QUALITY`, the hero numeral, its
-unit, the status word, and three sub-metrics.
+unit, the status word, and three sub-metrics. The column is centred as a group
+— the bands are measured rather than assumed — and it is never allowed to run
+under the Back chip, which on the 240 means it sits a fraction high rather than
+exactly centred.
+
+**The numeral's band is sized from the font, not from its point size.** The
+`rn` faces are a digits-only subset, so `lv_font_conv` recomputes their line
+height from the digits alone: 44 px at size 60, where a full charset would
+declare about 74. Sizing that band at the usual 1.20 em reserved 30 px of
+nothing on the 240 — which showed up at both ends of the stack at once, as an
+obvious hole under the value and an `AIR QUALITY` pushed up far enough to
+overlap the ring. The band is now the font's real line height plus 2 px, with
+an explicit 20 px (at 480) gap under the numeral to replace the slack it no
+longer carries, and the title sits 21 px lower on the 240, 17 px on the 360 and
+20 px on the 480.
+
+The generator **checks both ends of that**: it diffs the line heights against
+the exported `ui_font_rn*.c` when an export exists, and it refuses to write a
+project in which the eyebrow's box crosses the ring's inner edge. The overlap
+was found by eye on hardware; it will not need to be found that way again.
 
 **The hero is eCO2 in ppm, not an AQI.** The prototype shows an Air Quality
 Index on a 0–300 scale; there is no AQI on this bus. Borealis publishes eCO2,

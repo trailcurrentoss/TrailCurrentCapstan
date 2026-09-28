@@ -90,6 +90,7 @@ static void                    *s_discovery_ctx;
 static char                     s_last_error[96];
 static char                     s_lwt_topic[64];
 static char                     s_controls_topic[64];
+static char                     s_alarms_topic[64];
 static int64_t                  s_started_us;
 static uint32_t                 s_superseded;
 
@@ -171,6 +172,9 @@ static const char *const SUBSCRIPTIONS[] = {
     "local/spoor/+/inputs",
     "local/config/pdm_channels",
     "local/config/relay_channels",
+    /* Retained. What a status event MEANS depends on it -- see the alarm
+     * notes in capstan_config.h. */
+    "local/mode/current",
     "local/gps/time",
     "os/timezone/current",
     "local/discovery/trigger",
@@ -199,6 +203,9 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
          */
         if (s_controls_topic[0]) {
             esp_mqtt_client_subscribe(s_client, s_controls_topic, 1);
+        }
+        if (s_alarms_topic[0]) {
+            esp_mqtt_client_subscribe(s_client, s_alarms_topic, 1);
         }
         /* Retained "online" overrides the retained LWT the broker will have
          * published on the previous drop. */
@@ -322,7 +329,13 @@ esp_err_t capstan_mqtt_init(void)
     capstan_mqtt_hostname(host, sizeof(host));
     snprintf(s_controls_topic, sizeof(s_controls_topic),
              "local/config/capstan/%s/controls", host);
-    ESP_LOGI(TAG, "control config topic %s", s_controls_topic);
+    /* `panel`, not `capstan`: Milepost and Fireside are the same kind of
+     * consumer and should adopt this contract rather than growing their own.
+     * The controls topic is still capstan-scoped and should migrate with
+     * them. */
+    snprintf(s_alarms_topic, sizeof(s_alarms_topic),
+             "local/config/panel/%s/alarms", host);
+    ESP_LOGI(TAG, "config topics %s, %s", s_controls_topic, s_alarms_topic);
     return ESP_OK;
 }
 
@@ -619,6 +632,128 @@ static void apply_controls(const cJSON *root)
     ESP_LOGI(TAG, "device controls: %u configured", (unsigned)cfg.count);
 }
 
+/*
+ * One alarm's sensor key, `<source>:<addr>:<sensor>`.
+ *
+ * The same string Headwaters uses in system_config.alarms.sensors and in the
+ * PWA, so one identifier names one input everywhere on the platform. Parsed
+ * rather than sent as three fields because it is both shorter on the wire and
+ * greppable across the two codebases.
+ *
+ * Returns false on anything it does not fully understand -- a partially
+ * parsed key would silently arm the wrong input.
+ */
+static bool parse_alarm_key(const char *key, capstan_alarm_t *out)
+{
+    if (!key || !out) {
+        return false;
+    }
+
+    const char *rest;
+    if (strncmp(key, "picket:", 7) == 0) {
+        out->src = CAPSTAN_ALARM_SRC_PICKET;
+        rest = key + 7;
+    } else if (strncmp(key, "switchback:", 11) == 0) {
+        out->src = CAPSTAN_ALARM_SRC_SWITCHBACK;
+        rest = key + 11;
+    } else {
+        return false;
+    }
+
+    unsigned addr = 0, sensor = 0;
+    if (sscanf(rest, "%u:%u", &addr, &sensor) != 2) {
+        return false;
+    }
+    if (addr > UINT8_MAX || sensor < 1 ||
+        sensor > capstan_alarm_src_sensor_count(out->src)) {
+        return false;
+    }
+
+    out->addr   = (uint8_t)addr;
+    out->sensor = (uint8_t)sensor;
+    return true;
+}
+
+/*
+ * Alarms, from the retained per-device config topic. Same replace-the-whole-
+ * list contract as the controls, and an empty array is equally meaningful --
+ * it disarms the dial.
+ */
+static void apply_alarms(const cJSON *root)
+{
+    const cJSON *arr = cJSON_GetObjectItemCaseSensitive(root, "alarms");
+    if (!cJSON_IsArray(arr)) {
+        ESP_LOGW(TAG, "alarm config has no \"alarms\" array -- ignoring");
+        return;
+    }
+
+    capstan_alarms_t cfg;
+    memset(&cfg, 0, sizeof(cfg));
+
+    const cJSON *item = NULL;
+    cJSON_ArrayForEach(item, arr) {
+        if (cfg.count >= CAPSTAN_MAX_ALARMS) {
+            ESP_LOGW(TAG, "alarm config carries more than %d entries; "
+                          "keeping the first %d",
+                     CAPSTAN_MAX_ALARMS, CAPSTAN_MAX_ALARMS);
+            break;
+        }
+
+        const cJSON *key  = cJSON_GetObjectItemCaseSensitive(item, "key");
+        const cJSON *name = cJSON_GetObjectItemCaseSensitive(item, "name");
+        const cJSON *icon = cJSON_GetObjectItemCaseSensitive(item, "icon");
+
+        capstan_alarm_t a;
+        memset(&a, 0, sizeof(a));
+
+        if (!cJSON_IsString(key) || !parse_alarm_key(key->valuestring, &a)) {
+            ESP_LOGW(TAG, "alarm entry with an unusable key -- skipped");
+            continue;
+        }
+
+        /*
+         * A mode the payload does not mention, or names a verdict this
+         * firmware does not understand, resolves to NONE -- quiet. The
+         * alternative is an alarm that cannot be switched off from the PWA
+         * because the PWA does not believe it exists.
+         */
+        const cJSON *modes = cJSON_GetObjectItemCaseSensitive(item, "modes");
+        for (int mi = 0; mi < CAPSTAN_MODE_COUNT; mi++) {
+            const cJSON *v = cJSON_IsObject(modes)
+                ? cJSON_GetObjectItemCaseSensitive(modes, capstan_mode_name((capstan_mode_t)mi))
+                : NULL;
+            a.modes[mi] = cJSON_IsString(v)
+                ? capstan_verdict_from_name(v->valuestring)
+                : CAPSTAN_VERDICT_NONE;
+        }
+
+        if (cJSON_IsString(name) && name->valuestring) {
+            strncpy(a.name, name->valuestring, sizeof(a.name) - 1);
+        }
+        if (cJSON_IsString(icon) && icon->valuestring) {
+            strncpy(a.icon, icon->valuestring, sizeof(a.icon) - 1);
+        }
+        if (!a.name[0]) {
+            snprintf(a.name, sizeof(a.name), "%s%u-S%u",
+                     a.src == CAPSTAN_ALARM_SRC_SWITCHBACK ? "SB" : "PK",
+                     (unsigned)a.addr, (unsigned)a.sensor);
+        }
+        if (!a.icon[0]) {
+            strncpy(a.icon, "bell", sizeof(a.icon) - 1);
+        }
+
+        cfg.items[cfg.count++] = a;
+    }
+
+    const esp_err_t err = capstan_config_set_alarms(&cfg);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "failed to store %u alarm(s): %s",
+                 (unsigned)cfg.count, esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "alarms: %u configured", (unsigned)cfg.count);
+}
+
 static void apply(const msg_t *m)
 {
     /* Every field on every topic is optional: local/energy/status is an
@@ -749,6 +884,17 @@ static void apply(const msg_t *m)
          * skips the flash write when nothing actually changed, which is the
          * common case here. */
         apply_controls(root);
+    } else if (s_alarms_topic[0] && strcmp(m->topic, s_alarms_topic) == 0) {
+        apply_alarms(root);
+    } else if (strcmp(m->topic, "local/mode/current") == 0) {
+        /* Retained: arrives on every connect and whenever the user switches
+         * mode in the PWA. capstan_config_set_mode() skips the flash write
+         * when it has not changed, which is almost always. */
+        const cJSON *mode = cJSON_GetObjectItemCaseSensitive(root, "mode");
+        if (cJSON_IsString(mode)) {
+            capstan_config_set_mode(
+                capstan_mode_from_name(mode->valuestring, capstan_config_get_mode()));
+        }
     } else if (strncmp(m->topic, "local/picket/", 13) == 0) {
         double addr = 0, inputs = 0;
         num(root, "addr", &addr);

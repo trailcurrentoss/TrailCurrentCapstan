@@ -165,6 +165,157 @@ static inline bool capstan_control_is_relay(const capstan_control_t *c)
     return c && c->id >= CAPSTAN_SWITCHBACK_ID_BASE;
 }
 
+/*
+ * Rig mode -- what the vehicle is currently doing.
+ *
+ * Set in the Headwaters PWA and delivered retained on `local/mode/current`.
+ * It used to be a per-browser view preference; it is rig state now precisely
+ * so panels can act on it, because what a status event MEANS depends on it.
+ *
+ * Cached in NVS, unusually for something this volatile. The justification is
+ * narrow: alarms are evaluated locally so they keep working when the backend
+ * is down, and a dial that rebooted at 3 a.m. with no broker would otherwise
+ * fall back to CAMPING and evaluate every alarm against the wrong mode. The
+ * last known mode is a far better guess than a compiled-in default. The
+ * retained topic still wins the moment it arrives.
+ */
+typedef enum {
+    CAPSTAN_MODE_CAMPING = 0,
+    CAPSTAN_MODE_DRIVING = 1,
+    CAPSTAN_MODE_STORAGE = 2,
+    CAPSTAN_MODE_COUNT
+} capstan_mode_t;
+
+/** Wire name for a mode ("camping"), and the reverse. Never NULL. */
+const char    *capstan_mode_name(capstan_mode_t mode);
+capstan_mode_t capstan_mode_from_name(const char *name, capstan_mode_t fallback);
+
+/*
+ * Alarms -- which Picket reed switches and Switchback digital inputs this
+ * panel watches, and what each one MEANS in each mode.
+ *
+ * Configured in the Headwaters PWA beside the device controls and delivered,
+ * retained, on
+ *
+ *     local/config/panel/<esp32-XXXXXX>/alarms
+ *
+ * (`panel`, not `capstan`: Milepost and Fireside are the same kind of
+ * consumer and should adopt this contract rather than growing their own.)
+ *
+ * NOTHING ON THE BUS IS AN ALARM. Picket publishes a bitmask; Torrent
+ * publishes channel state. Whether a given status event constitutes an alarm
+ * is an interpretation, and the interpretation differs by panel and by mode.
+ * A fridge sense line:
+ *
+ *     storage  -- voltage present is the alarm. Something switched it on.
+ *     driving  -- voltage absent is the alarm. It lost power on the road.
+ *     camping  -- neither. It is supposed to cycle.
+ *
+ * Hence a verdict per mode rather than a single armed flag plus a polarity.
+ * The same panel evaluates the same input three different ways depending on
+ * what the rig is doing, and a dial on a nightstand can hold IGNORE in every
+ * mode for an alarm the kitchen panel handles.
+ *
+ * WHY THE SOURCE IS ALWAYS A DIGITAL INPUT, never a relay or PDM channel's
+ * reported state. A relay can report ON while a failed contact passes no
+ * voltage -- exactly the fault the alarm exists to catch. A Picket DI wired to
+ * the load's supply sees what the load sees, so it stays correct when the
+ * relay lies. Do not add local/lights/<id>/status as an alarm source: that
+ * alarms on commanded state rather than on reality.
+ *
+ * WHY THE NAME AND ICON ARE CARRIED HERE, unlike a control's. A control points
+ * at a channel that already has a label and an icon of its own. A sensor has
+ * neither -- Headwaters' system_config.alarms.sensors holds an armed flag and
+ * a name, nothing more.
+ *
+ * SENSOR NUMBERING is 1-based on the wire, matching the `type:addr:sensor`
+ * keys Headwaters uses throughout. The input bitmasks are 0-based, so the bit
+ * to test is `sensor - 1`:
+ *
+ *     local/picket/<addr>/inputs   12 bits   sensors 1..12
+ *     local/spoor/<addr>/inputs     8 bits   sensors 1..8
+ *
+ * Note the topic for a Switchback alarm is `spoor`, not `switchback`.
+ *
+ * CAPSTAN_MAX_ALARMS is SIX, and the difference from the controls' eight is
+ * the per-mode verdicts. A worst-case entry -- longest sensor key, a
+ * 24-character label, a 16-character icon key and all three modes spelled out
+ * -- is 149 bytes, so six plus the wrapper is 907, inside MSG_DATA_MAX in
+ * capstan_mqtt.c. Eight would be 1205, and an oversized message is DROPPED
+ * whole: the panel would have no alarms at all and one log line saying so. If
+ * six is too few, the lever is MSG_QUEUE_DEPTH against MSG_DATA_MAX, which are
+ * traded off against each other there -- not a quiet bump of this constant.
+ */
+#define CAPSTAN_MAX_ALARMS       6
+#define CAPSTAN_ALARM_NAME_MAX   25   /**< 24 chars, the PWA's limit, + NUL */
+#define CAPSTAN_ALARM_ICON_MAX   24
+
+typedef enum {
+    CAPSTAN_ALARM_SRC_PICKET     = 0,   /**< local/picket/<addr>/inputs, 12 bits */
+    CAPSTAN_ALARM_SRC_SWITCHBACK = 1,   /**< local/spoor/<addr>/inputs,   8 bits */
+} capstan_alarm_src_t;
+
+/*
+ * What this input means in one mode.
+ *
+ * NONE is not quite "disarmed" -- the same sensor is usually live in another
+ * mode. It means this mode does not care.
+ */
+typedef enum {
+    CAPSTAN_VERDICT_NONE = 0,   /**< this mode does not care */
+    CAPSTAN_VERDICT_HIGH = 1,   /**< alarm while the input is asserted */
+    CAPSTAN_VERDICT_LOW  = 2,   /**< alarm while the input is not asserted */
+} capstan_verdict_t;
+
+/** Wire name for a verdict ("high"), and the reverse. Never NULL. */
+const char       *capstan_verdict_name(capstan_verdict_t v);
+capstan_verdict_t capstan_verdict_from_name(const char *name);
+
+typedef struct {
+    capstan_alarm_src_t src;
+    uint8_t             addr;      /**< board address, as in the input topic */
+    uint8_t             sensor;    /**< 1-based; bit index is sensor - 1 */
+    char                name[CAPSTAN_ALARM_NAME_MAX];
+    char                icon[CAPSTAN_ALARM_ICON_MAX];
+    capstan_verdict_t   modes[CAPSTAN_MODE_COUNT];
+} capstan_alarm_t;
+
+typedef struct {
+    uint8_t         count;
+    capstan_alarm_t items[CAPSTAN_MAX_ALARMS];
+} capstan_alarms_t;
+
+/** Digital inputs on a board of this kind. */
+static inline uint8_t capstan_alarm_src_sensor_count(capstan_alarm_src_t src)
+{
+    return src == CAPSTAN_ALARM_SRC_PICKET ? 12 : 8;
+}
+
+/**
+ * Is this alarm firing, given the board's raw input word and the rig mode?
+ *
+ * The one place the verdict rule lives -- callers pass the bitmask straight
+ * off the input topic and never shift or invert it themselves.
+ */
+static inline bool capstan_alarm_is_active(const capstan_alarm_t *a,
+                                           uint16_t inputs,
+                                           capstan_mode_t mode)
+{
+    if (!a || mode < 0 || mode >= CAPSTAN_MODE_COUNT) {
+        return false;
+    }
+    if (a->sensor < 1 || a->sensor > capstan_alarm_src_sensor_count(a->src)) {
+        return false;
+    }
+
+    const bool high = ((inputs >> (a->sensor - 1)) & 1u) != 0;
+    switch (a->modes[mode]) {
+    case CAPSTAN_VERDICT_HIGH: return high;
+    case CAPSTAN_VERDICT_LOW:  return !high;
+    default:                   return false;
+    }
+}
+
 /**
  * Open the NVS namespace and load everything into the in-memory cache.
  * Call after nvs_flash_init() and before any getter.
@@ -186,6 +337,15 @@ void capstan_config_get_display(capstan_display_cfg_t *out);
 void capstan_config_get_controls(capstan_controls_t *out);
 
 /**
+ * The configured alarms. count = 0 is a legitimate state: a dial with no
+ * alarms configured, and what a Capstan removed in the PWA is told to become.
+ */
+void capstan_config_get_alarms(capstan_alarms_t *out);
+
+/** Last known rig mode. CAPSTAN_MODE_CAMPING until one has been received. */
+capstan_mode_t capstan_config_get_mode(void);
+
+/**
  * Setters write through to NVS immediately and commit before returning, so
  * a power cut straight after "Save" cannot lose the value. That costs a
  * flash write per call, which is why these take whole structs -- save a
@@ -205,6 +365,20 @@ esp_err_t capstan_config_set_display(const capstan_display_cfg_t *cfg);
  * never changed.
  */
 esp_err_t capstan_config_set_controls(const capstan_controls_t *controls);
+
+/**
+ * Replace the alarm list and commit it. Writes nothing when the list is
+ * byte-identical to what is stored, for the same reason as the controls: the
+ * retained topic is redelivered on every broker connect.
+ */
+esp_err_t capstan_config_set_alarms(const capstan_alarms_t *alarms);
+
+/**
+ * Record the rig mode. Writes nothing when it has not changed -- the retained
+ * topic is redelivered on every broker connect, and the mode changes rarely
+ * enough that an unconditional write would be almost entirely wasted.
+ */
+esp_err_t capstan_config_set_mode(capstan_mode_t mode);
 
 /** Touch calibration. An uncalibrated unit returns valid=false and the
  *  identity transform, so callers never need to special-case it. */

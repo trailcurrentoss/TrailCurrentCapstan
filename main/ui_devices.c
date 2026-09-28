@@ -29,35 +29,61 @@
 static const char *TAG = "ui.devices";
 
 /*
- * Authored dots, and the ceiling on devices.
+ * The dot arc.
  *
- * MAX_DEVICES in GUI/tmp/screens_layout.py authors exactly this many, and
- * the generator refuses to write a project where the two disagree with
- * CAPSTAN_MAX_CONTROLS -- see check_device_dots(). The assert is the third
- * leg of that: it catches the case where the header changed and the project
- * was never regenerated, which is the one the generator cannot see.
+ * The dots answer two questions at a glance -- how many devices there are,
+ * and which one this is -- so the number SHOWN is the number of devices and
+ * the lit one is the selected device. Both change at runtime; the widgets
+ * cannot move, because moving an authored widget from C is what makes EEZ
+ * Studio's canvas disagree with the panel.
+ *
+ * They sit on an arc at 12 o'clock, growing outwards from there -- the menu's
+ * dot row at the same radius and the same spacing, moved to the top because
+ * the Back chip owns the bottom of this screen. A row across the face would be
+ * bounded by its width and would eventually either run off the glass or shrink
+ * until the dots stopped being countable; an arc is not bounded that way.
+ *
+ * So there are 2*MAX-1 slots at HALF the visible spacing, and a list of n
+ * devices lights every OTHER slot starting at slot (MAX - n). Half-spacing
+ * slots are what let an EVEN count straddle 12 o'clock and an ODD count sit
+ * one dot on it -- one slot per device can only ever centre one of the two,
+ * and the other lands half a step round the arc.
+ *
+ * MAX_DEVICES in GUI/tmp/screens_layout.py authors the arc from the same
+ * ceiling, and the generator refuses to write a project where it disagrees
+ * with CAPSTAN_MAX_CONTROLS -- see check_device_dots(). The assert is the
+ * third leg of that: it catches the header changing and the project never
+ * being regenerated, which is the case the generator cannot see.
  */
-#define DEVICE_DOT_COUNT 8
+#define DEVICE_DOT_SLOTS (2 * CAPSTAN_MAX_CONTROLS - 1)
 
-_Static_assert(DEVICE_DOT_COUNT == CAPSTAN_MAX_CONTROLS,
-               "the devices carousel authors one dot per possible device -- "
-               "CAPSTAN_MAX_CONTROLS changed, so MAX_DEVICES in "
-               "GUI/tmp/screens_layout.py and this must change with it");
+_Static_assert(CAPSTAN_MAX_CONTROLS == 8,
+               "the devices dot arc is authored at 2*MAX-1 slots from "
+               "MAX_DEVICES in GUI/tmp/screens_layout.py -- change that, "
+               "regenerate the projects and re-export before changing this");
 
-static lv_obj_t *device_dot(int i)
+static lv_obj_t *device_dot(int slot)
 {
-    switch (i) {
-    case 0: return objects.devices_dot0;
-    case 1: return objects.devices_dot1;
-    case 2: return objects.devices_dot2;
-    case 3: return objects.devices_dot3;
-    case 4: return objects.devices_dot4;
-    case 5: return objects.devices_dot5;
-    case 6: return objects.devices_dot6;
-    case 7: return objects.devices_dot7;
+    switch (slot) {
+    case  0: return objects.devices_dot0;
+    case  1: return objects.devices_dot1;
+    case  2: return objects.devices_dot2;
+    case  3: return objects.devices_dot3;
+    case  4: return objects.devices_dot4;
+    case  5: return objects.devices_dot5;
+    case  6: return objects.devices_dot6;
+    case  7: return objects.devices_dot7;
+    case  8: return objects.devices_dot8;
+    case  9: return objects.devices_dot9;
+    case 10: return objects.devices_dot10;
+    case 11: return objects.devices_dot11;
+    case 12: return objects.devices_dot12;
+    case 13: return objects.devices_dot13;
+    case 14: return objects.devices_dot14;
     default: return NULL;
     }
 }
+
 
 static void show(lv_obj_t *o, bool visible)
 {
@@ -87,6 +113,32 @@ static void set_text(lv_obj_t *o, const char *s)
 {
     if (o) {
         lv_label_set_text(o, s);
+    }
+}
+
+/*
+ * Light the dots for `n` devices with `sel` selected, or clear the arc
+ * entirely when there are none.
+ *
+ * Every slot is written on every pass, including the ones that stay hidden.
+ * Touching only the slots in use is how an arc gets left with a stale dot
+ * from a longer list still showing beside a shorter one.
+ */
+static void draw_dots(int n, int sel)
+{
+    const int first = CAPSTAN_MAX_CONTROLS - n;   /* 0 at a full house */
+
+    for (int slot = 0; slot < DEVICE_DOT_SLOTS; slot++) {
+        lv_obj_t *d = device_dot(slot);
+
+        /* Interstitial slots exist only so the run can stay centred on 12
+         * o'clock; a device never lands on one. */
+        const bool on_rail = ((slot - first) % 2 == 0);
+        const int  item    = (slot - first) / 2;
+        const bool used    = on_rail && n > 0 && item >= 0 && item < n;
+
+        show(d, used);
+        set_checked(d, used && item == sel);
     }
 }
 
@@ -134,9 +186,7 @@ static void draw_empty(void)
 
     show(objects.devices_prev, false);
     show(objects.devices_next, false);
-    for (int i = 0; i < DEVICE_DOT_COUNT; i++) {
-        show(device_dot(i), false);
-    }
+    draw_dots(0, -1);
 }
 
 void ui_devices_refresh(void)
@@ -205,21 +255,8 @@ void ui_devices_refresh(void)
                  ui_light_icon(c.items[wrap(sel + 1, n)].icon));
     }
 
-    /*
-     * Dots. The row is authored at the maximum, so a shorter list hides the
-     * surplus from the OUTSIDE IN -- `first` is the offset that keeps the
-     * visible run centred under the tile. With an odd number spare the row
-     * sits half a dot off centre, which is under a pixel on every panel and
-     * is worth less than the alternative of moving authored widgets from C.
-     */
-    const int first = (DEVICE_DOT_COUNT - n) / 2;
-    for (int i = 0; i < DEVICE_DOT_COUNT; i++) {
-        lv_obj_t *d = device_dot(i);
-        const int item = i - first;
-        const bool used = (item >= 0 && item < n);
-        show(d, used);
-        set_checked(d, used && item == sel);
-    }
+    /* n dots on the rim, the sel-th lit, centred on 12 o'clock. */
+    draw_dots(n, sel);
 }
 
 /*

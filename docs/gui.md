@@ -218,6 +218,33 @@ The discriminator: **EEZ Studio controls appearance, C controls state.** If a
 state change does not look right, the fix belongs in EEZ Studio — not in a
 `lv_obj_set_style_*` call.
 
+### Percent positions are exported as whole numbers
+
+Geometry here is in percent, so one description lays out at 480, 360 and 240.
+There is one place that breaks down: **EEZ Studio's export rounds a percent
+position to a whole number.** A widget authored at 30.417% ships as
+`LV_PCT(30)`.
+
+One percent is 2.4 px on a 240 panel, 4.8 px on a 480. That is invisible for a
+title or a card, and destructive for anything small and repeated. The page-dot
+rows were the case that found it: authored on a true circle 6 degrees apart,
+they came out of the export with gaps alternating 9.6 px and 12 px, and the
+arc's vertical sag — a fraction of a pixel between neighbours near the centre —
+quantised into 2.4 px stair-steps. Nothing was wrong with the description, the
+canvas, or the C. The unit was too coarse to carry the curve.
+
+So a widget whose position needs sub-percent precision is authored in
+**pixels**, which costs nothing here because the generator emits one project
+per resolution and already knows the canvas size. `dot()` in
+`GUI/tmp/layout.py` is the one current user; it takes a centre in percent and
+converts once, because rounding a top-left that was itself derived from a
+percent size rounds twice.
+
+The generator's geometry checks read both units — see `as_pct()` in
+`validate()`. A pixel-positioned widget that skipped the round-mask check
+would be a bad trade, since the widgets most likely to be authored in pixels
+are the small ones near the rim.
+
 ### Some JSON shapes are silently dropped
 
 EEZ Studio's C generator is more forgiving than its own canvas renderer. A
