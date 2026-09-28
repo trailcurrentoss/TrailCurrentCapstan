@@ -1,0 +1,11 @@
+{
+    // Absolute path to YOUR ESP-IDF checkout. Per-developer: copy this file
+    // to .vscode/settings.json (which is gitignored) and edit the path, or
+    // leave it out entirely and use the command palette:
+    //
+    //   ESP-IDF: Select current ESP-IDF version
+    //
+    // which writes this key for you. There is no correct shared value --
+    // see docs/build.md for where the toolchain is expected to live.
+    "idf.currentSetup": "/path/to/your/esp-idf"
+}
