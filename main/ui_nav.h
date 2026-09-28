@@ -37,7 +37,7 @@ typedef enum {
     CAPSTAN_SCREEN_MENU,       /* the app carousel -- same on all three */
     CAPSTAN_SCREEN_CLIMATE,
     CAPSTAN_SCREEN_CLIMATE_MODE,
-    CAPSTAN_SCREEN_LIGHTS,
+    CAPSTAN_SCREEN_DEVICES,   /* the devices carousel */
     CAPSTAN_SCREEN_HEATER,
     CAPSTAN_SCREEN_ENERGY,
     CAPSTAN_SCREEN_WATER,

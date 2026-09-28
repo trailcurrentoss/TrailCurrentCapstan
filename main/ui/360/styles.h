@@ -85,6 +85,23 @@ lv_style_t *get_style_neighbour_icon_MAIN_DEFAULT();
 void add_style_neighbour_icon(lv_obj_t *obj);
 void remove_style_neighbour_icon(lv_obj_t *obj);
 
+// Style: DeviceTile
+lv_style_t *get_style_device_tile_MAIN_DEFAULT();
+lv_style_t *get_style_device_tile_MAIN_CHECKED();
+void add_style_device_tile(lv_obj_t *obj);
+void remove_style_device_tile(lv_obj_t *obj);
+
+// Style: DeviceIcon
+lv_style_t *get_style_device_icon_MAIN_DEFAULT();
+lv_style_t *get_style_device_icon_MAIN_CHECKED();
+void add_style_device_icon(lv_obj_t *obj);
+void remove_style_device_icon(lv_obj_t *obj);
+
+// Style: DeviceNeighbourIcon
+lv_style_t *get_style_device_neighbour_icon_MAIN_DEFAULT();
+void add_style_device_neighbour_icon(lv_obj_t *obj);
+void remove_style_device_neighbour_icon(lv_obj_t *obj);
+
 // Style: Dot
 lv_style_t *get_style_dot_MAIN_DEFAULT();
 lv_style_t *get_style_dot_MAIN_CHECKED();

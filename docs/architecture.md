@@ -69,18 +69,23 @@ Concretely:
 - The practical rule that guarantees it: **apply the delta to the displayed
   value and clamp the result**. Never keep a private counter and derive the
   displayed value from it — that is precisely how the overshoot gets stored.
-- **Lists clamp. The app carousel wraps.** A list of Wi-Fi networks or
-  settings rows stops at its ends: reaching the last row and turning further
-  does nothing, and the next detent the other way moves back immediately.
+- **Lists clamp. Carousels wrap.** A list of Wi-Fi networks or settings rows
+  stops at its ends: reaching the last row and turning further does nothing,
+  and the next detent the other way moves back immediately.
 
-  The app carousel is the one exception, and it follows the design prototype,
-  which wraps. The reasoning that originally rejected wrapping — that
-  silently jumping from the last item to the first is disorienting because
-  nothing about the input tells you a boundary was crossed — holds for a list
-  and does not hold here: the carousel shows the two neighbouring items and a
-  row of ten dots, so the wrap is visible before and after it happens. It is
-  also what puts Clock, the last item, one detent BACKWARDS from Climate, the
-  first, which is the shortest path back to the clock face.
+  The two carousels — the app menu and Devices — are the exception, and they
+  follow the design prototype, which wraps. The reasoning that originally
+  rejected wrapping — that silently jumping from the last item to the first is
+  disorienting because nothing about the input tells you a boundary was
+  crossed — holds for a list and does not hold here: a carousel shows the two
+  neighbouring items and a row of dots, so the wrap is visible before and
+  after it happens. On the menu it is also what puts Clock, the last item, one
+  detent BACKWARDS from Climate, the first, which is the shortest path back to
+  the clock face.
+
+  **The test is the layout, not the screen.** A screen wraps when its
+  neighbours are on the glass; if a third screen becomes a carousel it wraps
+  too, and if Devices ever went back to being a list it would clamp again.
 
   Whichever applies, **the overshoot is never stored**. That is the invariant
   that matters, and it is independent of clamping versus wrapping.

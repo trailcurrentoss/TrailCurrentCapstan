@@ -13,7 +13,7 @@
 #include "ui_nav.h"
 #include "ui_clock.h"
 #include "ui_icons.h"
-#include "ui_lights.h"
+#include "ui_devices.h"
 #include "ui_settings.h"
 #include "ui_setup.h"
 
@@ -78,8 +78,12 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_CLIMATE_MODE] = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_CLIMATE,  "climate.mode" },
 
-    [CAPSTAN_SCREEN_LIGHTS]       = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_MENU,     "lights" },
+    /* The devices carousel. Touch is live for the Back chip only -- the
+     * tile is deliberately not touchable, because on both CrowPanels the
+     * display IS the encoder button, so a tap on it would toggle the device
+     * twice and land back where it started. See page_devices(). */
+    [CAPSTAN_SCREEN_DEVICES]      = { CAPSTAN_INPUT_RING_AND_TOUCH,
+                                      CAPSTAN_SCREEN_MENU,     "devices" },
     [CAPSTAN_SCREEN_HEATER]       = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_MENU,     "heater" },
 
@@ -154,7 +158,7 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_MENU]         = SCREEN_ID_PAGE_MENU,
     [CAPSTAN_SCREEN_CLIMATE]      = SCREEN_ID_PAGE_CLIMATE,
     [CAPSTAN_SCREEN_CLIMATE_MODE] = SCREEN_ID_PAGE_CLIMATE_MODE,
-    [CAPSTAN_SCREEN_LIGHTS]       = SCREEN_ID_PAGE_LIGHTS,
+    [CAPSTAN_SCREEN_DEVICES]      = SCREEN_ID_PAGE_DEVICES,
     [CAPSTAN_SCREEN_HEATER]       = SCREEN_ID_PAGE_HEATER,
     [CAPSTAN_SCREEN_ENERGY]       = SCREEN_ID_PAGE_ENERGY,
     [CAPSTAN_SCREEN_WATER]        = SCREEN_ID_PAGE_WATER,
@@ -360,7 +364,7 @@ static const struct {
     capstan_screen_t  dest;
 } s_menu[MENU_ITEM_COUNT] = {
     { UI_ICON_CLIMATE,  "Climate",  CAPSTAN_SCREEN_CLIMATE  },
-    { UI_ICON_LIGHTS,   "Lights",   CAPSTAN_SCREEN_LIGHTS   },
+    { UI_ICON_DEVICES,  "Devices",  CAPSTAN_SCREEN_DEVICES  },
     { UI_ICON_HEATER,   "Heater",   CAPSTAN_SCREEN_HEATER   },
     { UI_ICON_ENERGY,   "Energy",   CAPSTAN_SCREEN_ENERGY   },
     { UI_ICON_WATER,    "Water",    CAPSTAN_SCREEN_WATER    },
@@ -450,15 +454,15 @@ static void apply_menu_carousel(void)
  * found, and a hard-coded 6 would either strand rows past the sixth or
  * let the selection run off the end of a short list.
  *
- * The menu is not in here: on the 480 and 360 it is a ring of faces with
- * no container at all, so it keeps its explicit accessor above.
+ * Neither carousel is in here. The menu and the devices screen both show
+ * three items through fixed slots with no container to count, so each has
+ * its own count and its own apply function above.
  */
 static lv_obj_t *list_container(capstan_screen_t s)
 {
 #if HAVE_GENERATED_UI
     switch (s) {
     case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.cmode_list;
-    case CAPSTAN_SCREEN_LIGHTS:       return objects.lights_list;
     case CAPSTAN_SCREEN_DOORS:        return objects.doors_list;
     case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_list;
     default:                          return NULL;
@@ -479,6 +483,12 @@ static int selectable_count(capstan_screen_t s)
     if (s == CAPSTAN_SCREEN_ENERGY) {
         /* Not a list -- the "items" are pages through one readout. */
         return ENERGY_PAGE_COUNT;
+    }
+    if (s == CAPSTAN_SCREEN_DEVICES) {
+        /* However many devices Headwaters gave this dial. Not a widget
+         * count: the carousel has three slots whatever the list length, so
+         * the length lives in the config payload and nowhere else. */
+        return ui_devices_count();
     }
     lv_obj_t *c = list_container(s);
     if (c) {
@@ -518,6 +528,13 @@ static void refresh_selection(capstan_screen_t s)
     }
     if (s == CAPSTAN_SCREEN_ENERGY) {
         apply_energy_dots();
+        return;
+    }
+    if (s == CAPSTAN_SCREEN_DEVICES) {
+        /* Glyphs, name, state and dots in one pass -- the selected device's
+         * state is part of what the carousel shows, so there is nothing
+         * useful to split out the way the menu splits off its summary. */
+        ui_devices_refresh();
         return;
     }
 
@@ -592,15 +609,21 @@ void ui_nav_rotate(int diff)
      * here, in the board layer, or in LVGL -- is what reintroduces the
      * wind-back, so there is none.
      *
-     * Past the end the index WRAPS on the carousel and CLAMPS everywhere
-     * else. That is a deliberate split, not an inconsistency:
+     * Past the end the index WRAPS on the two CAROUSELS and CLAMPS
+     * everywhere else. That is a deliberate split, not an inconsistency:
      *
-     *   The carousel is a ring of ten app tiles with no first or last one --
-     *   it shows three at a time and the dots make the wrap visible. The
-     *   physical ring has no end stops either, so stopping dead at Clock
-     *   reads as the input having jammed. Wrapping is also what puts the
-     *   clock one detent backwards from Climate, which is the whole reason
-     *   Clock is the last item.
+     *   A carousel is a ring with no first or last item -- it shows three at
+     *   a time and the neighbouring glyphs and the dots make the wrap
+     *   visible before the user reaches it. The physical ring has no end
+     *   stops either, so stopping dead at the last app reads as the input
+     *   having jammed. Wrapping is also what puts the clock one detent
+     *   backwards from Climate, which is the whole reason Clock is the last
+     *   menu item.
+     *
+     *   Both carousels wrap for the same reason, so the ring feels the same
+     *   on both. If a third screen becomes a carousel it wraps too -- the
+     *   test is whether the neighbours are on screen, not which screen it
+     *   is.
      *
      *   A list of Wi-Fi networks or settings rows genuinely has a top and a
      *   bottom, and wrapping one means a user who holds the ring the wrong
@@ -610,7 +633,8 @@ void ui_nav_rotate(int diff)
      * is the invariant that matters.
      */
     int sel = s_sel[s_current] + diff;
-    if (s_current == CAPSTAN_SCREEN_MENU) {
+    if (s_current == CAPSTAN_SCREEN_MENU ||
+        s_current == CAPSTAN_SCREEN_DEVICES) {
         sel = ((sel % n) + n) % n;
     } else {
         if (sel < 0)      { sel = 0; }
@@ -650,10 +674,10 @@ void ui_nav_press(void)
         return;
     }
 
-    case CAPSTAN_SCREEN_LIGHTS:
-        /* Rows are built from the controls Headwaters assigned to this dial;
-         * the press commands the selected one. See ui_lights.c. */
-        ui_lights_press();
+    case CAPSTAN_SCREEN_DEVICES:
+        /* The carousel holds the controls Headwaters assigned to this dial;
+         * the press commands the selected one. See ui_devices.c. */
+        ui_devices_press();
         return;
 
     case CAPSTAN_SCREEN_SETTINGS:

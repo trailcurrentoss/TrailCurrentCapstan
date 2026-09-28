@@ -29,8 +29,18 @@ two codepoints Fireside lacks, `temperature-full` (`U+F2C7`) and `wind`
 (`U+F72E`), for its air-quality readouts. Capstan follows Milepost, the
 superset, so it contains everything either project uses.
 
-Sizes follow the house `fa<size>` convention: `fa24`/`fa18`/`fa14` on the
-480, `fa20`/`fa16`/`fa13` on the 360, `fa16`/`fa13` on the 240.
+Sizes follow the house `fa<size>` convention. The row sizes are
+`fa24`/`fa18`/`fa14` on the 480, `fa20`/`fa16`/`fa13` on the 360 and
+`fa16`/`fa13` on the 240, plus two larger ones per panel for the **devices
+carousel** — `fa56`/`fa36`, `fa42`/`fa28` and `fa30`/`fa20`.
+
+Those two are the FULL 111-codepoint face rather than the app carousel's
+reduced `fh` subset, and that is deliberate: the device tile draws whichever
+icon the user picked in Headwaters, which is any key in
+`main/ui_light_icons.h`. Subsetting it to the ten app glyphs would render an
+empty box for every other choice, with nothing to warn about it. It costs
+roughly 240 KB of flash on the 480 — only the selected board's variant is
+compiled — and that is the price of "every icon a user can choose renders".
 
 ## Inherited meanings
 
@@ -46,7 +56,7 @@ gives them. Same concept, same glyph, across modules.
 | Water tanks | `droplet` | `U+F043` | `nav_water_icon`, `water_pump_icon` |
 | Air quality | `cloud` | `U+F0C2` | `nav_air_icon`, `air_eco2_icon` |
 | Climate / temperature | `temperature-full` | `U+F2C7` | `air_temp_icon` |
-| Lights | `lightbulb` | `U+F0EB` | `home_dev4_icon` |
+| Devices | `lightbulb` | `U+F0EB` | `home_dev4_icon` |
 | Wi-Fi | `wifi` | `U+F1EB` | `topbar_wifi_icon` |
 | Theme toggle | `moon` | `U+F186` | `topbar_theme_icon` |
 

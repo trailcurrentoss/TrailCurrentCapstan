@@ -32,7 +32,7 @@ first input after waking is consumed by the wake itself.
 | Menu | ring | Idle | — |
 | Climate | ring | Menu | **none — stubbed** |
 | Climate mode | ring | Climate | **none — stubbed** |
-| Lights | ring | Menu | `local/lights/+/status` |
+| Devices | ring | Menu | `local/lights/+/status` |
 | Heater | ring | Menu | a PDM/relay channel |
 | Energy | ring | Menu | `local/energy/status` |
 | Water | ring | Menu | `local/water/status` |
@@ -78,7 +78,7 @@ which the second hand's own redraws would otherwise keep resetting forever.
 
 ## Menu
 
-Nine faces: Climate, Lights, Heater, Energy, Water Tanks, Air Quality,
+Nine faces: Climate, Devices, Heater, Energy, Water Tanks, Air Quality,
 Levelling, Doors, Settings. Each shows a one-line summary — `Heating · 72°`,
 `3 on`, `Fresh 72%`, `2 open`.
 
@@ -133,20 +133,72 @@ Behaviour, from the prototype:
 The only ambient temperature available today is `tempInC` / `tempInF` from
 `local/airquality/temphumid`.
 
-## Lights
+## Devices
+
+**Called Devices, not Lights.** What Headwaters assigns to a dial is a set of
+switchable channels — a PDM output, a Switchback relay — and those drive
+awning lights, a fan, a pump, a fridge socket. Calling the screen Lights
+named one of them and misdescribed the rest.
+
+The MQTT topics are still `local/lights/*`. That is the platform's contract,
+shared with Fireside and the PWA; renaming a topic on the dial alone would
+just stop it talking to the rig. See [mqtt.md](mqtt.md#commands).
+
+**A carousel, identical on all three panels — the same shape as the menu.**
+The selected device sits in a circular tile in the middle with its name and
+state under it, its two neighbours flank it as muted glyphs, and a row of
+dots across the bottom shows position in the list. Rotating moves the devices
+through the three fixed slots; the slots never move.
+
+This replaced a vertical scrolling list, for two reasons:
+
+- **It was not the design.** The prototype's devices face (`lv:'focus'`, its
+  default) is this carousel. The list was the alternative it offers and does
+  not choose.
+- **The list could not be reviewed.** Its rows were created, positioned and
+  sized from C at runtime, so EEZ Studio's canvas showed an empty box where
+  the devices would be — the canvas-device divergence
+  [gui.md](gui.md#the-rule-the-canvas-must-match-the-device) exists to
+  prevent, sitting in the tree as a documented exception. A carousel shows
+  three items whatever the list length, so the exception is no longer needed:
+  the only per-device content is a glyph, a name and a word, all of which are
+  `lv_label_set_text`.
 
 On/off only — **no brightness**, even though the topic carries it. The ring
-selects, a press toggles, `LV_STATE_CHECKED` is the on state.
+selects, a press toggles, and `LV_STATE_CHECKED` on the tile and its glyph is
+the on state.
 
-Below the lights are scene chips: Evening, Night, All Off. Selection runs
-through lights and then scenes as one list, clamping at both ends.
+**Wraps, like the menu.** It is the second exception to the clamping rule and
+for the same reason: the neighbouring glyphs and the dots make the wrap
+visible before the user reaches it. The overshoot is still never stored. See
+[architecture.md](architecture.md#2-the-ring-reports-direction-never-position).
+
+**The tile is not touchable.** On both CrowPanels the display *is* the encoder
+button, so a tap firm enough to register would also close the ring button and
+toggle the device twice. The Back chip survives that because
+`ui_nav_press()` suppresses the ring press that follows a Back; a toggle has
+nothing to suppress it against.
+
+**There are no scene chips.** The previous version authored Evening, Night and
+All Off. No scenes topic exists anywhere in Headwaters, so all three were
+placeholders for a feature with no backend.
 
 A toggle publishes to `local/lights/<id>/command` and the UI changes **only
 when the module confirms** on `local/lights/<id>/status`. This is a
 deliberate departure from the handoff's optimistic-update instruction — see
 [mqtt.md](mqtt.md#optimistic-update-and-why-capstan-does-not-do-it).
 
-Friendly names and icons come from the retained `local/config/pdm_channels`.
+Friendly names and icons come from the retained controls payload, per device.
+
+**Unconfigured dial**: the tile sits in its off look and the two labels read
+`No devices` / `Use Headwaters`. There is no separate message widget — a
+round 240 px face has no free band for one, and authoring it over the tile
+would make the canvas show the message and the carousel at once.
+
+**The dot row is authored at `CAPSTAN_MAX_CONTROLS`** and the surplus is
+hidden from the outside in, keeping the visible run centred. The ceiling is
+the MQTT buffer limit, mirrored from Headwaters' own `MAX_CONTROLS`; the
+generator refuses to build a project where the two disagree.
 
 ## Heater
 

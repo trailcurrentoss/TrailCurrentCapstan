@@ -153,7 +153,7 @@ untested. The product screens do not exist yet.
 | Ring navigation | **verified** — clamped selection, press, long-press, touch Back |
 | Settings: MQTT fields, factory reset | **verified on hardware** |
 | Energy paging | 5 pages (battery / charge / solar / load / runtime) |
-| Live data on readout screens | Energy, Water, Air, Level bound; Lights and Doors not yet |
+| Live data on readout screens | Energy, Water, Air, Level bound; Devices carousel bound; Doors not yet |
 
 Tracked debt:
 

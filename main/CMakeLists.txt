@@ -92,7 +92,7 @@ idf_component_register(
         "ui_data.c"
         "ui_setup.c"
         "ui_clock.c"
-        "ui_lights.c"
+        "ui_devices.c"
         "discovery.c"
         "actions.c"
         "vars.c"

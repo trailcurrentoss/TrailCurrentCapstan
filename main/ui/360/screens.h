@@ -15,7 +15,7 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_MENU = 2,
     SCREEN_ID_PAGE_CLIMATE = 3,
     SCREEN_ID_PAGE_CLIMATE_MODE = 4,
-    SCREEN_ID_PAGE_LIGHTS = 5,
+    SCREEN_ID_PAGE_DEVICES = 5,
     SCREEN_ID_PAGE_HEATER = 6,
     SCREEN_ID_PAGE_ENERGY = 7,
     SCREEN_ID_PAGE_WATER = 8,
@@ -33,7 +33,7 @@ typedef struct _objects_t {
     lv_obj_t *page_menu;
     lv_obj_t *page_climate;
     lv_obj_t *page_climate_mode;
-    lv_obj_t *page_lights;
+    lv_obj_t *page_devices;
     lv_obj_t *page_heater;
     lv_obj_t *page_energy;
     lv_obj_t *page_water;
@@ -89,11 +89,25 @@ typedef struct _objects_t {
     lv_obj_t *cmode_item3_title;
     lv_obj_t *climate_mode_back;
     lv_obj_t *climate_mode_back_icon;
-    lv_obj_t *lights_title;
-    lv_obj_t *lights_list;
-    lv_obj_t *lights_empty;
-    lv_obj_t *lights_back;
-    lv_obj_t *lights_back_icon;
+    lv_obj_t *devices_title;
+    lv_obj_t *devices_hero;
+    lv_obj_t *devices_hero_icon;
+    lv_obj_t *devices_prev;
+    lv_obj_t *devices_prev_icon;
+    lv_obj_t *devices_next;
+    lv_obj_t *devices_next_icon;
+    lv_obj_t *devices_name;
+    lv_obj_t *devices_value;
+    lv_obj_t *devices_dot0;
+    lv_obj_t *devices_dot1;
+    lv_obj_t *devices_dot2;
+    lv_obj_t *devices_dot3;
+    lv_obj_t *devices_dot4;
+    lv_obj_t *devices_dot5;
+    lv_obj_t *devices_dot6;
+    lv_obj_t *devices_dot7;
+    lv_obj_t *devices_back;
+    lv_obj_t *devices_back_icon;
     lv_obj_t *heater_arc;
     lv_obj_t *heater_title;
     lv_obj_t *heater_level;
@@ -222,8 +236,8 @@ void tick_screen_page_climate();
 void create_screen_page_climate_mode();
 void tick_screen_page_climate_mode();
 
-void create_screen_page_lights();
-void tick_screen_page_lights();
+void create_screen_page_devices();
+void tick_screen_page_devices();
 
 void create_screen_page_heater();
 void tick_screen_page_heater();

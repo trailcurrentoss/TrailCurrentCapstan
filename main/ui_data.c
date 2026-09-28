@@ -24,7 +24,7 @@
 #include "capstan_mqtt.h"
 #include "capstan_wifi.h"
 #include "ui_data.h"
-#include "ui_lights.h"
+#include "ui_devices.h"
 #include "ui_nav.h"
 #include "ui_setup.h"
 
@@ -176,7 +176,7 @@ static void refresh_menu(void)
     case 0:     /* Climate -- no thermostat topic exists yet. See docs/mqtt.md. */
         break;
 
-    case 1: {   /* Lights */
+    case 1: {   /* Devices */
         if (capstan_model_module_alive(CAPSTAN_MOD_LIGHTS)) {
             snprintf(buf, sizeof(buf), "%d on",
                      capstan_model_lights_on_count());
@@ -465,7 +465,7 @@ void ui_data_refresh(void)
     refresh_settings();
     ui_setup_tick();         /* portal progress while provisioning */
     refresh_menu();
-    ui_lights_refresh();     /* controls from Headwaters -> rows */
+    ui_devices_refresh();    /* controls from Headwaters -> the carousel */
     refresh_energy();
     refresh_water();
     refresh_air();
