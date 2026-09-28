@@ -35,26 +35,72 @@ static volatile bool s_running;
 void discovery_init(void)
 {
     /*
-     * mdns_init() is idempotent per boot but not re-entrant, and nothing else
-     * in this firmware starts it, so this is the only call.
+     * Deliberately does NOT start mDNS. See mdns_up() below -- starting it at
+     * boot breaks the broker connection on every board.
      */
+    ESP_LOGI(TAG, "discovery ready -- will answer local/discovery/trigger");
+}
+
+/* ---------------------------------------------------------------------- *
+ * mDNS is started per discovery window, NOT at boot.
+ *
+ * WHY, HONESTLY
+ *
+ * This is PRECAUTIONARY, not a fix for an observed fault. Read this before
+ * changing it, and do not repeat the mistake the first version of this
+ * comment made by asserting a cause that had not been established.
+ *
+ * The broker is reached by an mDNS name -- `mqtts://headwaters.local:8883`.
+ * Nothing in this firmware resolves that; lwIP does, through
+ * CONFIG_LWIP_DNS_SUPPORT_MDNS_QUERIES, which answers `.local` lookups inside
+ * getaddrinfo() by sending its own multicast query. The espressif/mdns
+ * component binds UDP 5353 for itself, and the two sharing that port is a
+ * known thing to be careful about in ESP-IDF. The component offers no
+ * getaddrinfo integration of its own -- no DNS hook, no Kconfig for it.
+ *
+ * Capstan is the only TrailCurrent device whose BROKER is addressed by a
+ * `.local` name, so it is the only one where that would matter. Fireside and
+ * Spotter start mDNS at boot and are fine.
+ *
+ * Confining mDNS to the window costs nothing and removes the question. The
+ * window already stops the broker, so for its duration nothing needs to
+ * resolve `.local`; outside it, lwIP has 5353 to itself. A wall panel also has
+ * no reason to answer multicast queries except while it is being onboarded.
+ *
+ * WHAT THIS DID NOT FIX
+ *
+ * All three boards once sat retrying the broker forever with
+ *
+ *   E esp-tls: couldn't get hostname for :headwaters.local:
+ *              getaddrinfo() returns 202, addrinfo=0x0
+ *   E mqtt: TLS/TCP error (esp-tls 0x8001)
+ *
+ * and this arrangement did NOT change that. The cause was external: nothing on
+ * the network was answering for `headwaters.local` -- a workstation running
+ * none of this code could not resolve it either, and `avahi-browse` saw no
+ * mDNS services at all. If this error appears, check that the Headwaters box
+ * is up and on the same network BEFORE looking at this file.
+ * ---------------------------------------------------------------------- */
+static bool mdns_up(void)
+{
     const esp_err_t err = mdns_init();
     if (err != ESP_OK) {
-        /* Not fatal. Everything else -- Wi-Fi, the broker, the whole UI --
-         * works without mDNS; the one thing that will not is being found by
-         * Overlook, which is exactly what this warning is about. */
-        ESP_LOGE(TAG, "mdns_init failed (%s) -- this panel will not be "
-                      "discoverable from Headwaters", esp_err_to_name(err));
-        return;
+        ESP_LOGE(TAG, "mdns_init failed (%s) -- cannot be discovered",
+                 esp_err_to_name(err));
+        return false;
     }
 
     char hostname[24];
     capstan_mqtt_hostname(hostname, sizeof(hostname));
     mdns_hostname_set(hostname);
     mdns_instance_name_set(MDNS_INSTANCE);
+    return true;
+}
 
-    ESP_LOGI(TAG, "mDNS up -- this device is %s.local; waiting for "
-                  "local/discovery/trigger", hostname);
+/* Tears down the service AND the component, handing UDP 5353 back to lwIP. */
+static void mdns_down(void)
+{
+    mdns_free();
 }
 
 static void advertise(void)
@@ -125,6 +171,14 @@ static void discovery_task(void *arg)
     /* Free the TLS session so port 80 can bind. See discovery.h. */
     capstan_mqtt_stop();
 
+    /* Only now -- see the note on mdns_up(). */
+    if (!mdns_up()) {
+        capstan_mqtt_connect();
+        s_running = false;
+        vTaskDelete(NULL);
+        return;
+    }
+
     advertise();
     httpd_handle_t server = start_server();
 
@@ -142,7 +196,9 @@ static void discovery_task(void *arg)
     if (server) {
         httpd_stop(server);
     }
-    mdns_service_remove("_trailcurrent", "_tcp");
+    /* mdns_free() drops the service with it, and -- the point of the whole
+     * arrangement -- releases UDP 5353 so `headwaters.local` resolves again. */
+    mdns_down();
 
     /*
      * Back to normal on both paths. An unconfirmed window must still

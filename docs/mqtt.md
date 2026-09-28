@@ -313,10 +313,10 @@ Not Home Assistant discovery. TrailCurrent uses mDNS plus an MQTT-mediated
 confirm handshake. Capstan follows the MCU "confirm" pattern that Fireside
 implements in `main/discovery.c`:
 
-1. On boot, `mdns_init()`, hostname `esp32-XXXXXX`, instance name
-   `TrailCurrent Capstan`.
-2. Subscribe to `local/discovery/trigger`. Headwaters broadcasts the bare
+1. Subscribe to `local/discovery/trigger`. Headwaters broadcasts the bare
    string `*` (not JSON) at QoS 0.
+2. On trigger — and NOT before — `mdns_init()`, hostname `esp32-XXXXXX`,
+   instance name `TrailCurrent Capstan`.
 3. On trigger, advertise `_trailcurrent._tcp` on **port 80** with TXT records
    `type=capstan` and `fw=<app version>`, and serve `GET /discovery/confirm`.
 4. The host daemon `local_code/discovery-mdns.py` browses for the service and
@@ -336,6 +336,21 @@ debugging a device that does not appear in Overlook:
   loop in `main.c` skips its broker-reconnect poll while a window is open — 
   without that it would rebuild the client five seconds in and undo the
   teardown.
+- **mDNS runs only inside the window, never at boot.** Precautionary: the
+  broker is `headwaters.local`, resolved by lwIP through
+  `CONFIG_LWIP_DNS_SUPPORT_MDNS_QUERIES`, and the espressif/mdns component
+  binds the same UDP port with no getaddrinfo integration of its own. Capstan
+  is the only TrailCurrent device whose broker is a `.local` name, which is why
+  Fireside and Spotter start mDNS at boot without trouble. The window already
+  stops the broker, so mDNS costs nothing there.
+
+> **`getaddrinfo() returns 202` / `esp-tls 0x8001` is a NETWORK fault, not a
+> firmware one.** It means nothing answered for `headwaters.local`. Check the
+> Headwaters box is powered and on the same network as the panel — from a
+> laptop, `avahi-resolve-host-name headwaters.local` and `avahi-browse -at`.
+> All three panels once showed this at once and the cause was that the name
+> was unresolvable from every machine on the network, not anything on the
+> device.
 - **A trigger addressed to another device is ignored.** Every device on the
   broker sees every trigger, so the payload is matched against `*` or this
   device's own `esp32-XXXXXX` hostname before anything happens. A device that

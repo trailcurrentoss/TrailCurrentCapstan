@@ -31,6 +31,10 @@
  * follows them rather than inventing a third answer. It reconnects on the way
  * out whether the confirm arrived or the window timed out.
  *
+ * It also turns out to be what makes running mDNS safe at all here -- see
+ * discovery_init() below. The broker is down for the window, so nothing needs
+ * to resolve a `.local` name while the mDNS component owns UDP 5353.
+ *
  * WHAT THE USER SEES
  *
  * Nothing yet. Discovery is a network-side handshake with no screen of its
@@ -51,12 +55,13 @@
 #define DISCOVERY_TIMEOUT_MS 180000
 
 /**
- * Start the mDNS resolver and claim the hostname.
+ * Arm discovery. Call once at boot, after Wi-Fi has been initialised.
  *
- * Call once at boot, after Wi-Fi has been initialised. This does NOT make the
- * device discoverable -- it only makes `<hostname>.local` resolve, which is
- * what the confirm GET in step 4 above needs. The `_trailcurrent._tcp`
- * service is added and removed per discovery window.
+ * This does NOT start mDNS. That is a precaution, not a fix for a known fault
+ * -- the reasoning, and what it explicitly did not solve, is in discovery.c.
+ * In short: the broker is a `.local` name resolved by lwIP, the mdns component
+ * wants the same UDP port, and the discovery window is the only time this
+ * device needs to be resolvable, so mDNS lives there.
  */
 void discovery_init(void);
 
