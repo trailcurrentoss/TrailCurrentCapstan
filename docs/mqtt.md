@@ -326,14 +326,35 @@ implements in `main/discovery.c`:
    `http://<hostname>.local/discovery/confirm`; the result goes to
    `discovery/confirm/response`.
 
-> **Headwaters change required.** The `type` value must be registered in
-> `containers/backend/src/routes/modules.js` (`MCU_MODULES`) with
-> `wireless: true`, or the backend rejects the device. Capstan cannot complete
-> discovery until that entry exists. This is tracked as a Headwaters task, not
-> a Capstan one.
+Implemented in `main/discovery.c`. Two things about it are worth knowing before
+debugging a device that does not appear in Overlook:
 
-Also subscribe to `local/ota/trigger` — payload is a bare hostname string at
-QoS 0, targeted at one device. On a match the device enters OTA mode.
+- **The broker connection is dropped for the duration of a window**, so port 80
+  can bind and because the TLS session is the largest single heap consumer that
+  would otherwise compete with the HTTP server. It reconnects on the way out
+  whether the confirm arrived or the three-minute window timed out. The service
+  loop in `main.c` skips its broker-reconnect poll while a window is open — 
+  without that it would rebuild the client five seconds in and undo the
+  teardown.
+- **A trigger addressed to another device is ignored.** Every device on the
+  broker sees every trigger, so the payload is matched against `*` or this
+  device's own `esp32-XXXXXX` hostname before anything happens. A device that
+  skipped the check would drop its broker connection for three minutes every
+  time any other device was targeted.
+
+> **Headwaters side.** The `type` value has to be registered in
+> `containers/backend/src/routes/modules.js` (`MCU_MODULES`) with
+> `wireless: true`, or the backend rejects the device and it never reaches
+> Overlook's list however correctly it advertises itself. `capstan` is now in
+> that list. The host-side browser (`local_code/discovery-mdns.py`) needs no
+> change — it is type-agnostic and routes anything that is not `playbill`
+> through the `confirm` flow.
+
+`local/ota/trigger` is subscribed to as well — payload is a bare hostname
+string at QoS 0, targeted at one device — but **nothing implements OTA on this
+device yet**. A matching trigger is logged and otherwise ignored. There is
+deliberately no callback registered for it: a handler that quietly did nothing
+would be worse than an unhandled topic, which at least says so in the log.
 
 ## Gaps
 

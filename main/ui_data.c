@@ -144,6 +144,104 @@ static void refresh_energy(void)
     set_text(objects.energy_sub, sub[0] ? sub : "--");
 }
 
+/*
+ * The carousel's centre readout.
+ *
+ * ui_nav owns the glyphs, the name and the dots -- everything that depends
+ * only on which item is selected. The summary is the one part that depends
+ * on the MODEL, so it is written here, on the same 250 ms pass as every
+ * other reading, rather than from the rotation handler which has no data
+ * behind it.
+ *
+ * Every line is a glance, not a report: one number and its unit, or one
+ * word. Anything that does not fit in the width the layout gives it belongs
+ * on the app's own screen.
+ *
+ * The order of the switch follows MENU_ITEMS in GUI/tmp/screens_layout.py
+ * and s_menu[] in ui_nav.c. It has a `default` so an item added there
+ * without a line here reads as "--" rather than falling through to the
+ * previous item's value.
+ */
+static void refresh_menu(void)
+{
+    if (!objects.menu_summary) {
+        return;
+    }
+
+    const int sel = ui_nav_selection_of(CAPSTAN_SCREEN_MENU);
+    char buf[32] = "";
+
+    switch (sel) {
+    case 0:     /* Climate -- no thermostat topic exists yet. See docs/mqtt.md. */
+        break;
+
+    case 1: {   /* Lights */
+        if (capstan_model_module_alive(CAPSTAN_MOD_LIGHTS)) {
+            snprintf(buf, sizeof(buf), "%d on",
+                     capstan_model_lights_on_count());
+        }
+        break;
+    }
+
+    case 2:     /* Heater -- no topic yet. */
+        break;
+
+    case 3: {   /* Energy -- battery volts, the one number worth a glance. */
+        const capstan_value_t v = capstan_model_battery_volts();
+        if (v.valid) {
+            snprintf(buf, sizeof(buf), "%.1f V", v.value);
+        }
+        break;
+    }
+
+    case 4: {   /* Water -- fresh is the tank people care about. */
+        const capstan_value_t v = capstan_model_tank(CAPSTAN_TANK_FRESH);
+        if (v.valid) {
+            snprintf(buf, sizeof(buf), "Fresh %.0f%%", v.value);
+        }
+        break;
+    }
+
+    case 5: {   /* Air */
+        const capstan_value_t t = capstan_model_temp_f();
+        if (t.valid) {
+            snprintf(buf, sizeof(buf), "%.0f F", t.value);
+        }
+        break;
+    }
+
+    case 6: {   /* Level -- the larger of the two tilts is the actionable one. */
+        const capstan_value_t fb = capstan_model_tilt_front_back();
+        const capstan_value_t ss = capstan_model_tilt_side_to_side();
+        if (fb.valid && ss.valid) {
+            const float afb = fb.value < 0 ? -fb.value : fb.value;
+            const float ass = ss.value < 0 ? -ss.value : ss.value;
+            snprintf(buf, sizeof(buf), "%.1f deg", afb > ass ? afb : ass);
+        }
+        break;
+    }
+
+    case 7:     /* Doors -- needs the Picket channel map to name a door. */
+        break;
+
+    case 8:     /* Settings */
+        snprintf(buf, sizeof(buf), "%s",
+                 capstan_mqtt_is_connected() ? "Connected" : "Offline");
+        break;
+
+    case 9:     /* Clock. Says what pressing does, because nothing else does. */
+        snprintf(buf, sizeof(buf), "Back to the clock");
+        break;
+
+    default:
+        break;
+    }
+
+    /* An empty summary reads "--", exactly as a missing reading does
+     * anywhere else on this device -- see set_value(). */
+    set_text(objects.menu_summary, buf[0] ? buf : "--");
+}
+
 static void refresh_water(void)
 {
     static const struct {
@@ -259,6 +357,7 @@ void ui_data_refresh(void)
      */
     refresh_settings();
     ui_setup_tick();         /* portal progress while provisioning */
+    refresh_menu();
     refresh_energy();
     refresh_water();
     refresh_air();

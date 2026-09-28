@@ -29,6 +29,8 @@
 #include <string.h>
 #include <time.h>
 
+#include "esp_log.h"
+
 #include "capstan_model.h"
 #include "ui_clock.h"
 
@@ -40,6 +42,8 @@
 
 #include "screens.h"
 #include "ui.h"
+
+static const char *TAG = "ui.clock";
 
 /*
  * Needle lengths as a fraction of the face, matching the authored
@@ -128,9 +132,47 @@ void ui_clock_refresh(void)
     }
 }
 
+/*
+ * Say out loud, once, why the face is blank.
+ *
+ * "The clock is not getting data" is the single most reported thing about this
+ * screen, and from the panel it is indistinguishable from a bug in this file.
+ * It almost never is: `local/gps/time` is published at 1 Hz only while the
+ * GNSS module has a fix, it is NOT retained, and there is no other time source
+ * on the rig. So after half a minute of a live broker and no time, one line
+ * naming the topic saves reading this code.
+ *
+ * Also reports the zone, because a clock that is exactly some whole number of
+ * hours out is a missing `os/timezone/current` and nothing else.
+ */
+static void report_time_source_once(void)
+{
+    static bool s_reported;
+    static bool s_reported_tz;
+
+    if (!s_reported && !capstan_model_time_valid() &&
+        lv_tick_get() > 30000) {
+        s_reported = true;
+        ESP_LOGW(TAG, "no time after 30s -- nothing has published "
+                      "local/gps/time. It is 1 Hz, not retained, and only "
+                      "flows while the GNSS module has a fix; there is no "
+                      "other clock source on the rig.");
+    }
+
+    if (!s_reported_tz && capstan_model_time_valid() &&
+        !capstan_model_timezone_known()) {
+        s_reported_tz = true;
+        ESP_LOGW(TAG, "clock is set but no known timezone -- rendering UTC. "
+                      "Expect os/timezone/current (retained) from Headwaters.");
+    }
+}
+
 static void clock_timer_cb(lv_timer_t *t)
 {
     (void)t;
+
+    report_time_source_once();
+
     /*
      * The second hand moves once a second, so this fires once a second --
      * but only the idle screen shows it. Redrawing a background screen

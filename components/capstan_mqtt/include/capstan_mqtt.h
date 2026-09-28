@@ -73,6 +73,29 @@ int capstan_mqtt_publish(const char *topic, const char *payload, int len);
  */
 void capstan_mqtt_process(void);
 
+/*
+ * The Headwaters discovery broadcast.
+ *
+ * `local/discovery/trigger` is what makes a device appear in Overlook's
+ * device list; see main/discovery.h for the full handshake. This layer does
+ * two things with it and no more: it decides whether the trigger is FOR US
+ * (payload `*`, or this device's own `esp32-XXXXXX` hostname), and it calls
+ * this callback if so. Everything the device then does about it -- mDNS, the
+ * HTTP server, the timeout -- lives in main/, because a broker client has no
+ * business starting a web server.
+ *
+ * The callback runs on whichever task called capstan_mqtt_process(), NOT on
+ * the MQTT event task, so it may take locks. It must still return promptly;
+ * spawn a task for anything that waits.
+ *
+ * There is deliberately no equivalent for `local/ota/trigger` yet. Nothing
+ * implements OTA on this device, and a registered callback that quietly did
+ * nothing would be worse than an unhandled topic, which at least logs.
+ */
+typedef void (*capstan_mqtt_trigger_cb_t)(void *ctx);
+void capstan_mqtt_set_discovery_callback(capstan_mqtt_trigger_cb_t cb,
+                                         void *ctx);
+
 /**
  * Expire values whose module has gone quiet.
  *

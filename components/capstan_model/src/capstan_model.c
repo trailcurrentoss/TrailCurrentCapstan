@@ -196,6 +196,7 @@ static const struct { const char *iana; const char *posix; } ZONES[] = {
 };
 
 static bool s_time_valid;
+static bool s_tz_known;
 
 bool capstan_model_set_timezone(const char *iana)
 {
@@ -206,19 +207,43 @@ bool capstan_model_set_timezone(const char *iana)
         if (strcmp(iana, ZONES[i].iana) == 0) {
             setenv("TZ", ZONES[i].posix, 1);
             tzset();
+            s_tz_known = true;
             ESP_LOGI(TAG, "timezone %s -> %s", iana, ZONES[i].posix);
             return true;
         }
     }
-    ESP_LOGW(TAG, "unknown timezone '%s'; keeping the current one", iana);
+    ESP_LOGW(TAG, "unknown timezone '%s'; keeping the current one -- add it "
+                  "to ZONES above. The clock will read UTC until then", iana);
     return false;
 }
+
+bool capstan_model_timezone_known(void) { return s_tz_known; }
 
 void capstan_model_set_gps_time(int year, int month, int day,
                                 int hour, int minute, int second)
 {
-    /* No fix yet. Milepost still publishes, with a placeholder date. */
+    /*
+     * No fix yet. The GNSS module keeps publishing CAN 0x006 either way, with
+     * a placeholder date, so a stream of these is NOT evidence that the clock
+     * should be working.
+     *
+     * Rate-limited and logged at WARNING, because this is the answer to the
+     * only question anyone asks about the idle face: the clock shows `--` and
+     * the panel is plainly on the broker with every other reading live. When
+     * that happens, either this line is in the log -- the fix is the antenna,
+     * not the firmware -- or `local/gps/time` is not arriving at all, and its
+     * absence from the log is what says so.
+     *
+     * Roughly once a minute at the 1 Hz this topic publishes at.
+     */
     if (year < 2020) {
+        static int64_t s_last_nofix_us;
+        const int64_t now = esp_timer_get_time();
+        if (s_last_nofix_us == 0 || (now - s_last_nofix_us) > 60LL * 1000000) {
+            s_last_nofix_us = now;
+            ESP_LOGW(TAG, "GNSS time has no fix yet (year=%d) -- the clock "
+                          "stays blank until it does", year);
+        }
         return;
     }
 

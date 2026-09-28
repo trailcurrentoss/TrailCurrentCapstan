@@ -70,6 +70,27 @@ lv_style_t *get_style_label_icon_sm_MAIN_DEFAULT();
 void add_style_label_icon_sm(lv_obj_t *obj);
 void remove_style_label_icon_sm(lv_obj_t *obj);
 
+// Style: HeroTile
+lv_style_t *get_style_hero_tile_MAIN_DEFAULT();
+void add_style_hero_tile(lv_obj_t *obj);
+void remove_style_hero_tile(lv_obj_t *obj);
+
+// Style: HeroIcon
+lv_style_t *get_style_hero_icon_MAIN_DEFAULT();
+void add_style_hero_icon(lv_obj_t *obj);
+void remove_style_hero_icon(lv_obj_t *obj);
+
+// Style: NeighbourIcon
+lv_style_t *get_style_neighbour_icon_MAIN_DEFAULT();
+void add_style_neighbour_icon(lv_obj_t *obj);
+void remove_style_neighbour_icon(lv_obj_t *obj);
+
+// Style: Dot
+lv_style_t *get_style_dot_MAIN_DEFAULT();
+lv_style_t *get_style_dot_MAIN_CHECKED();
+void add_style_dot(lv_obj_t *obj);
+void remove_style_dot(lv_obj_t *obj);
+
 // Style: Plain
 lv_style_t *get_style_plain_MAIN_DEFAULT();
 void add_style_plain(lv_obj_t *obj);

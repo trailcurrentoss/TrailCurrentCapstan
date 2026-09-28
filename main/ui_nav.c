@@ -9,8 +9,10 @@
 #include "esp_timer.h"
 
 #include "capstan_board.h"
+#include "capstan_config.h"
 #include "ui_nav.h"
 #include "ui_clock.h"
+#include "ui_icons.h"
 #include "ui_settings.h"
 #include "ui_setup.h"
 
@@ -64,7 +66,7 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_IDLE]         = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_IDLE,     "idle" },
 
-    /* Carousel or list. Rotating through nine items is the whole
+    /* The app carousel. Rotating through the ten items is the whole
      * interaction; touch here would just fight the ring press. */
     [CAPSTAN_SCREEN_MENU]         = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_IDLE,     "menu" },
@@ -285,7 +287,12 @@ void ui_nav_back(void)
 
 #if HAVE_GENERATED_UI
 
-#define MENU_ITEM_COUNT 9
+/*
+ * Ten carousel items -- the nine apps plus Clock. Must stay in step with
+ * MENU_ITEMS in GUI/tmp/screens_layout.py, which is what the tiles, the
+ * labels and the page dots are all authored from.
+ */
+#define MENU_ITEM_COUNT 10
 
 /* Energy shows one reading at a time. Must match ENERGY_PAGES in
  * GUI/tmp/screens_layout.py -- the dots are authored from that list. */
@@ -318,53 +325,114 @@ static void apply_energy_dots(void)
     }
 }
 
+/* ---------------------------------------------------------------------- *
+ * The app carousel.
+ *
+ * The screen shows THREE of the ten items -- the selected one in the centre
+ * tile and its two neighbours either side -- through slots whose position
+ * and size never change. Rotating the ring rewrites the GLYPH in each slot
+ * and moves the CHECKED state along the row of dots.
+ *
+ * That split is deliberate and is the rule for this whole file: C sets text
+ * and states, never geometry or style. A carousel that slid nine authored
+ * tiles across the screen from here would look right on the device and show
+ * nothing of the sort on EEZ Studio's canvas, which is the divergence the
+ * GUI pipeline exists to prevent. See docs/gui.md.
+ *
+ * It also means the layout is identical on all three panels. The radial ring
+ * this replaced was not: nine icons spaced around the edge need more radius
+ * than a 240 px panel has, so the 240 drew a scrolling list instead and the
+ * three boards navigated three different ways.
+ * ---------------------------------------------------------------------- */
+
 /*
- * The menu items, in the order screens_layout.py lays them out. The
- * identifiers are deliberately the same on all three resolutions even
- * though the 240 draws a list and the others a ring, so this table does
- * not have to know which panel it is running on.
+ * Item table. Index is the carousel position, and the three arrays are
+ * indexed together, so nothing here may be reordered on its own.
+ *
+ * Clock is last. It goes to the idle face rather than to a page of its own,
+ * which is why it is the one entry whose destination is a screen the
+ * carousel can also be reached FROM.
  */
-static lv_obj_t *menu_item(int i)
+static const struct {
+    const char       *icon;     /* from ui_icons.h */
+    const char       *title;
+    capstan_screen_t  dest;
+} s_menu[MENU_ITEM_COUNT] = {
+    { UI_ICON_CLIMATE,  "Climate",  CAPSTAN_SCREEN_CLIMATE  },
+    { UI_ICON_LIGHTS,   "Lights",   CAPSTAN_SCREEN_LIGHTS   },
+    { UI_ICON_HEATER,   "Heater",   CAPSTAN_SCREEN_HEATER   },
+    { UI_ICON_ENERGY,   "Energy",   CAPSTAN_SCREEN_ENERGY   },
+    { UI_ICON_WATER,    "Water",    CAPSTAN_SCREEN_WATER    },
+    { UI_ICON_AIR,      "Air",      CAPSTAN_SCREEN_AIR      },
+    { UI_ICON_LEVEL,    "Level",    CAPSTAN_SCREEN_LEVEL    },
+    { UI_ICON_DOORS,    "Doors",    CAPSTAN_SCREEN_DOORS    },
+    { UI_ICON_SETTINGS, "Settings", CAPSTAN_SCREEN_SETTINGS },
+    { UI_ICON_CLOCK,    "Clock",    CAPSTAN_SCREEN_IDLE     },
+};
+
+static lv_obj_t *menu_dot(int i)
 {
     switch (i) {
-    case 0: return objects.menu_item0;
-    case 1: return objects.menu_item1;
-    case 2: return objects.menu_item2;
-    case 3: return objects.menu_item3;
-    case 4: return objects.menu_item4;
-    case 5: return objects.menu_item5;
-    case 6: return objects.menu_item6;
-    case 7: return objects.menu_item7;
-    case 8: return objects.menu_item8;
+    case 0: return objects.menu_dot0;
+    case 1: return objects.menu_dot1;
+    case 2: return objects.menu_dot2;
+    case 3: return objects.menu_dot3;
+    case 4: return objects.menu_dot4;
+    case 5: return objects.menu_dot5;
+    case 6: return objects.menu_dot6;
+    case 7: return objects.menu_dot7;
+    case 8: return objects.menu_dot8;
+    case 9: return objects.menu_dot9;
     default: return NULL;
     }
 }
 
-/* Must stay in step with MENU_ITEMS in GUI/tmp/screens_layout.py. */
-static const capstan_screen_t s_menu_dest[MENU_ITEM_COUNT] = {
-    CAPSTAN_SCREEN_CLIMATE, CAPSTAN_SCREEN_LIGHTS,  CAPSTAN_SCREEN_HEATER,
-    CAPSTAN_SCREEN_ENERGY,  CAPSTAN_SCREEN_WATER,   CAPSTAN_SCREEN_AIR,
-    CAPSTAN_SCREEN_LEVEL,   CAPSTAN_SCREEN_DOORS,   CAPSTAN_SCREEN_SETTINGS,
-};
-
-/*
- * Selection is shown by setting LV_STATE_CHECKED, which the project's Card
- * style already defines a look for. Setting a state is one of the few
- * things C is allowed to do to an EEZ-authored widget -- restyling or
- * moving one from here would put the device out of step with the canvas.
- */
-static void apply_menu_highlight(void)
+/* Index `n` places from `i`, wrapping. See ui_nav_rotate() for why the
+ * carousel wraps where every other screen clamps. */
+static int menu_wrap(int i)
 {
+    const int n = MENU_ITEM_COUNT;
+    return ((i % n) + n) % n;
+}
+
+static void apply_menu_carousel(void)
+{
+    const int sel = menu_wrap(s_sel[CAPSTAN_SCREEN_MENU]);
+
+    if (objects.menu_hero_icon) {
+        lv_label_set_text(objects.menu_hero_icon, s_menu[sel].icon);
+    }
+    if (objects.menu_prev_icon) {
+        lv_label_set_text(objects.menu_prev_icon,
+                          s_menu[menu_wrap(sel - 1)].icon);
+    }
+    if (objects.menu_next_icon) {
+        lv_label_set_text(objects.menu_next_icon,
+                          s_menu[menu_wrap(sel + 1)].icon);
+    }
+    if (objects.menu_title) {
+        lv_label_set_text(objects.menu_title, s_menu[sel].title);
+    }
+
+    /*
+     * The summary is NOT set here.
+     *
+     * It is a live reading -- "3 on", "13.2 V" -- so it belongs to the
+     * refresh that already reads the model four times a second, in
+     * ui_data.c. Writing it from here as well would leave whichever of the
+     * two ran last on the screen, and the one that runs on rotation is the
+     * one with no data behind it.
+     */
+
     for (int i = 0; i < MENU_ITEM_COUNT; i++) {
-        lv_obj_t *o = menu_item(i);
-        if (!o) {
+        lv_obj_t *d = menu_dot(i);
+        if (!d) {
             continue;
         }
-        if (i == s_sel[CAPSTAN_SCREEN_MENU]) {
-            lv_obj_add_state(o, LV_STATE_CHECKED);
-            lv_obj_scroll_to_view(o, LV_ANIM_ON);   /* no-op on the ring */
+        if (i == sel) {
+            lv_obj_add_state(d, LV_STATE_CHECKED);
         } else {
-            lv_obj_remove_state(o, LV_STATE_CHECKED);
+            lv_obj_remove_state(d, LV_STATE_CHECKED);
         }
     }
 }
@@ -444,7 +512,7 @@ static void refresh_selection(capstan_screen_t s)
 {
 #if HAVE_GENERATED_UI
     if (s == CAPSTAN_SCREEN_MENU) {
-        apply_menu_highlight();
+        apply_menu_carousel();
         return;
     }
     if (s == CAPSTAN_SCREEN_ENERGY) {
@@ -514,19 +582,39 @@ void ui_nav_rotate(int diff)
     }
 
     /*
-     * CLAMP, DO NOT WRAP -- and never store the overshoot.
+     * NEVER STORE THE OVERSHOOT.
      *
-     * `diff` is a count of detents for THIS event only. It is applied to
-     * the displayed index and the result clamped, so past either end the
-     * selection just stops. Crucially nothing remembers how far past the
-     * end the user kept turning: two full turns beyond the last item then
-     * one detent back moves by exactly one. Keeping a private running
-     * total anywhere -- here, in the board layer, or in LVGL -- is what
-     * reintroduces the wind-back, so there is none.
+     * `diff` is a count of detents for THIS event only, applied to the
+     * DISPLAYED index. Nothing remembers how far past the end the user kept
+     * turning, so two full turns beyond the last item then one detent back
+     * moves by exactly one. Keeping a private running total anywhere --
+     * here, in the board layer, or in LVGL -- is what reintroduces the
+     * wind-back, so there is none.
+     *
+     * Past the end the index WRAPS on the carousel and CLAMPS everywhere
+     * else. That is a deliberate split, not an inconsistency:
+     *
+     *   The carousel is a ring of ten app tiles with no first or last one --
+     *   it shows three at a time and the dots make the wrap visible. The
+     *   physical ring has no end stops either, so stopping dead at Clock
+     *   reads as the input having jammed. Wrapping is also what puts the
+     *   clock one detent backwards from Climate, which is the whole reason
+     *   Clock is the last item.
+     *
+     *   A list of Wi-Fi networks or settings rows genuinely has a top and a
+     *   bottom, and wrapping one means a user who holds the ring the wrong
+     *   way ends up somewhere they cannot account for. Those still clamp.
+     *
+     * Either way the overshoot is discarded rather than accumulated, which
+     * is the invariant that matters.
      */
     int sel = s_sel[s_current] + diff;
-    if (sel < 0)      { sel = 0; }
-    if (sel > n - 1)  { sel = n - 1; }
+    if (s_current == CAPSTAN_SCREEN_MENU) {
+        sel = ((sel % n) + n) % n;
+    } else {
+        if (sel < 0)      { sel = 0; }
+        if (sel > n - 1)  { sel = n - 1; }
+    }
 
     if (sel != s_sel[s_current]) {
         /* Moving off the Factory Reset row cancels an armed reset --
@@ -556,7 +644,7 @@ void ui_nav_press(void)
     case CAPSTAN_SCREEN_MENU: {
         const int sel = s_sel[CAPSTAN_SCREEN_MENU];
         if (sel >= 0 && sel < MENU_ITEM_COUNT) {
-            ui_nav_goto(s_menu_dest[sel]);
+            ui_nav_goto(s_menu[sel].dest);
         }
         return;
     }
@@ -629,6 +717,55 @@ static void on_ring_long_press(void *ctx)
     ui_nav_back();
 }
 
+/* ----------------------------------------------------------------------
+ * Returning to the clock on its own.
+ *
+ * CONFIG_CAPSTAN_IDLE_TIMEOUT_S has existed since the first commit, and
+ * capstan_config carries it through to NVS so the user can change it -- but
+ * nothing read it, so no screen ever went back to the idle face. A panel left
+ * on the Water screen stayed there until somebody touched it, which on a
+ * wall-mounted display means until somebody walked past. It also meant the
+ * clock was only ever seen at boot.
+ *
+ * The timeout is read from settings on every tick rather than cached, so
+ * changing it takes effect immediately and there is no second copy to keep in
+ * step. A tick is once a second and reading it is a struct copy out of RAM.
+ * ---------------------------------------------------------------------- */
+static void idle_timer_cb(lv_timer_t *t)
+{
+    (void)t;
+
+    if (s_current == CAPSTAN_SCREEN_IDLE) {
+        return;
+    }
+
+    /*
+     * Two screens are never timed out.
+     *
+     * SETUP is a set of instructions the user is following on their phone --
+     * the network name and password are on the glass, and taking them away
+     * mid-typing is the one thing this screen must not do. ALERT is an alarm
+     * that has not been acknowledged; it is dismissed by a press and by
+     * nothing else, which is the same reason it is ring-only.
+     */
+    if (s_current == CAPSTAN_SCREEN_SETUP || s_current == CAPSTAN_SCREEN_ALERT) {
+        return;
+    }
+
+    capstan_display_cfg_t disp;
+    capstan_config_get_display(&disp);
+    if (disp.idle_timeout_s == 0) {
+        return;             /* 0 disables it */
+    }
+
+    if (capstan_board_ms_since_input() < (uint32_t)disp.idle_timeout_s * 1000u) {
+        return;
+    }
+
+    ESP_LOGD(TAG, "idle for %us -> clock", (unsigned)disp.idle_timeout_s);
+    ui_nav_goto(CAPSTAN_SCREEN_IDLE);
+}
+
 void ui_nav_init(void)
 {
     /*
@@ -647,4 +784,8 @@ void ui_nav_init(void)
     /* Whatever the board defaulted to, the policy table is authoritative
      * from here on. */
     ui_nav_goto(CAPSTAN_SCREEN_IDLE);
+
+    /* One second is plenty: the timeout is tens of seconds, so the worst
+     * case is returning to the clock a second late. */
+    lv_timer_create(idle_timer_cb, 1000, NULL);
 }

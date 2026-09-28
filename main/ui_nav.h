@@ -34,7 +34,7 @@ extern "C" {
 /* Screens, in the order the prototype's menu carousel presents them. */
 typedef enum {
     CAPSTAN_SCREEN_IDLE = 0,   /* analog clock */
-    CAPSTAN_SCREEN_MENU,       /* carousel (480/360) or list (240) */
+    CAPSTAN_SCREEN_MENU,       /* the app carousel -- same on all three */
     CAPSTAN_SCREEN_CLIMATE,
     CAPSTAN_SCREEN_CLIMATE_MODE,
     CAPSTAN_SCREEN_LIGHTS,
@@ -88,10 +88,12 @@ void ui_nav_back(void);
  * already held.
  *
  * `diff` is a DIRECTION AND MAGNITUDE for this event only -- a count of
- * detents since the last callback, never an absolute position. Selection
- * clamps at both ends and the overshoot is not stored anywhere, so
- * turning past the end and coming back moves by exactly one detent. See
- * the note in ui_nav_rotate().
+ * detents since the last callback, never an absolute position. The
+ * overshoot is not stored anywhere, so turning past the end and coming
+ * back moves by exactly one detent.
+ *
+ * Past the end the app carousel WRAPS and every list CLAMPS; see the note
+ * in ui_nav_rotate() for why those differ.
  */
 void ui_nav_rotate(int diff);
 

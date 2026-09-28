@@ -26,6 +26,7 @@
 #include "capstan_mqtt.h"
 #include "capstan_model.h"
 #include "capstan_wifi.h"
+#include "discovery.h"
 #include "ui_nav.h"
 #include "ui_clock.h"
 #include "ui_data.h"
@@ -493,6 +494,14 @@ static void build_calibration_screen(void)
 /* Set at boot when NVS holds no network; acted on once the UI is up. */
 static bool s_needs_setup;
 
+static void on_discovery_trigger(void *ctx)
+{
+    (void)ctx;
+    /* Runs on the service task, from capstan_mqtt_process(). The handler
+     * spawns its own worker, so this returns immediately. */
+    discovery_handle_trigger();
+}
+
 static void rf_health_cb(const capstan_wifi_ap_t *aps, size_t count, void *ctx)
 {
     (void)ctx;
@@ -513,8 +522,19 @@ static void rf_health_cb(const capstan_wifi_ap_t *aps, size_t count, void *ctx)
 static void service_task(void *arg)
 {
     (void)arg;
+    uint32_t ticks = 0;
     while (true) {
-        ui_data_service_tick();     /* connect the broker when online */
+        /*
+         * While a discovery window is open the broker is deliberately down --
+         * discovery_task() stopped it so the HTTP server could bind port 80,
+         * and it reconnects on the way out. Without this guard
+         * ui_data_service_tick() would see "online but not connected", rebuild
+         * the client five seconds later, and undo the teardown in the middle
+         * of the handshake.
+         */
+        if (!discovery_is_running()) {
+            ui_data_service_tick();     /* connect the broker when online */
+        }
         capstan_mqtt_process();
 
         /* Nothing on this platform is retained, so a reading is only as
@@ -522,7 +542,27 @@ static void service_task(void *arg)
          * sits on the display looking live. */
         capstan_mqtt_check_watchdogs();
 
-        vTaskDelay(pdMS_TO_TICKS(50));
+        /*
+         * Heartbeat, every 10 s.
+         *
+         * capstan_mqtt_process() drains the WHOLE queue on each call, so
+         * a full inbound queue can only mean this loop is not running --
+         * and "inbound queue full, dropped 551" looks like a throughput
+         * problem, not an absent consumer. This line is what tells the
+         * two apart at a glance.
+         */
+        /* Every 10 s: proof the loop runs AND that data is reaching the
+         * model. Between them these separate "consumer stalled" from
+         * "consumer fine, nothing arriving" -- two failures that look
+         * identical on a screen full of `--`. */
+        if (++ticks % 500 == 0) {
+            const capstan_value_t v = capstan_model_battery_volts();
+            ESP_LOGI(TAG, "service alive: %u B stack free, battery %s",
+                     (unsigned)uxTaskGetStackHighWaterMark(NULL),
+                     v.valid ? "live" : "--");
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(20));
     }
 }
 
@@ -620,6 +660,18 @@ void app_main(void)
         ESP_LOGE(TAG, "mqtt init failed (%s) -- no data will arrive",
                  esp_err_to_name(mqtt_err));
     }
+
+    /*
+     * Discovery.
+     *
+     * Overlook's device list is built from an mDNS browse that follows an MQTT
+     * broadcast, so a panel that never answers the broadcast is invisible
+     * there no matter how healthy it looks otherwise. The trigger arrives
+     * through the broker, which is why the callback is registered next to the
+     * client rather than with the rest of the UI.
+     */
+    discovery_init();
+    capstan_mqtt_set_discovery_callback(on_discovery_trigger, NULL);
 
     if (capstan_board_lock(0)) {
 #if HAVE_GENERATED_UI

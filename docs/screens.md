@@ -82,14 +82,31 @@ Nine faces: Climate, Lights, Heater, Energy, Water Tanks, Air Quality,
 Levelling, Doors, Settings. Each shows a one-line summary — `Heating · 72°`,
 `3 on`, `Fresh 72%`, `2 open`.
 
-**Clamps; does not wrap.** Past the last item, further rotation does
-nothing. The next detent in the opposite direction moves back immediately —
-no wind-back. This differs from the prototype, which wraps; see
+**Wraps, like the prototype.** This screen is the one exception to the
+clamping rule — the carousel shows its two neighbouring items and a row of
+dots, so the wrap is visible rather than silent. The overshoot is still never
+stored: two turns past the end then one detent back moves by exactly one. See
 [architecture.md](architecture.md#2-the-ring-reports-direction-never-position).
 
-- **480 / 360:** radial carousel, icons on a ring, selected item highlighted.
-- **240:** vertical list. Nine icons on a ring need ~188 px of radius, which
-  does not exist on a 240 px panel.
+**Horizontal carousel, identical on all three panels.** The selected app sits
+in a circular tile in the middle with its name and a live summary under it,
+its two neighbours flank it as muted glyphs, and a row of dots across the
+bottom shows position in the list. Rotating the ring moves the items through
+the three fixed slots; the slots themselves never move.
+
+Ten items: the nine apps, then **Clock**, which returns to the idle face.
+Clock is last so that one detent backwards from Climate reaches it.
+
+Nothing about this layout scales with the panel, which is the point — it shows
+three items whether the list has ten or thirty, so the 240 does not need the
+list it used to have. The radial ring it replaced could not fit on the 240 at
+all.
+
+**Getting back to the clock** has three routes, in order of how likely a user
+is to find them: the Clock item in the carousel, the idle timeout
+(`CONFIG_CAPSTAN_IDLE_TIMEOUT_S`, 30 s by default), and a long press on the
+ring. Only the last of those existed at first, and nothing on the display
+mentioned it.
 
 ## Climate — GUI only, backend stubbed
 

@@ -69,15 +69,21 @@ Concretely:
 - The practical rule that guarantees it: **apply the delta to the displayed
   value and clamp the result**. Never keep a private counter and derive the
   displayed value from it — that is precisely how the overshoot gets stored.
-- **Everything clamps. Nothing wraps.** Lists, menus and bounded values all
-  stop at their ends. Reaching item 9 of 9 and turning further does nothing;
-  the next detent the other way moves to 8 immediately.
+- **Lists clamp. The app carousel wraps.** A list of Wi-Fi networks or
+  settings rows stops at its ends: reaching the last row and turning further
+  does nothing, and the next detent the other way moves back immediately.
 
-  Note this overrides the design prototype, whose menu carousel uses a
-  `wrap()` helper. Wrapping was rejected deliberately: on a ring with no end
-  stops, silently jumping from the last item back to the first is
-  disorienting, because nothing about the input tells you a boundary was
-  crossed. Stopping is unambiguous.
+  The app carousel is the one exception, and it follows the design prototype,
+  which wraps. The reasoning that originally rejected wrapping — that
+  silently jumping from the last item to the first is disorienting because
+  nothing about the input tells you a boundary was crossed — holds for a list
+  and does not hold here: the carousel shows the two neighbouring items and a
+  row of ten dots, so the wrap is visible before and after it happens. It is
+  also what puts Clock, the last item, one detent BACKWARDS from Climate, the
+  first, which is the shortest path back to the clock face.
+
+  Whichever applies, **the overshoot is never stored**. That is the invariant
+  that matters, and it is independent of clamping versus wrapping.
 
 Implemented in
 [`board_encoder.c`](../components/capstan_board/src/board_encoder.c).
@@ -228,6 +234,11 @@ LVGL 9 grid layout with `FR()` tracks and percentage sizing does reflow at
 runtime, and is used throughout — but it does not scale *contents*. Fonts,
 arc widths and tick lengths are absolute pixels, which is why a 480×480
 layout cannot simply be stretched to 240×240 and why the smallest panel gets
-a list menu and a compact keyboard instead of the radial carousel.
+a compact keyboard and a smaller type scale.
+
+The app menu used to be on that list and no longer is. A layout that had to
+differ per panel was the wrong shape, not an unavoidable cost of the smallest
+panel: the carousel shows three items however many there are, so one
+description serves 240, 360 and 480.
 
 See [gui.md](gui.md).

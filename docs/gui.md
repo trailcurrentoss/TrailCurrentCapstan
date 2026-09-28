@@ -51,8 +51,12 @@ others is how they drift.
 
 Not a scaled-down 480. The content itself changes:
 
-- **List menu, not the radial carousel.** Nine icons on a ring need
-  ~188 px of radius; there is not room.
+- **The app menu is NOT one of these.** It used to be — the 240 drew a
+  scrolling list because nine icons on a ring need ~188 px of radius and a
+  240 px panel has 120 px of half-width in total. The carousel that replaced
+  the ring shows three items whatever the list length, so its geometry is
+  identical on all three panels and the divergence is gone. See
+  `page_menu()` in `GUI/tmp/screens_layout.py`.
 - **Compact keyboard.** The prototype's 34×44 px keys give a 10-key row of
   340 px plus gaps. That does not fit in 240 px, and the round mask eats the
   corners on top of that.

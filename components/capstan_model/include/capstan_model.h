@@ -121,6 +121,18 @@ bool capstan_model_set_timezone(const char *iana);
  *  whatever the un-set system clock happens to say. */
 bool capstan_model_time_valid(void);
 
+/**
+ * True once `os/timezone/current` has been received AND its zone was one this
+ * build knows.
+ *
+ * False therefore covers two different situations that look identical on the
+ * glass -- the topic never arrived, or it named a zone missing from ZONES --
+ * and in both the clock is rendering UTC. That is only a few hours wrong,
+ * which is exactly the kind of wrong nobody notices from the panel, so the
+ * distinction is worth being able to log.
+ */
+bool capstan_model_timezone_known(void);
+
 /* ---- getters, called from the LVGL task ---------------------------- */
 capstan_value_t capstan_model_battery_volts(void);
 capstan_value_t capstan_model_battery_pct(void);

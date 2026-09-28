@@ -32,7 +32,16 @@ static const char *TAG = "mqtt";
  * overflow the OLDEST is dropped, because with no retained state the newest
  * reading is the only one that matters.
  */
-#define MSG_QUEUE_DEPTH 24
+/*
+ * 48, and read every 20 ms.
+ *
+ * Headwaters publishes local/energy/status on EVERY CAN frame -- see
+ * can-bridge.js, which has no rate limit -- so a live bus delivers
+ * hundreds of messages a second. The queue is not a buffer for work
+ * that is falling behind; it is a place for state to land between
+ * reads, and the oldest is discarded first so the newest always wins.
+ */
+#define MSG_QUEUE_DEPTH 48
 #define MSG_TOPIC_MAX   96
 #define MSG_DATA_MAX    512
 
@@ -48,10 +57,12 @@ static SemaphoreHandle_t        s_lock;
 static capstan_mqtt_state_t     s_state;
 static capstan_mqtt_state_cb_t  s_state_cb;
 static void                    *s_state_ctx;
+static capstan_mqtt_trigger_cb_t s_discovery_cb;
+static void                    *s_discovery_ctx;
 static char                     s_last_error[96];
 static char                     s_lwt_topic[64];
 static int64_t                  s_started_us;
-static uint32_t                 s_dropped;
+static uint32_t                 s_superseded;
 
 const char *capstan_mqtt_state_name(capstan_mqtt_state_t s)
 {
@@ -68,6 +79,12 @@ void capstan_mqtt_set_state_callback(capstan_mqtt_state_cb_t cb, void *ctx)
 {
     s_state_cb = cb;
     s_state_ctx = ctx;
+}
+
+void capstan_mqtt_set_discovery_callback(capstan_mqtt_trigger_cb_t cb, void *ctx)
+{
+    s_discovery_cb  = cb;
+    s_discovery_ctx = ctx;
 }
 
 capstan_mqtt_state_t capstan_mqtt_state(void) { return s_state; }
@@ -209,8 +226,17 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
             if (xQueueReceive(s_queue, &discard, 0) == pdTRUE) {
                 xQueueSend(s_queue, &m, 0);
             }
-            if ((++s_dropped % 50) == 1) {
-                ESP_LOGW(TAG, "inbound queue full, dropped %u", (unsigned)s_dropped);
+            /*
+             * DEBUG, and rare. This is not data loss in any sense that
+             * matters: the discarded message is an older copy of state
+             * that has already been superseded, and a display only ever
+             * wants the latest. Logged as a warning it read as a fault
+             * and sent someone looking for a stalled consumer that was
+             * running perfectly.
+             */
+            if ((++s_superseded % 500) == 1) {
+                ESP_LOGD(TAG, "coalesced %u superseded updates",
+                         (unsigned)s_superseded);
             }
         }
         break;
@@ -385,19 +411,79 @@ static bool num(const cJSON *o, const char *key, double *out)
     return false;
 }
 
+/*
+ * Is this trigger addressed to us?
+ *
+ * Headwaters broadcasts `*` when the user asks Overlook to scan, and sends a
+ * single `esp32-XXXXXX` hostname when it wants one specific device. Every
+ * device on the broker sees both, so a device that does not check the payload
+ * would enter discovery every time any other device was targeted -- dropping
+ * its broker connection for three minutes each time.
+ *
+ * Matched with strncmp over the payload length, the way Spotter and Fireside
+ * do, because the payload is not guaranteed to be terminated the same way our
+ * own hostname buffer is.
+ */
+static bool trigger_is_for_us(const msg_t *m)
+{
+    if (m->len == 1 && m->data[0] == '*') {
+        return true;
+    }
+    char me[24];
+    capstan_mqtt_hostname(me, sizeof(me));
+    return m->len > 0 && strncmp(m->data, me, (size_t)m->len) == 0;
+}
+
+static void dispatch_trigger(const msg_t *m)
+{
+    const bool discovery = strcmp(m->topic, "local/discovery/trigger") == 0;
+
+    if (!trigger_is_for_us(m)) {
+        ESP_LOGD(TAG, "%s for '%s' -- not us", m->topic, m->data);
+        return;
+    }
+
+    if (discovery) {
+        if (s_discovery_cb) {
+            ESP_LOGI(TAG, "discovery trigger accepted (payload '%s')", m->data);
+            s_discovery_cb(s_discovery_ctx);
+        } else {
+            /* Loud, because the consequence is invisible: the panel simply
+             * never appears in Overlook's list and nothing else looks wrong. */
+            ESP_LOGW(TAG, "discovery trigger for us, but no handler is "
+                          "registered -- this panel will not be discoverable");
+        }
+        return;
+    }
+
+    /* OTA. No implementation yet; say so rather than dropping it silently. */
+    capstan_model_note_trigger(m->topic, m->data);
+}
+
 static void apply(const msg_t *m)
 {
     /* Every field on every topic is optional: local/energy/status is an
      * accumulator fed by three separate CAN frames, so a message routinely
      * carries only part of it. */
+    /*
+     * The triggers are handled BEFORE the JSON parse, not in its failure
+     * branch.
+     *
+     * They are bare strings -- `*`, or a hostname -- so parsing them fails and
+     * falling through to the failure branch happens to work today. It is the
+     * wrong place for it: a trigger is a trigger whatever its payload parses
+     * as, and hanging the discovery handshake off "cJSON gave up" makes it
+     * fragile to a payload that happens to be valid JSON. `*` is not, but
+     * `"*"` with quotes would be, and nothing on our side controls that.
+     */
+    if (strcmp(m->topic, "local/discovery/trigger") == 0 ||
+        strcmp(m->topic, "local/ota/trigger") == 0) {
+        dispatch_trigger(m);
+        return;
+    }
+
     cJSON *root = cJSON_ParseWithLength(m->data, m->len);
     if (!root) {
-        /* Not all topics are JSON -- discovery/ota triggers are bare
-         * strings -- so this is not necessarily an error. */
-        if (strcmp(m->topic, "local/discovery/trigger") == 0 ||
-            strcmp(m->topic, "local/ota/trigger") == 0) {
-            capstan_model_note_trigger(m->topic, m->data);
-        }
         return;
     }
 

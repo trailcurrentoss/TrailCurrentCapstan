@@ -84,6 +84,31 @@ CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=4096
 # verification option set"), which reads like a broker problem and is not.
 # Fireside hit exactly this. See docs/mqtt.md.
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# mbedTLS memory.
+#
+# TLS failed at setup, long before any certificate was looked at:
+#
+#   esp-tls-mbedtls: mbedtls_ssl_setup returned -0x7F00
+#
+# 0x7F00 is MBEDTLS_ERR_SSL_ALLOC_FAILED. mbedTLS allocates two record
+# buffers (16 KB each by default) and by default takes them from internal
+# DRAM, which on this device is largely spoken for by LVGL, the setup
+# portal's HTTP server and the Wi-Fi stack. There is 8 MB of PSRAM idle
+# next to it.
+#
+# This is worth recognising by its shape: an allocation failure inside
+# the TLS stack reads as a broker or certificate problem -- the log says
+# "TLS/TCP error" and the panel says the broker is offline -- when
+# nothing has reached the network at all.
+CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC=y
+
+# The outbound record can be much smaller than the default 16 KB: this
+# device publishes short JSON status payloads and nothing else. Inbound
+# stays at the default, because what the broker sends is not ours to
+# bound.
+CONFIG_MBEDTLS_SSL_OUT_CONTENT_LEN=4096
+
 CONFIG_ESP_TLS_INSECURE=y
 CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY=y
 CONFIG_MQTT_TASK_STACK_SIZE=6144

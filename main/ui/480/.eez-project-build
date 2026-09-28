@@ -14,6 +14,8 @@
     "ui_font_fa14.c",
     "ui_font_fa18.c",
     "ui_font_fa24.c",
+    "ui_font_fh44.c",
+    "ui_font_fh68.c",
     "ui_font_rl72.c",
     "ui_font_rm20.c",
     "ui_font_rm26.c",

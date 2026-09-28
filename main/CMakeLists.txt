@@ -92,6 +92,7 @@ idf_component_register(
         "ui_data.c"
         "ui_setup.c"
         "ui_clock.c"
+        "discovery.c"
         "actions.c"
         "vars.c"
         ${UI_CORE}
@@ -109,6 +110,12 @@ idf_component_register(
         capstan_portal
         nvs_flash
         esp_timer
+        # discovery.c: mDNS advertisement plus the one-endpoint HTTP server
+        # Headwaters GETs to confirm a module. esp_app_format supplies
+        # esp_app_get_description() for the firmware version in the TXT record.
+        espressif__mdns
+        esp_http_server
+        esp_app_format
 )
 
 target_compile_definitions(${COMPONENT_LIB} PRIVATE
