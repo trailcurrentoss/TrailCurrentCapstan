@@ -10,6 +10,9 @@
 
 #include "capstan_board.h"
 #include "ui_nav.h"
+#include "ui_keyboard.h"
+#include "ui_mqtt.h"
+#include "ui_settings.h"
 #include "ui_wifi.h"
 
 /* From main/CMakeLists.txt -- see the note there and in main.c. Never
@@ -224,6 +227,12 @@ void ui_nav_goto(capstan_screen_t screen)
         return;
     }
 
+    /* Leaving Settings cancels an armed reset, so it cannot be completed
+     * by a press that lands on the row after coming back later. */
+    if (s_current == CAPSTAN_SCREEN_SETTINGS && screen != s_current) {
+        ui_settings_disarm_reset();
+    }
+
     const screen_policy_t *p = &s_policy[screen];
 
     /*
@@ -269,6 +278,8 @@ void ui_nav_goto(capstan_screen_t screen)
      */
     if (screen == CAPSTAN_SCREEN_WIFI) {
         ui_wifi_screen_entered();
+    } else if (screen == CAPSTAN_SCREEN_MQTT) {
+        ui_mqtt_screen_entered();
     }
 #endif
 
@@ -295,6 +306,37 @@ void ui_nav_back(void)
 #if HAVE_GENERATED_UI
 
 #define MENU_ITEM_COUNT 9
+
+/* Energy shows one reading at a time. Must match ENERGY_PAGES in
+ * GUI/tmp/screens_layout.py -- the dots are authored from that list. */
+#define ENERGY_PAGE_COUNT 5
+
+static lv_obj_t *energy_dot(int i)
+{
+    switch (i) {
+    case 0: return objects.energy_dot0;
+    case 1: return objects.energy_dot1;
+    case 2: return objects.energy_dot2;
+    case 3: return objects.energy_dot3;
+    case 4: return objects.energy_dot4;
+    default: return NULL;
+    }
+}
+
+static void apply_energy_dots(void)
+{
+    for (int i = 0; i < ENERGY_PAGE_COUNT; i++) {
+        lv_obj_t *d = energy_dot(i);
+        if (!d) {
+            continue;
+        }
+        if (i == s_sel[CAPSTAN_SCREEN_ENERGY]) {
+            lv_obj_add_state(d, LV_STATE_CHECKED);
+        } else {
+            lv_obj_remove_state(d, LV_STATE_CHECKED);
+        }
+    }
+}
 
 /*
  * The menu items, in the order screens_layout.py lays them out. The
@@ -388,6 +430,10 @@ static int selectable_count(capstan_screen_t s)
     if (s == CAPSTAN_SCREEN_MENU) {
         return MENU_ITEM_COUNT;
     }
+    if (s == CAPSTAN_SCREEN_ENERGY) {
+        /* Not a list -- the "items" are pages through one readout. */
+        return ENERGY_PAGE_COUNT;
+    }
     lv_obj_t *c = list_container(s);
     if (c) {
         /*
@@ -424,6 +470,10 @@ static void refresh_selection(capstan_screen_t s)
         apply_menu_highlight();
         return;
     }
+    if (s == CAPSTAN_SCREEN_ENERGY) {
+        apply_energy_dots();
+        return;
+    }
 
     lv_obj_t *c = list_container(s);
     if (!c) {
@@ -455,6 +505,14 @@ void ui_nav_selection_changed(void)
 int ui_nav_selection(void)
 {
     return selectable_count(s_current) > 0 ? s_sel[s_current] : -1;
+}
+
+int ui_nav_selection_of(capstan_screen_t s)
+{
+    if (s < 0 || s >= CAPSTAN_SCREEN_COUNT) {
+        return 0;
+    }
+    return s_sel[s];
 }
 
 void ui_nav_rotate(int diff)
@@ -494,6 +552,11 @@ void ui_nav_rotate(int diff)
     if (sel > n - 1)  { sel = n - 1; }
 
     if (sel != s_sel[s_current]) {
+        /* Moving off the Factory Reset row cancels an armed reset --
+         * turning away from it is as clear a "no" as any. */
+        if (s_current == CAPSTAN_SCREEN_SETTINGS) {
+            ui_settings_disarm_reset();
+        }
         s_sel[s_current] = sel;
         refresh_selection(s_current);
     }
@@ -529,6 +592,7 @@ void ui_nav_press(void)
         switch (s_sel[CAPSTAN_SCREEN_SETTINGS]) {
         case 0: ui_nav_goto(CAPSTAN_SCREEN_WIFI); return;
         case 1: ui_nav_goto(CAPSTAN_SCREEN_MQTT); return;
+        case 3: ui_settings_factory_reset_pressed(); return;
         default:
             ESP_LOGD(TAG, "settings row %d has no action yet",
                      s_sel[CAPSTAN_SCREEN_SETTINGS]);
@@ -537,13 +601,20 @@ void ui_nav_press(void)
 
     case CAPSTAN_SCREEN_WIFI:
         /* Pick a network -> ask for its security type explicitly, rather
-         * than inferring it from the scan record. See docs/screens.md. */
+         * than inferring it from the scan record. See docs/screens.md.
+         * The SSID is captured NOW, because a rescan can replace the
+         * rows while the user is still working through the flow. */
+        ui_wifi_select(s_sel[CAPSTAN_SCREEN_WIFI]);
         ui_nav_goto(CAPSTAN_SCREEN_WIFI_SEC);
         return;
 
     case CAPSTAN_SCREEN_WIFI_SEC:
-        ui_nav_set_keyboard_return(CAPSTAN_SCREEN_WIFI);
-        ui_nav_goto(CAPSTAN_SCREEN_KEYBOARD);
+        /* Opens the keyboard itself, or skips it for an open network. */
+        ui_wifi_set_security_index(s_sel[CAPSTAN_SCREEN_WIFI_SEC]);
+        return;
+
+    case CAPSTAN_SCREEN_MQTT:
+        ui_mqtt_row_pressed(s_sel[CAPSTAN_SCREEN_MQTT]);
         return;
 
     case CAPSTAN_SCREEN_CLIMATE_MODE:

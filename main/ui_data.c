@@ -1,0 +1,360 @@
+/*
+ * Model -> widgets.
+ *
+ * WHY A TIMER AND NOT A CALLBACK PER VALUE
+ *
+ * MQTT arrives in bursts -- a module waking up republishes everything it
+ * has. Redrawing on each value would turn one burst into dozens of
+ * invalidations in the same frame, on a panel whose whole job is to look
+ * calm. A fixed refresh decouples the two: however chaotic the traffic,
+ * the display updates at a steady rate.
+ *
+ * 250 ms is chosen against human perception rather than data rate.
+ * Nothing here is a control loop; these are readings a person glances
+ * at, and four updates a second already looks instant.
+ */
+
+#include <stdio.h>
+
+#include "esp_log.h"
+#include "esp_timer.h"
+
+#include "capstan_config.h"
+#include "capstan_model.h"
+#include "capstan_mqtt.h"
+#include "capstan_wifi.h"
+#include "ui_data.h"
+#include "ui_nav.h"
+#include "ui_wifi.h"
+
+#ifndef CAPSTAN_HAVE_UI
+#  error "CAPSTAN_HAVE_UI is not defined -- main/CMakeLists.txt must set it"
+#endif
+
+#if CAPSTAN_HAVE_UI
+
+#include "screens.h"
+#include "ui.h"
+
+static const char *TAG = "ui.data";
+
+#define REFRESH_MS 250
+
+/*
+ * Render a reading, or the empty placeholder.
+ *
+ * `valid` is false both for "never received" and "received but the
+ * module has since gone quiet", and both must read as `--`. That is the
+ * entire reason capstan_value_t carries the flag instead of using a
+ * sentinel float: a stale number that still looks live is worse than no
+ * number, and NaN-as-missing is the kind of convention that survives
+ * exactly until someone formats it without checking.
+ */
+static void set_value(lv_obj_t *label, capstan_value_t v,
+                      const char *fmt)
+{
+    if (!label) {
+        return;
+    }
+    if (!v.valid) {
+        lv_label_set_text(label, "--");
+        return;
+    }
+    char buf[24];
+    snprintf(buf, sizeof(buf), fmt, v.value);
+    lv_label_set_text(label, buf);
+}
+
+static void set_text(lv_obj_t *label, const char *text)
+{
+    if (label) {
+        lv_label_set_text(label, text ? text : "--");
+    }
+}
+
+/*
+ * Energy: one page at a time, chosen by the ring.
+ *
+ * The page list must match ENERGY_PAGES in GUI/tmp/screens_layout.py,
+ * which is what the dots were authored from, and ENERGY_PAGE_COUNT in
+ * ui_nav.c, which is how far the ring will turn.
+ */
+static void refresh_energy(void)
+{
+    const int page = ui_nav_selection_of(CAPSTAN_SCREEN_ENERGY);
+
+    const char *title = "Battery";
+    const char *unit  = "V";
+    capstan_value_t v = { 0.0f, false };
+    const char *fmt = "%.1f";
+    char sub[32] = "";
+
+    switch (page) {
+    case 0:
+        v = capstan_model_battery_volts();
+        title = "Battery"; unit = "V"; fmt = "%.1f";
+        {
+            const capstan_value_t pct = capstan_model_battery_pct();
+            if (pct.valid) {
+                snprintf(sub, sizeof(sub), "%.0f%%", pct.value);
+            }
+        }
+        break;
+
+    case 1:
+        v = capstan_model_battery_pct();
+        title = "Charge"; unit = "%"; fmt = "%.0f";
+        /* The charger's own view of what it is doing -- bulk, float,
+         * absorption. "--" when the MPPT has not reported. */
+        snprintf(sub, sizeof(sub), "%s", capstan_model_charge_type());
+        break;
+
+    case 2:
+        v = capstan_model_solar_watts();
+        title = "Solar"; unit = "W"; fmt = "%.0f";
+        break;
+
+    case 3:
+        v = capstan_model_load_watts();
+        title = "Load"; unit = "W"; fmt = "%.0f";
+        break;
+
+    case 4: {
+        /* Time-to-go arrives in minutes; hours are what a person wants
+         * once it is past an hour or two. */
+        const capstan_value_t mins = capstan_model_runtime_min();
+        title = "Runtime";
+        if (mins.valid && mins.value >= 120.0f) {
+            v.value = mins.value / 60.0f; v.valid = true;
+            unit = "hours"; fmt = "%.1f";
+        } else {
+            v = mins;
+            unit = "min"; fmt = "%.0f";
+        }
+        break;
+    }
+
+    default:
+        break;
+    }
+
+    set_text(objects.energy_title, title);
+    set_value(objects.energy_value, v, fmt);
+    set_text(objects.energy_unit, unit);
+    set_text(objects.energy_sub, sub[0] ? sub : "--");
+}
+
+static void refresh_water(void)
+{
+    static const struct {
+        capstan_tank_t tank;
+        lv_obj_t **bar;
+        lv_obj_t **value;
+    } rows[] = {
+        { CAPSTAN_TANK_FRESH, &objects.water_fresh_bar,
+          &objects.water_fresh_value },
+        { CAPSTAN_TANK_GREY,  &objects.water_grey_bar,
+          &objects.water_grey_value },
+        { CAPSTAN_TANK_BLACK, &objects.water_black_bar,
+          &objects.water_black_value },
+    };
+
+    for (size_t i = 0; i < sizeof(rows) / sizeof(rows[0]); i++) {
+        const capstan_value_t v = capstan_model_tank(rows[i].tank);
+        if (rows[i].value && *rows[i].value) {
+            if (v.valid) {
+                char buf[16];
+                snprintf(buf, sizeof(buf), "%.0f%%", v.value);
+                lv_label_set_text(*rows[i].value, buf);
+            } else {
+                lv_label_set_text(*rows[i].value, "--");
+            }
+        }
+        if (rows[i].bar && *rows[i].bar) {
+            /* An unknown tank reads EMPTY, not "last known". A tank bar
+             * is glanced at, not read, so leaving the old height up
+             * would be actively misleading. */
+            lv_bar_set_value(*rows[i].bar,
+                             v.valid ? (int32_t)v.value : 0, LV_ANIM_OFF);
+        }
+    }
+}
+
+static void refresh_air(void)
+{
+    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f F");
+    set_value(objects.air_humidity, capstan_model_humidity(), "%.0f%%");
+    set_value(objects.air_eco2, capstan_model_eco2(), "%.0f ppm");
+    set_value(objects.air_voc, capstan_model_tvoc(), "%.0f ppb");
+}
+
+static void refresh_level(void)
+{
+    set_value(objects.level_pitch, capstan_model_tilt_front_back(), "%.1f");
+    set_value(objects.level_roll, capstan_model_tilt_side_to_side(), "%.1f");
+}
+
+/*
+ * Connection status, on the Settings rows.
+ *
+ * Until this existed there was no way to tell from the panel whether
+ * the device was on the network: the Wi-Fi screen's title only says so
+ * while that screen is open, and a failed rejoin after a reboot looked
+ * exactly like a successful one. On a wall-mounted display with no
+ * console, "am I connected?" has to be answerable by looking at it.
+ *
+ * The SSID is shown rather than the word "Connected" -- in a vehicle
+ * that may see a home network, a phone hotspot and a campground AP,
+ * WHICH network is the useful half of the answer.
+ */
+static void refresh_settings(void)
+{
+    const char *wifi;
+    switch (capstan_wifi_state()) {
+    case CAPSTAN_WIFI_CONNECTED: {
+        capstan_wifi_cfg_t c;
+        capstan_config_get_wifi(&c);
+        wifi = c.ssid[0] ? c.ssid : "Connected";
+        break;
+    }
+    case CAPSTAN_WIFI_CONNECTING: wifi = "Connecting..."; break;
+    case CAPSTAN_WIFI_SCANNING:   wifi = "Scanning...";   break;
+    case CAPSTAN_WIFI_FAILED:
+        /* The reason, not just "failed": a wrong passphrase and an AP
+         * that is switched off need different things from the user, and
+         * the retry backoff means this state persists long enough to
+         * read. */
+        wifi = capstan_wifi_last_error();
+        break;
+    default: {
+        capstan_wifi_cfg_t c;
+        capstan_config_get_wifi(&c);
+        wifi = c.configured ? "Offline" : "Not set";
+        break;
+    }
+    }
+    set_text(objects.settings_item0_value, wifi);
+
+    const char *mq;
+    if (capstan_mqtt_is_connected()) {
+        mq = "Connected";
+    } else {
+        capstan_mqtt_cfg_t m;
+        capstan_config_get_mqtt(&m);
+        mq = m.configured ? "Offline" : "Not set";
+    }
+    set_text(objects.settings_item1_value, mq);
+}
+
+void ui_data_refresh(void)
+{
+    /*
+     * Everything is refreshed, not just the visible screen.
+     *
+     * EEZ builds all screens up front, so every widget exists and
+     * writing to a hidden one is cheap -- LVGL invalidates nothing that
+     * is not on screen. The alternative, refreshing only the current
+     * screen, means every screen needs a "fill me in" path on entry as
+     * well, and the two drift.
+     */
+    refresh_settings();
+    ui_wifi_tick();          /* scan results + title, off the event task */
+    refresh_energy();
+    refresh_water();
+    refresh_air();
+    refresh_level();
+}
+
+static void refresh_timer_cb(lv_timer_t *t)
+{
+    (void)t;
+    ui_data_refresh();
+}
+
+/*
+ * NOTHING RUNS ON THE SYSTEM EVENT TASK.
+ *
+ * This used to subscribe to capstan_wifi's state callback and call
+ * capstan_mqtt_connect() from it. That callback runs on `sys_evt`,
+ * whose stack is CONFIG_ESP_SYSTEM_EVENT_TASK_STACK_SIZE -- 2304 bytes
+ * -- and building an MQTT client with a TLS context does not fit in it.
+ * All three panels rebooted in a loop:
+ *
+ *   ***ERROR*** A stack overflow in task sys_evt has been detected.
+ *
+ * It was invisible on the board that never associated, because the
+ * callback never fired there.
+ *
+ * Raising that stack would be the wrong fix twice over: it is a global
+ * shared by every event handler in the system, and the real problem is
+ * doing slow, allocating work on the task that delivers events at all.
+ *
+ * So state is POLLED instead, from two places that own generous stacks:
+ * the service task connects the broker, and the LVGL refresh timer
+ * updates the widgets. Polling a connection state four times a second
+ * costs nothing and removes a whole class of context bug.
+ */
+static bool    s_mqtt_wanted;
+static int64_t s_last_attempt_us;
+
+/*
+ * How often to retry the broker.
+ *
+ * The service task runs at 50 ms, and calling connect() on every pass
+ * produced twenty "broker not configured" errors a second -- a log so
+ * noisy it hid everything else, for a condition that is not an error at
+ * all on a device nobody has configured yet.
+ */
+#define MQTT_RETRY_US 5000000   /* 5 s */
+
+void ui_data_service_tick(void)
+{
+    /* Runs on the service task -- 6 KB, and nothing latency-sensitive
+     * is waiting on it. */
+    if (!capstan_wifi_is_connected()) {
+        s_mqtt_wanted = false;
+        return;
+    }
+    if (capstan_mqtt_is_connected()) {
+        return;
+    }
+
+    /* Not configured is a normal state, not a failure: the panel ships
+     * blank and the user has not been to the MQTT screen yet. Saying so
+     * once is useful; saying it twenty times a second is not. */
+    capstan_mqtt_cfg_t m;
+    capstan_config_get_mqtt(&m);
+    if (!m.configured || !m.host[0]) {
+        if (!s_mqtt_wanted) {
+            ESP_LOGI(TAG, "online, but no broker configured yet");
+            s_mqtt_wanted = true;
+        }
+        return;
+    }
+
+    const int64_t now = esp_timer_get_time();
+    if (s_last_attempt_us && (now - s_last_attempt_us) < MQTT_RETRY_US) {
+        return;
+    }
+    s_last_attempt_us = now;
+
+    ESP_LOGI(TAG, "connecting to broker %s:%u", m.host, (unsigned)m.port);
+
+    /* connect() is idempotent while connected or just started, and
+     * rebuilds a client that has been down -- which is what is needed
+     * after a reassociation leaves a dead socket behind. */
+    capstan_mqtt_connect();
+}
+
+void ui_data_init(void)
+{
+    lv_timer_create(refresh_timer_cb, REFRESH_MS, NULL);
+}
+
+#else
+
+void ui_data_init(void) { }
+void ui_data_refresh(void) { }
+void ui_data_service_tick(void) { }
+
+#endif

@@ -26,6 +26,7 @@ extern void action_mqtt_save(lv_event_t * e);
 extern void action_keyboard_key(lv_event_t * e);
 extern void action_keyboard_ok(lv_event_t * e);
 extern void action_keyboard_cancel(lv_event_t * e);
+extern void action_keyboard_reveal(lv_event_t * e);
 extern void action_settings_toggle_units(lv_event_t * e);
 extern void action_settings_toggle_theme(lv_event_t * e);
 extern void action_touch_calibrate_start(lv_event_t * e);

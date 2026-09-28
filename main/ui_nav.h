@@ -83,6 +83,14 @@ void ui_nav_goto(capstan_screen_t screen);
 /** Where a long press or the back chip goes from the current screen. */
 void ui_nav_back(void);
 
+/**
+ * Where Back goes from the keyboard.
+ *
+ * The keyboard is shared, so its return destination belongs to whoever
+ * opened it. Set by ui_keyboard_open(); there is no sensible default.
+ */
+void ui_nav_set_keyboard_return(capstan_screen_t screen);
+
 /*
  * Ring input.
  *
@@ -103,6 +111,15 @@ void ui_nav_press(void);
 
 /** Index of the highlighted item on the current screen, or -1. */
 int ui_nav_selection(void);
+
+/**
+ * Selection on a NAMED screen, whether or not it is showing.
+ *
+ * The data bridge refreshes every screen, not just the visible one, so
+ * it needs the Energy page index even while Energy is in the
+ * background.
+ */
+int ui_nav_selection_of(capstan_screen_t s);
 
 /**
  * A screen's item list changed underneath the selection.

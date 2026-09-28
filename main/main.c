@@ -23,7 +23,12 @@
 #include "capstan_board.h"
 #include "capstan_config.h"
 #include "capstan_touch_cal.h"
+#include "capstan_mqtt.h"
+#include "capstan_model.h"
+#include "capstan_wifi.h"
 #include "ui_nav.h"
+#include "ui_data.h"
+#include "ui_wifi.h"
 
 /*
  * The generated UI may not exist yet -- main/ui/<res>/ is disposable and is
@@ -469,6 +474,37 @@ static void build_calibration_screen(void)
 
 #endif /* HAVE_GENERATED_UI */
 
+/* ----------------------------------------------------------------------
+ * Service task
+ *
+ * Drains the MQTT queue into the data model and expires readings whose
+ * module has gone quiet.
+ *
+ * 6 KB because the JSON parsing in capstan_mqtt_process() happens on
+ * this stack -- deliberately, so it is off the MQTT task and cannot
+ * stall the network stack. Priority 4 keeps it below the LVGL task:
+ * dropping a frame to parse a payload would be the wrong trade on a
+ * display whose job is to look calm.
+ * ---------------------------------------------------------------------- */
+#define CAPSTAN_SERVICE_TASK_STACK 6144
+#define CAPSTAN_SERVICE_TASK_PRIO  4
+
+static void service_task(void *arg)
+{
+    (void)arg;
+    while (true) {
+        ui_data_service_tick();     /* connect the broker when online */
+        capstan_mqtt_process();
+
+        /* Nothing on this platform is retained, so a reading is only as
+         * good as its last frame. Without this a dead module's number
+         * sits on the display looking live. */
+        capstan_mqtt_check_watchdogs();
+
+        vTaskDelay(pdMS_TO_TICKS(50));
+    }
+}
+
 /* ---------------------------------------------------------------------- */
 
 void app_main(void)
@@ -507,6 +543,40 @@ void app_main(void)
                       "will not work", esp_err_to_name(wifi_err));
     }
 
+    /*
+     * Rejoin the saved network.
+     *
+     * capstan_wifi_init() only brings the radio up. Association used to
+     * happen ONLY through the settings flow, which meant the panel came
+     * back from every reboot offline with perfectly good credentials in
+     * NVS, and the only way back on was to retype the passphrase. A
+     * wall-mounted display has to come back by itself after a power cut.
+     *
+     * Nothing is retried here: capstan_wifi_connect() backs off and
+     * keeps trying on its own, which is right for a vehicle whose
+     * access point may simply be switched off.
+     */
+    if (capstan_config_is_provisioned() || wifi_err == ESP_OK) {
+        capstan_wifi_cfg_t wcfg;
+        capstan_config_get_wifi(&wcfg);
+        if (wcfg.configured && wcfg.ssid[0]) {
+            ESP_LOGI(TAG, "rejoining saved network '%s'", wcfg.ssid);
+            capstan_wifi_connect();
+        } else {
+            ESP_LOGI(TAG, "no saved network -- waiting for setup");
+        }
+    }
+
+    /* The data layer, then the broker client. Neither connects here:
+     * capstan_mqtt_connect() needs an IP, so it is driven off the Wi-Fi
+     * state callback in ui_data.c. */
+    capstan_model_init();
+    const esp_err_t mqtt_err = capstan_mqtt_init();
+    if (mqtt_err != ESP_OK) {
+        ESP_LOGE(TAG, "mqtt init failed (%s) -- no data will arrive",
+                 esp_err_to_name(mqtt_err));
+    }
+
     if (capstan_board_lock(0)) {
 #if HAVE_GENERATED_UI
         /*
@@ -526,6 +596,8 @@ void app_main(void)
         ui_init();
         lv_timer_create(ui_tick_timer_cb, 20, NULL);
         ui_nav_init();          /* owns screen transitions AND touch policy */
+        ui_wifi_init();         /* connection-state -> Wi-Fi screen title */
+        ui_data_init();         /* model -> widgets, and mqtt connect-on-IP */
 
         const size_t heap_after = esp_get_free_heap_size();
         ESP_LOGI(TAG, "generated UI initialised -- %u KB heap used, "
@@ -557,4 +629,31 @@ void app_main(void)
     ESP_ERROR_CHECK(capstan_board_backlight_set(disp.backlight_percent));
 
     ESP_LOGI(TAG, "running");
+
+    /*
+     * Hand the service loop to its own task and let app_main return.
+     *
+     * It ran inline here first, which overflowed the main task's stack
+     * and rebooted the panel every few seconds:
+     *
+     *   vApplicationStackOverflowHook  <- panic
+     *   Backtrace: ... |<-CORRUPTED
+     *
+     * CONFIG_ESP_MAIN_TASK_STACK_SIZE is 3584 bytes, and
+     * capstan_mqtt_process() parses JSON, which does not fit in what is
+     * left of it. Raising the main task's stack would have worked and
+     * would have been the wrong fix: it makes one number in sdkconfig
+     * responsible for whatever anyone later adds to app_main, and the
+     * next overflow would look exactly as mysterious as this one.
+     *
+     * A named task with its own stack says what it needs and keeps the
+     * cost next to the code that incurs it.
+     */
+    BaseType_t ok = xTaskCreate(service_task, "capstan_svc",
+                                CAPSTAN_SERVICE_TASK_STACK, NULL,
+                                CAPSTAN_SERVICE_TASK_PRIO, NULL);
+    if (ok != pdPASS) {
+        ESP_LOGE(TAG, "could not start the service task -- no MQTT data "
+                      "will be parsed");
+    }
 }

@@ -89,6 +89,10 @@ idf_component_register(
         "main.c"
         "ui_nav.c"
         "ui_wifi.c"
+        "ui_settings.c"
+        "ui_keyboard.c"
+        "ui_mqtt.c"
+        "ui_data.c"
         "actions.c"
         "vars.c"
         ${UI_CORE}

@@ -164,6 +164,8 @@ typedef struct _objects_t {
     lv_obj_t *energy_dot0;
     lv_obj_t *energy_dot1;
     lv_obj_t *energy_dot2;
+    lv_obj_t *energy_dot3;
+    lv_obj_t *energy_dot4;
     lv_obj_t *energy_back;
     lv_obj_t *energy_back_icon;
     lv_obj_t *water_title;
@@ -320,6 +322,7 @@ typedef struct _objects_t {
     lv_obj_t *mqtt_back_icon;
     lv_obj_t *kb_field;
     lv_obj_t *kb_eye;
+    lv_obj_t *kb_eye_icon;
     lv_obj_t *kb_keys;
     lv_obj_t *keyboard_back;
     lv_obj_t *keyboard_back_icon;
