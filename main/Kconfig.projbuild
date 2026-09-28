@@ -235,8 +235,8 @@ comment "Input"
 config CAPSTAN_ENCODER_STEPS_PER_DETENT
     int "Quadrature counts per detent"
     range 1 8
-    default 2 if CAPSTAN_BOARD_CROWPANEL_128
-    default 4 if CAPSTAN_BOARD_CROWPANEL_146
+    default 4 if CAPSTAN_BOARD_CROWPANEL_128
+    default 2 if CAPSTAN_BOARD_CROWPANEL_146
     default 4 if CAPSTAN_BOARD_MATOUCH_21
     help
       How many counts the full 4x quadrature decoder produces for one
@@ -249,17 +249,17 @@ config CAPSTAN_ENCODER_STEPS_PER_DETENT
       giveaway is that the count of items moved is a fixed multiple of the
       count of detents felt.
 
-      CrowPanel 1.28in: its EC3501 C15H30P3 is specified as 30 detents with
-      "1 pulse per 2 detents", which is 2 counts per detent under 4x decode.
-      Note the datasheet contradicts itself -- section 4-2 claims 30 pulses
-      per revolution per phase, which would give 4. The part number favours
-      the value set here. NOT yet checked on hardware.
+      CrowPanel 1.28in: VERIFIED on hardware -- 4. It was 2, taken from the
+      EC3501 C15H30P3 datasheet's "1 pulse per 2 detents", but section 4-2 of
+      that same datasheet contradicts it with 30 pulses per revolution per
+      phase, which gives 4. The hardware agrees with section 4-2: at 2 every
+      detent moved the selection by two. Trust the board, not the part number.
 
-      CrowPanel 1.46in: VERIFIED on hardware -- 4. It was 2, inherited from
-      the 1.28in on the assumption that two otherwise pin-identical boards
-      carry the same encoder. They do not: at 2 every detent produced two
-      navigation events and the ring was close to unusable. Do not re-derive
-      this board's value from its sibling's.
+      CrowPanel 1.46in: VERIFIED on hardware -- 2. An earlier change raised
+      this to 4 while trying to fix the 1.28in, and at 4 it took two detents
+      to move the selection once. The two boards are pin-identical but do NOT
+      share an encoder, and they do not share this value either -- 1.28in is
+      4, 1.46in is 2. Do not re-derive either from the other.
 
       MaTouch 2.1in: the encoder part is not documented either; 4 is the
       common case for panel-mount encoders.

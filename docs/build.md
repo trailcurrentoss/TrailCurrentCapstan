@@ -211,8 +211,9 @@ Below the bars is a wrapping selector, `item N / 9`, and a direction readout.
 - A short press logs nothing yet; a **long press** logs `ring long-press
   (back)`.
 
-The counts-per-detent defaults are starting points, not facts — only the
-1.28"'s encoder has a datasheet, and it contradicts itself. Calibrate.
+The counts-per-detent defaults are per-board and not interchangeable — 1.28"
+is 4, 1.46" is 2, MaTouch is 4. The only encoder with a datasheet is the
+1.28"'s, and it contradicts both itself and the hardware. Calibrate.
 
 ## Building the UI
 

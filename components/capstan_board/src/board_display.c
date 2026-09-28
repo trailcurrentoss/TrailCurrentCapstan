@@ -497,15 +497,30 @@ esp_err_t board_display_init(lv_display_t **out_disp)
                         "display on failed");
 
     /*
-     * Partial-buffer rendering: an eighth of the screen, twice, in PSRAM.
-     * These panels are small enough that a full framebuffer would fit, but
-     * SPI is the bottleneck here, not memory -- smaller buffers let LVGL
-     * start flushing sooner.
+     * Partial-buffer rendering: a fixed pixel budget, twice, in internal RAM.
+     * A FIXED budget, not a fraction of the screen. As a fraction, the cost
+     * scaled with resolution: the same `/8` that spends 28.8 KB on the 1.28"
+     * spends 64.8 KB on the 1.46", and that board has no room for it. Measured
+     * on the 1.46" with the fraction: 2711 B of internal heap free and 1920 B
+     * as the largest contiguous block, against the 8 KB the discovery task
+     * needs for its stack -- so every discovery window died at xTaskCreate()
+     * and the panel silently never appeared in Overlook.
+     *
+     * These buffers stay in INTERNAL RAM. Moving them to PSRAM frees ~97 KB
+     * and was tried: the SPI flush then runs slowly enough to starve IDLE1
+     * and trip the task watchdog on the LVGL task. Internal and smaller is
+     * the combination that works.
+     *
+     * 8192 px = 16 KB per buffer, 32 KB for the pair, on every SPI board
+     * regardless of resolution. SPI is the bottleneck here, not memory, and
+     * smaller buffers let LVGL start flushing sooner anyway.
      */
+#define DRAW_BUF_PX 8192
+
     lvgl_port_display_cfg_t disp_cfg = {
         .io_handle     = s_io,
         .panel_handle  = s_panel,
-        .buffer_size   = LCD_H_RES * LCD_V_RES / 8,
+        .buffer_size   = DRAW_BUF_PX,
         .double_buffer = true,
         .hres          = LCD_H_RES,
         .vres          = LCD_V_RES,

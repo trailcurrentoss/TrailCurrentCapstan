@@ -13,6 +13,7 @@
 #include "ui_nav.h"
 #include "ui_clock.h"
 #include "ui_icons.h"
+#include "ui_lights.h"
 #include "ui_settings.h"
 #include "ui_setup.h"
 
@@ -648,6 +649,12 @@ void ui_nav_press(void)
         }
         return;
     }
+
+    case CAPSTAN_SCREEN_LIGHTS:
+        /* Rows are built from the controls Headwaters assigned to this dial;
+         * the press commands the selected one. See ui_lights.c. */
+        ui_lights_press();
+        return;
 
     case CAPSTAN_SCREEN_SETTINGS:
         /* Rows, in the order page_settings() lays them out. Factory reset

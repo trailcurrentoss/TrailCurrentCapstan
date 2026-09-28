@@ -113,9 +113,19 @@ static const char PORTAL_HTML[] =
 "if(!b.ssid){show('Choose a network first.','err');return}"
 "fetch('/save',{method:'POST',body:JSON.stringify(b)})"
 ".then(r=>r.json()).then(function(r){"
-"if(r.ok){show('Saved. The display is connecting -- you can close this "
-"page and rejoin your normal Wi-Fi.','ok')}"
+"if(r.ok){show('Checking...','ok');setTimeout(chk,1200)}"
 "else{show(r.error||'Could not save.','err')}})"
 ".catch(function(){show('Could not reach the display.','err')})}"
+/* Nothing is saved until this reports ok. The page has to keep asking,
+ * because associating and then completing a TLS handshake takes far longer
+ * than an iOS captive-portal browser will hold a request open. */
+"function chk(){fetch('/status').then(r=>r.json()).then(function(r){"
+"if(r.state=='checking'){show(r.msg||'Checking...','ok');"
+"setTimeout(chk,1200);return}"
+"if(r.state=='ok'){show(r.msg||'Saved.','ok');return}"
+"if(r.state=='fail'){show((r.msg||'Could not verify.')+' Nothing was saved -- "
+"correct it and try again.','err');return}"
+"setTimeout(chk,1200)})"
+".catch(function(){setTimeout(chk,1500)})}"
 "scan();"
 "</script></body></html>";

@@ -3,9 +3,11 @@
  * and why the broker connection is dropped for the duration.
  */
 
+#include <stdio.h>
 #include <string.h>
 
 #include "esp_app_desc.h"
+#include "esp_heap_caps.h"
 #include "esp_http_server.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -26,8 +28,65 @@ static const char *TAG = "discovery";
  */
 #define MODULE_TYPE "capstan"
 
-/* mDNS instance name: shown to a human browsing the network, not parsed. */
-#define MDNS_INSTANCE "TrailCurrent Capstan"
+/*
+ * mDNS instance name base.
+ *
+ * The DNS-SD service instance name -- what goes in the PTR record and keys
+ * the whole service in every browser -- MUST be unique on the link. It is
+ * NOT decoration, even though nothing on our side parses it: Headwaters'
+ * host-side browser (local_code/discovery-mdns.py) reads the hostname from
+ * the SRV target and the module type from TXT, but zeroconf indexes the
+ * record it resolves by instance name, so two devices claiming the same one
+ * collapse into a single entry.
+ *
+ * Every TrailCurrent module used to advertise the literal
+ * "TrailCurrent Discovery". With one of each module type on a rig, the mDNS
+ * component's conflict resolution papered over it -- the loser of each
+ * collision renames itself to "...-2" and reprobes. With three identical
+ * Capstans opening their discovery window off the same broadcast, that
+ * degenerates: all three probe at once, the two losers BOTH mangle to the
+ * same "-2", collide again, and the result is a multi-round race inside a
+ * 30-second window. Any round whose multicast is missed leaves two dials
+ * sharing a name, and only one of them reaches Overlook's list.
+ *
+ * The hostname is appended below to make the name unique by construction so
+ * none of that has to happen at all.
+ */
+#define MDNS_INSTANCE_BASE "TrailCurrent Capstan"
+
+/*
+ * Re-announcement cadence.
+ *
+ * mDNS announcements are unacknowledged UDP multicast. The component sends a
+ * burst when the service is added and then goes quiet, so the whole window
+ * hangs on that burst surviving the air. On a board whose transmit power has
+ * been backed off -- the 1.46" runs at 11 dBm, see
+ * boards/crowpanel146.defaults -- that is exactly the traffic that gets lost
+ * first, while the broker connection stays up because TCP retransmits and
+ * mDNS does not. Symptom: a panel that is plainly online and simply never
+ * appears in Overlook's list.
+ *
+ * So announce again on a timer. mdns_service_txt_item_set() re-announces
+ * unconditionally on every call (mdns_responder.c does not gate on the value
+ * having changed), so bumping a counter key is the supported way to ask for
+ * one without removing and re-adding the service -- a remove would emit a
+ * goodbye packet and could evict us from a host that had just resolved us.
+ *
+ * Stops after REANNOUNCE_UNTIL_MS because Headwaters' browser only listens
+ * for BROWSE_TIMEOUT_S = 35 s (local_code/discovery-mdns.py); multicasting
+ * into a window nobody is watching buys nothing. The HTTP server stays up for
+ * the full DISCOVERY_TIMEOUT_MS regardless.
+ */
+/*
+ * Discovery task stack, in bytes. 8 KB matches the siblings; the task carries
+ * the mDNS calls and the wait loop, while the HTTP server runs on its own.
+ * Named rather than inlined so the failure log below reports the size that
+ * was actually requested.
+ */
+#define DISCOVERY_TASK_STACK 8192
+
+#define REANNOUNCE_INTERVAL_MS 5000
+#define REANNOUNCE_UNTIL_MS    40000
 
 static volatile bool s_confirmed;
 static volatile bool s_running;
@@ -93,7 +152,10 @@ static bool mdns_up(void)
     char hostname[24];
     capstan_mqtt_hostname(hostname, sizeof(hostname));
     mdns_hostname_set(hostname);
-    mdns_instance_name_set(MDNS_INSTANCE);
+
+    char instance[64];
+    snprintf(instance, sizeof(instance), "%s %s", MDNS_INSTANCE_BASE, hostname);
+    mdns_instance_name_set(instance);
     return true;
 }
 
@@ -101,6 +163,44 @@ static bool mdns_up(void)
 static void mdns_down(void)
 {
     mdns_free();
+}
+
+/*
+ * Internal heap, at each step that can fail for want of it.
+ *
+ * mdns_init(), httpd_start() and the service add all allocate, and
+ * CONFIG_MDNS_MEMORY_ALLOC_INTERNAL=y keeps mDNS out of PSRAM entirely. The
+ * larger panels carry bigger draw buffers, so "works on one board, not on
+ * another" and "runs out of internal RAM on the bigger board" look identical
+ * from the outside. Largest free block is printed alongside each total because
+ * a fragmented heap fails an allocation while still reporting plenty free --
+ * and a task stack is one contiguous block, so the largest block is the number
+ * that actually decides whether xTaskCreate() succeeds.
+ */
+static void log_heap(const char *when)
+{
+    ESP_LOGI(TAG, "heap %s: internal %u B free / %u B largest, "
+                  "DMA %u B free / %u B largest",
+             when,
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_DMA),
+             (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_DMA));
+}
+
+/* Force a fresh announcement. See REANNOUNCE_INTERVAL_MS above. */
+static void reannounce(unsigned seq)
+{
+    char val[12];
+    snprintf(val, sizeof(val), "%u", seq);
+
+    const esp_err_t err =
+        mdns_service_txt_item_set("_trailcurrent", "_tcp", "seq", val);
+    if (err != ESP_OK) {
+        ESP_LOGW(TAG, "re-announce %u failed (%s)", seq, esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "re-announced (seq=%u)", seq);
 }
 
 static void advertise(void)
@@ -112,7 +212,15 @@ static void advertise(void)
         { "fw",   app->version },
     };
 
-    const esp_err_t err = mdns_service_add("TrailCurrent Discovery",
+    char hostname[24];
+    capstan_mqtt_hostname(hostname, sizeof(hostname));
+
+    /* Per-device instance name -- see MDNS_INSTANCE_BASE above for why this
+     * must not be the same literal on every dial. */
+    char instance[64];
+    snprintf(instance, sizeof(instance), "TrailCurrent Discovery %s", hostname);
+
+    const esp_err_t err = mdns_service_add(instance,
                                            "_trailcurrent", "_tcp", 80,
                                            txt, sizeof(txt) / sizeof(txt[0]));
     if (err != ESP_OK) {
@@ -120,10 +228,8 @@ static void advertise(void)
         return;
     }
 
-    char hostname[24];
-    capstan_mqtt_hostname(hostname, sizeof(hostname));
-    ESP_LOGI(TAG, "advertising %s.local type=%s fw=%s",
-             hostname, MODULE_TYPE, app->version);
+    ESP_LOGI(TAG, "advertising \"%s\" %s.local type=%s fw=%s",
+             instance, hostname, MODULE_TYPE, app->version);
 }
 
 static esp_err_t confirm_handler(httpd_req_t *req)
@@ -168,6 +274,8 @@ static void discovery_task(void *arg)
     (void)arg;
     ESP_LOGI(TAG, "=== entering discovery mode ===");
 
+    log_heap("entering discovery");
+
     /* Free the TLS session so port 80 can bind. See discovery.h. */
     capstan_mqtt_stop();
 
@@ -181,14 +289,27 @@ static void discovery_task(void *arg)
 
     advertise();
     httpd_handle_t server = start_server();
+    log_heap("after httpd_start");
 
     s_confirmed = false;
     const int64_t start = esp_timer_get_time();
+    int64_t next_announce = start + (int64_t)REANNOUNCE_INTERVAL_MS * 1000;
+    unsigned announced = 1; /* mdns_service_add() sent the first one. */
 
     while (!s_confirmed) {
         vTaskDelay(pdMS_TO_TICKS(100));
-        if ((esp_timer_get_time() - start) / 1000 >= DISCOVERY_TIMEOUT_MS) {
-            ESP_LOGW(TAG, "timed out -- nothing confirmed us");
+
+        const int64_t now = esp_timer_get_time();
+        const int64_t elapsed_ms = (now - start) / 1000;
+
+        if (elapsed_ms < REANNOUNCE_UNTIL_MS && now >= next_announce) {
+            next_announce = now + (int64_t)REANNOUNCE_INTERVAL_MS * 1000;
+            reannounce(announced++);
+        }
+
+        if (elapsed_ms >= DISCOVERY_TIMEOUT_MS) {
+            ESP_LOGW(TAG, "timed out -- nothing confirmed us after %u "
+                          "announcement(s)", announced);
             break;
         }
     }
@@ -232,8 +353,20 @@ void discovery_handle_trigger(void)
      * created at priority 3 so it stays below the LVGL task and cannot stall
      * a redraw while it waits.
      */
-    if (xTaskCreate(discovery_task, "discovery", 8192, NULL, 3, NULL) != pdPASS) {
-        ESP_LOGE(TAG, "could not start the discovery task");
+    /*
+     * Measured, not assumed. xTaskCreate() has exactly one failure mode --
+     * errCOULD_NOT_ALLOCATE_REQUIRED_MEMORY -- and a FreeRTOS stack must be a
+     * single contiguous internal-RAM block, so when this fails the only
+     * question is how far short the heap was. Logging it before the attempt
+     * gives that number on the next scan instead of another theory.
+     */
+    log_heap("at discovery trigger");
+
+    if (xTaskCreate(discovery_task, "discovery", DISCOVERY_TASK_STACK, NULL, 3,
+                    NULL) != pdPASS) {
+        ESP_LOGE(TAG, "could not start the discovery task -- wanted %d B of "
+                      "contiguous internal stack", DISCOVERY_TASK_STACK);
+        log_heap("after the failed create");
         s_running = false;
     }
 }

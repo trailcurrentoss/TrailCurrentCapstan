@@ -93,10 +93,14 @@ void ui_setup_tick(void)
         return;
     }
 
+    /* Drives the provisioning check. /save only starts it; without this
+     * nothing is ever verified and nothing is ever written to NVS. */
+    capstan_portal_tick();
+
     if (capstan_portal_got_credentials()) {
         if (s_saved_ms == 0) {
             s_saved_ms = (int64_t)lv_tick_get();
-            set(objects.setup_status, "Saved -- connecting...");
+            set(objects.setup_status, "Verified and saved -- connecting...");
             return;
         }
         if ((int64_t)lv_tick_elaps((uint32_t)s_saved_ms) < LINGER_MS) {

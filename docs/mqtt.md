@@ -135,6 +135,8 @@ local/picket/+/inputs
 local/spoor/+/inputs
 local/config/pdm_channels        (retained — friendly names and icons)
 local/config/relay_channels      (retained)
+local/config/capstan/<esp32-XXXXXX>/controls
+                                 (retained — this dial's device controls)
 local/gps/time                   (clock fallback when there is no SNTP)
 os/timezone/current              (retained — IANA TZ string)
 local/discovery/trigger
@@ -173,6 +175,12 @@ incrementally. **Treat every field as optional on every message.**
 
 **`local/airquality/safety`** — thresholds are evaluated on-board Borealis.
 Use the booleans; do not re-derive them from the ppm values.
+
+`co2_warn` / `co2_alarm` / `voc_alarm` / `co_warn` / `co_alarm` are what drive
+the Air quality screen's status word and ring colour — see
+[screens.md](screens.md#air-quality). A payload that omits one reads as
+`false`, i.e. "not flagged", which is the right answer for an older Borealis
+that does not publish it.
 
 ```json
 { "co_ppm": 12, "lpg_rs_r0": 0.812, "alarm_flags": 0,
@@ -242,6 +250,48 @@ Publish anything to `local/config/request` to force a re-publish.
 ```json
 { "channels": [ /* … */ ] }
 ```
+
+**`local/config/capstan/<esp32-XXXXXX>/controls`** — retained, per device.
+
+Which Torrent (PDM) channels and Switchback relays *this* dial may switch.
+Configured in the Headwaters PWA under **Settings → Network & Modules**, on the
+Capstan's own Edit dialog, and published by
+`containers/backend/src/services/capstan-control-sync.js`.
+
+```json
+{ "controls": [ { "id": 3,   "name": "Kitchen",    "icon": "lightbulb" },
+                { "id": 104, "name": "Water Pump", "icon": "power-outlet" } ] }
+```
+
+`id` is the unified light id the display already commands with
+`local/lights/<id>/command`: PDM channels are 1..N, Switchback relays start at
+100. So the source never has to be special-cased — though it is still
+recoverable, and `id >= 100` is exactly the toggle-only case described under
+[Commands](#commands).
+
+The topic is keyed by mDNS hostname, not MAC, because the hostname is what
+Headwaters stores against the module. Two dials in one rig therefore carry
+different lists, which is the point of the feature.
+
+Three things about this payload are load-bearing:
+
+- **The name and icon are resolved by Headwaters, not chosen for the dial.**
+  The PWA stores only a reference — source, module hostname, channel — and the
+  backend derives the id, label and icon at publish time from the channel's own
+  configuration. Rename a PDM channel and the dial follows, with no second
+  place to edit.
+- **An empty array is a payload, not an absence.** It is what a Capstan that was
+  deleted or disabled in the PWA is sent, and it clears the stored list.
+- **It is stored in NVS.** The dial comes up with labelled controls before the
+  broker is reachable, for the same reason the Wi-Fi and broker settings live
+  there. The retained topic remains the authority and overwrites the copy;
+  `capstan_config_set_controls()` skips the flash write when nothing changed,
+  which matters because the retained message is redelivered on every connect.
+
+At most `CAPSTAN_MAX_CONTROLS` (8) entries are kept. That ceiling is the
+message buffer, not the screen — see the sizing note on `MSG_DATA_MAX` in
+`components/capstan_mqtt/src/capstan_mqtt.c`. It is mirrored in the backend
+(`MAX_CONTROLS`) and the PWA (`MAX_CAPSTAN_CONTROLS`); all three move together.
 
 **`local/gps/time`** — the rig's only clock source. Fields are **UTC**, from
 Milepost's GNSS fix, republished at ~1 Hz. All six are required; a partial
@@ -316,9 +366,19 @@ implements in `main/discovery.c`:
 1. Subscribe to `local/discovery/trigger`. Headwaters broadcasts the bare
    string `*` (not JSON) at QoS 0.
 2. On trigger — and NOT before — `mdns_init()`, hostname `esp32-XXXXXX`,
-   instance name `TrailCurrent Capstan`.
-3. On trigger, advertise `_trailcurrent._tcp` on **port 80** with TXT records
+   instance name `TrailCurrent Capstan esp32-XXXXXX`.
+3. On trigger, advertise `_trailcurrent._tcp` on **port 80** with the DNS-SD
+   service instance name `TrailCurrent Discovery esp32-XXXXXX` and TXT records
    `type=capstan` and `fw=<app version>`, and serve `GET /discovery/confirm`.
+
+   The hostname suffix on both names is load-bearing. A DNS-SD service
+   instance name must be unique on the link, and the browser indexes what it
+   resolves by that name — two dials advertising the same literal collapse
+   into one entry in Overlook's list. Nothing downstream parses it
+   (`discovery-mdns.py` takes the hostname from SRV and the type from TXT),
+   so it is free to make unique, and the mDNS component's rename-and-reprobe
+   conflict resolution is a race that should not be relied on with several
+   identical panels triggering off one broadcast.
 4. The host daemon `local_code/discovery-mdns.py` browses for the service and
    publishes to `discovery/browse/found`:
    `{"hostname":"esp32-A1B2C3","type":"capstan","fw":"1.0.0","onboard":"confirm"}`

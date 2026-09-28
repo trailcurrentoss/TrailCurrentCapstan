@@ -153,6 +153,39 @@ lv_style_t *get_style_arc_value_INDICATOR_DEFAULT();
 void add_style_arc_value(lv_obj_t *obj);
 void remove_style_arc_value(lv_obj_t *obj);
 
+// Style: ArcThin
+lv_style_t *get_style_arc_thin_MAIN_DEFAULT();
+lv_style_t *get_style_arc_thin_INDICATOR_DEFAULT();
+lv_style_t *get_style_arc_thin_INDICATOR_CHECKED();
+lv_style_t *get_style_arc_thin_INDICATOR_DISABLED();
+lv_style_t *get_style_arc_thin_INDICATOR_PRESSED();
+lv_style_t *get_style_arc_thin_KNOB_DEFAULT();
+void add_style_arc_thin(lv_obj_t *obj);
+void remove_style_arc_thin(lv_obj_t *obj);
+
+// Style: LabelEyebrow
+lv_style_t *get_style_label_eyebrow_MAIN_DEFAULT();
+void add_style_label_eyebrow(lv_obj_t *obj);
+void remove_style_label_eyebrow(lv_obj_t *obj);
+
+// Style: LabelHeroXL
+lv_style_t *get_style_label_hero_xl_MAIN_DEFAULT();
+void add_style_label_hero_xl(lv_obj_t *obj);
+void remove_style_label_hero_xl(lv_obj_t *obj);
+
+// Style: LabelMetric
+lv_style_t *get_style_label_metric_MAIN_DEFAULT();
+void add_style_label_metric(lv_obj_t *obj);
+void remove_style_label_metric(lv_obj_t *obj);
+
+// Style: LabelStatus
+lv_style_t *get_style_label_status_MAIN_DEFAULT();
+lv_style_t *get_style_label_status_MAIN_CHECKED();
+lv_style_t *get_style_label_status_MAIN_DISABLED();
+lv_style_t *get_style_label_status_MAIN_PRESSED();
+void add_style_label_status(lv_obj_t *obj);
+void remove_style_label_status(lv_obj_t *obj);
+
 #ifdef __cplusplus
 }
 #endif

@@ -10,6 +10,7 @@
 #include "esp_http_server.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/semphr.h"
@@ -17,6 +18,7 @@
 #include "lwip/inet.h"
 
 #include "capstan_config.h"
+#include "capstan_mqtt.h"
 #include "capstan_portal.h"
 #include "capstan_wifi.h"
 #include "portal_dns.h"
@@ -147,6 +149,126 @@ static esp_err_t scan_get(httpd_req_t *req)
     return ESP_OK;
 }
 
+
+/* ----------------------------------------------------------------------
+ * Provisioning validation.
+ *
+ * Credentials reach NVS at exactly one place -- PORTAL_VAL_OK below -- and
+ * only after the radio has associated and, when a broker was given, the
+ * broker has accepted us. Anything else leaves NVS untouched, keeps the setup
+ * AP up, and tells the user which half failed.
+ *
+ * WHY THIS EXISTS
+ *
+ * /save used to write first and find out afterwards. A wrong passphrase, or a
+ * broker host that never resolves, was committed anyway; the panel then booted
+ * believing it was provisioned, retried forever, and gave no sign of what was
+ * wrong. Recovering meant a factory reset. A MaTouch in the field had Wi-Fi in
+ * NVS and no broker at all for exactly this reason.
+ *
+ * It is a polled state machine rather than a long HTTP request for the reason
+ * already recorded for /scan: iOS's captive-portal browser abandons a slow
+ * fetch, and associating plus a TLS handshake takes far longer than it waits.
+ * ---------------------------------------------------------------------- */
+typedef enum {
+    PORTAL_VAL_IDLE = 0,
+    PORTAL_VAL_WIFI,
+    PORTAL_VAL_MQTT,
+    PORTAL_VAL_OK,
+    PORTAL_VAL_FAIL,
+} portal_val_t;
+
+#define VAL_WIFI_TIMEOUT_MS 25000
+#define VAL_MQTT_TIMEOUT_MS 20000
+
+static portal_val_t        s_val;
+static int64_t             s_val_started;
+static char                s_val_msg[160];
+static capstan_wifi_cfg_t  s_pending_w;
+static capstan_mqtt_cfg_t  s_pending_m;
+static bool                s_pending_mqtt;
+
+static void val_fail(const char *why)
+{
+    /* Nothing was persisted, so there is nothing to roll back. Stop trying,
+     * so the radio is not hammering a wrong passphrase while the user
+     * retypes it. */
+    capstan_wifi_disconnect();
+    capstan_mqtt_stop();
+    s_val = PORTAL_VAL_FAIL;
+    strlcpy(s_val_msg, why, sizeof(s_val_msg));
+    ESP_LOGW(TAG, "provisioning check failed: %s (nothing saved)", why);
+}
+
+void capstan_portal_tick(void)
+{
+    if (s_val != PORTAL_VAL_WIFI && s_val != PORTAL_VAL_MQTT) {
+        return;
+    }
+    const int64_t elapsed_ms = (esp_timer_get_time() - s_val_started) / 1000;
+
+    if (s_val == PORTAL_VAL_WIFI) {
+        if (capstan_wifi_is_connected()) {
+            if (!s_pending_mqtt) {
+                if (capstan_config_set_wifi(&s_pending_w) != ESP_OK) {
+                    val_fail("Joined, but could not save settings");
+                    return;
+                }
+                s_val = PORTAL_VAL_OK;
+                strlcpy(s_val_msg,
+                        "Wi-Fi saved. No broker host was given, so this "
+                        "display will show no data until one is set.",
+                        sizeof(s_val_msg));
+                s_got_creds = true;
+                return;
+            }
+            s_val = PORTAL_VAL_MQTT;
+            s_val_started = esp_timer_get_time();
+            snprintf(s_val_msg, sizeof(s_val_msg), "Joined. Checking %s...",
+                     s_pending_m.host);
+            if (capstan_mqtt_try(&s_pending_m) != ESP_OK) {
+                val_fail("Joined Wi-Fi, but the broker could not be reached");
+            }
+            return;
+        }
+        if (capstan_wifi_state() == CAPSTAN_WIFI_FAILED) {
+            const char *e = capstan_wifi_last_error();
+            val_fail((e && e[0]) ? e : "Could not join that network");
+            return;
+        }
+        if (elapsed_ms > VAL_WIFI_TIMEOUT_MS) {
+            val_fail("Timed out joining that network -- check the password");
+        }
+        return;
+    }
+
+    /* PORTAL_VAL_MQTT */
+    if (capstan_mqtt_is_connected()) {
+        if (capstan_config_set_wifi(&s_pending_w) != ESP_OK ||
+            capstan_config_set_mqtt(&s_pending_m) != ESP_OK) {
+            val_fail("Everything worked, but settings could not be saved");
+            return;
+        }
+        s_val = PORTAL_VAL_OK;
+        strlcpy(s_val_msg, "Saved. The display is connected -- you can close "
+                           "this page and rejoin your normal Wi-Fi.",
+                sizeof(s_val_msg));
+        ESP_LOGI(TAG, "provisioning verified and saved: '%s' -> %s:%u",
+                 s_pending_w.ssid, s_pending_m.host,
+                 (unsigned)s_pending_m.port);
+        s_got_creds = true;
+        return;
+    }
+    if (elapsed_ms > VAL_MQTT_TIMEOUT_MS) {
+        const char *e = capstan_mqtt_last_error();
+        char why[160];
+        snprintf(why, sizeof(why),
+                 "Joined Wi-Fi, but the broker did not answer%s%s",
+                 (e && e[0]) ? " -- " : "", (e && e[0]) ? e : "");
+        val_fail(why);
+    }
+}
+
 static esp_err_t save_post(httpd_req_t *req)
 {
     char buf[512];
@@ -175,6 +297,19 @@ static esp_err_t save_post(httpd_req_t *req)
         return ESP_OK;
     }
 
+    /* ------------------------------------------------------------------
+     * Parse into PENDING buffers. NOTHING is written to NVS here.
+     *
+     * Provisioning used to save first and find out afterwards. A wrong
+     * passphrase, or a broker host that does not resolve, was committed
+     * anyway -- and the panel then booted believing it was provisioned,
+     * retried forever, and showed no route back to setup. Recovering meant
+     * a factory reset.
+     *
+     * So /save now only STARTS a check. The credentials are applied to the
+     * radio and the broker, and they reach NVS in portal_validate_tick()
+     * only once both have actually worked.
+     * ------------------------------------------------------------------ */
     capstan_wifi_cfg_t w;
     capstan_config_get_wifi(&w);
     strlcpy(w.ssid, ssid->valuestring, sizeof(w.ssid));
@@ -190,18 +325,13 @@ static esp_err_t save_post(httpd_req_t *req)
                  : CAPSTAN_WIFI_SEC_WPA_WPA2_PSK;
     w.configured = true;
 
-    /* MQTT is optional here: a panel that is on the network can be
-     * pointed at a broker later from Overlook, and refusing to save
-     * Wi-Fi because the broker field was left blank would strand the
-     * user on the setup AP. */
+    /* The broker stays optional -- a panel on the network can be pointed at
+     * one later -- but "optional" now means "skipped deliberately", not
+     * "silently dropped": an empty host is reported on the page. */
     capstan_mqtt_cfg_t m;
     capstan_config_get_mqtt(&m);
+    bool want_mqtt = false;
     const cJSON *mh = cJSON_GetObjectItem(j, "mh");
-    /* Say either way. A silent skip here is what made an empty host look
-     * like a save that had worked. */
-    if (!cJSON_IsString(mh) || !mh->valuestring[0]) {
-        ESP_LOGW(TAG, "no broker host submitted -- MQTT left unconfigured");
-    }
     if (cJSON_IsString(mh) && mh->valuestring[0]) {
         strlcpy(m.host, mh->valuestring, sizeof(m.host));
         const cJSON *mp = cJSON_GetObjectItem(j, "mp");
@@ -214,39 +344,56 @@ static esp_err_t save_post(httpd_req_t *req)
         strlcpy(m.password, cJSON_IsString(mpw) ? mpw->valuestring : "",
                 sizeof(m.password));
         m.configured = true;
-        const esp_err_t merr = capstan_config_set_mqtt(&m);
-        if (merr != ESP_OK) {
-            ESP_LOGE(TAG, "broker save failed: %s", esp_err_to_name(merr));
-        } else {
-            ESP_LOGI(TAG, "broker saved: %s:%u", m.host, (unsigned)m.port);
-        }
+        want_mqtt = true;
+    } else {
+        ESP_LOGW(TAG, "no broker host submitted -- will save Wi-Fi only");
     }
 
     cJSON_Delete(j);
 
-    const esp_err_t err = capstan_config_set_wifi(&w);
-    httpd_resp_set_type(req, "application/json");
-    if (err != ESP_OK) {
-        httpd_resp_sendstr(req,
-            "{\"ok\":false,\"error\":\"Could not save settings\"}");
-        return ESP_OK;
+    s_pending_w    = w;
+    s_pending_m    = m;
+    s_pending_mqtt = want_mqtt;
+    s_val_started  = esp_timer_get_time();
+    s_val          = PORTAL_VAL_WIFI;
+    snprintf(s_val_msg, sizeof(s_val_msg), "Joining %s...", w.ssid);
+
+    const esp_err_t terr = capstan_wifi_try(&s_pending_w);
+    if (terr != ESP_OK) {
+        s_val = PORTAL_VAL_FAIL;
+        snprintf(s_val_msg, sizeof(s_val_msg), "Could not start Wi-Fi (%s)",
+                 esp_err_to_name(terr));
     }
 
-    ESP_LOGI(TAG, "credentials saved for '%s'", w.ssid);
-    httpd_resp_sendstr(req, "{\"ok\":true}");
-
-    /*
-     * Flag only -- the teardown happens elsewhere.
-     *
-     * Stopping the AP here would kill the socket this response is still
-     * being written to, so the phone would see the request fail and the
-     * user would assume setup did not work. The owner of the portal
-     * polls capstan_portal_got_credentials() and tears down once the
-     * reply has gone out.
-     */
-    s_got_creds = true;
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, "{\"ok\":true,\"checking\":true}");
     return ESP_OK;
 }
+
+/* Progress of the check, polled by the page. */
+static esp_err_t status_handler(httpd_req_t *req)
+{
+    const char *st = "idle";
+    switch (s_val) {
+    case PORTAL_VAL_WIFI:
+    case PORTAL_VAL_MQTT: st = "checking"; break;
+    case PORTAL_VAL_OK:   st = "ok";       break;
+    case PORTAL_VAL_FAIL: st = "fail";     break;
+    default:              st = "idle";     break;
+    }
+
+    cJSON *o = cJSON_CreateObject();
+    cJSON_AddStringToObject(o, "state", st);
+    cJSON_AddStringToObject(o, "msg", s_val_msg);
+    char *txt = cJSON_PrintUnformatted(o);
+    httpd_resp_set_type(req, "application/json");
+    httpd_resp_sendstr(req, txt ? txt : "{\"state\":\"idle\",\"msg\":\"\"}");
+    cJSON_free(txt);
+    cJSON_Delete(o);
+    return ESP_OK;
+}
+
+
 
 /* ---------------------------------------------------------------- */
 
@@ -254,6 +401,7 @@ static const httpd_uri_t URIS[] = {
     { .uri = "/",       .method = HTTP_GET,  .handler = root_get },
     { .uri = "/scan",   .method = HTTP_GET,  .handler = scan_get },
     { .uri = "/save",   .method = HTTP_POST, .handler = save_post },
+    { .uri = "/status", .method = HTTP_GET,  .handler = status_handler },
     /* The probe URLs each OS uses to decide a network is captive. */
     { .uri = "/generate_204",        .method = HTTP_GET, .handler = probe_get },
     { .uri = "/gen_204",             .method = HTTP_GET, .handler = probe_get },
@@ -271,6 +419,8 @@ esp_err_t capstan_portal_start(void)
         return ESP_OK;
     }
     s_got_creds = false;
+    s_val = PORTAL_VAL_IDLE;
+    s_val_msg[0] = '\0';
 
     ESP_RETURN_ON_ERROR(capstan_wifi_ap_start(), TAG, "ap failed");
 

@@ -55,7 +55,16 @@ typedef enum {
     CAPSTAN_TANK_COUNT
 } capstan_tank_t;
 
-#define CAPSTAN_MAX_LIGHTS  24
+/*
+ * How many DISTINCT lights this dial tracks state for -- not a ceiling on the
+ * light id.
+ *
+ * Ids are sparse: PDM channels are 1..N and Switchback relays start at 100, so
+ * an array indexed by id would have to be 100+ entries and would still break
+ * the moment the id space moved. State is held in a table keyed by id
+ * instead; this is its capacity.
+ */
+#define CAPSTAN_MAX_LIGHTS  56
 #define CAPSTAN_PICKET_ADDRS 8
 
 /** A reading plus whether it is still trustworthy. */
@@ -80,8 +89,18 @@ void capstan_model_set_humidity(double v);
 void capstan_model_set_tvoc(double v);
 void capstan_model_set_eco2(double v);
 void capstan_model_set_co(double v);
+/**
+ * Borealis's own threshold verdicts, from `local/airquality/safety`.
+ *
+ * All seven are evaluated ON BOARD Borealis and must be taken as given --
+ * docs/mqtt.md says so explicitly, and re-deriving any of them from the ppm
+ * values here would mean this display disagreeing with the module that owns
+ * the sensor.
+ */
 void capstan_model_set_safety_flags(bool co_alarm, bool co_warn,
-                                    bool lpg_alarm, bool lpg_warn);
+                                    bool lpg_alarm, bool lpg_warn,
+                                    bool co2_alarm, bool co2_warn,
+                                    bool voc_alarm);
 
 void capstan_model_set_tank(capstan_tank_t t, double pct);
 void capstan_model_set_tilt(double front_back, double side_to_side);
@@ -149,11 +168,41 @@ capstan_value_t capstan_model_eco2(void);
 capstan_value_t capstan_model_co(void);
 bool capstan_model_any_alarm(void);
 
+/**
+ * How the air screen's status word and ring should read.
+ *
+ * This is a VERDICT, not a measurement: it is folded from Borealis's
+ * threshold booleans and from nothing else. There is no AQI on this bus and
+ * this is deliberately not one -- see the note on page_air in
+ * GUI/tmp/screens_layout.py.
+ *
+ * CAPSTAN_AIR_UNKNOWN covers both "Borealis has never reported" and
+ * "Borealis has gone quiet", which the screen renders as `--` with the ring
+ * empty, for the same reason every other reading does.
+ *
+ * LPG is NOT folded in. A propane leak is a leak, not air quality, and it
+ * already raises the alert overlay through capstan_model_any_alarm(). Having
+ * it also turn this ring amber would mean two controls reporting one event
+ * with different words.
+ */
+typedef enum {
+    CAPSTAN_AIR_UNKNOWN = 0,  /**< no data -- render `--` */
+    CAPSTAN_AIR_GOOD,         /**< nothing flagged */
+    CAPSTAN_AIR_MODERATE,     /**< co2_warn or co_warn */
+    CAPSTAN_AIR_UNHEALTHY,    /**< co2_alarm, voc_alarm or co_alarm */
+} capstan_air_level_t;
+
+capstan_air_level_t capstan_model_air_level(void);
+
 capstan_value_t capstan_model_tank(capstan_tank_t t);
 capstan_value_t capstan_model_tilt_front_back(void);
 capstan_value_t capstan_model_tilt_side_to_side(void);
 
 bool capstan_model_light_on(int id);
+
+/** True once a status has been seen for this id. Distinguishes "off" from
+ *  "never reported", which look identical through light_on() alone. */
+bool capstan_model_light_known(int id);
 int  capstan_model_light_brightness(int id);
 int  capstan_model_lights_on_count(void);
 

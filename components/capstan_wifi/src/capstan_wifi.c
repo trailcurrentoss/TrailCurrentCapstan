@@ -558,12 +558,21 @@ esp_err_t capstan_wifi_scan_start(capstan_wifi_scan_cb_t cb, void *ctx)
     return ESP_OK;
 }
 
-esp_err_t capstan_wifi_connect(void)
+/*
+ * Apply a config to the radio and start associating.
+ *
+ * Split out of capstan_wifi_connect() so credentials can be TRIED without
+ * being written to NVS first -- see capstan_wifi_try(). Provisioning must be
+ * able to find out whether a passphrase is right before committing it,
+ * because a wrong one written to NVS leaves a panel that boots, believes it
+ * is provisioned, and retries forever with no way back to setup except a
+ * factory reset.
+ */
+static esp_err_t connect_using(const capstan_wifi_cfg_t *cfg)
 {
-    capstan_wifi_cfg_t c;
-    capstan_config_get_wifi(&c);
+    const capstan_wifi_cfg_t c = *cfg;
     ESP_RETURN_ON_FALSE(c.configured && c.ssid[0], ESP_ERR_INVALID_STATE, TAG,
-                        "no saved credentials");
+                        "no credentials");
 
     wifi_config_t wc = { 0 };
     strncpy((char *)wc.sta.ssid, c.ssid, sizeof(wc.sta.ssid) - 1);
@@ -605,6 +614,25 @@ esp_err_t capstan_wifi_connect(void)
         ESP_RETURN_ON_ERROR(err, TAG, "connect failed");
     }
     return ESP_OK;
+}
+
+esp_err_t capstan_wifi_connect(void)
+{
+    capstan_wifi_cfg_t c;
+    capstan_config_get_wifi(&c);
+    ESP_RETURN_ON_FALSE(c.configured && c.ssid[0], ESP_ERR_INVALID_STATE, TAG,
+                        "no saved credentials");
+    return connect_using(&c);
+}
+
+esp_err_t capstan_wifi_try(const capstan_wifi_cfg_t *cfg)
+{
+    ESP_RETURN_ON_FALSE(cfg, ESP_ERR_INVALID_ARG, TAG, "null cfg");
+    /* Deliberately no capstan_config_set_wifi() here. That is the whole
+     * point: nothing reaches NVS until the association has succeeded. */
+    capstan_wifi_cfg_t c = *cfg;
+    c.configured = true;
+    return connect_using(&c);
 }
 
 esp_err_t capstan_wifi_connect_with(const capstan_wifi_cfg_t *cfg)

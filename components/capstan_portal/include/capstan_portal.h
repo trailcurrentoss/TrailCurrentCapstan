@@ -45,6 +45,16 @@ bool capstan_portal_is_running(void);
 /** True once credentials have been submitted and saved. */
 bool capstan_portal_got_credentials(void);
 
+/**
+ * Advance the provisioning check. Call regularly while the portal is up.
+ *
+ * /save does not save. It applies the submitted credentials to the radio and
+ * the broker and returns immediately; this drives the check to a verdict and
+ * writes to NVS only if both actually worked. Without it being called, a
+ * submission never completes.
+ */
+void capstan_portal_tick(void);
+
 /** Number of phones currently associated with the setup AP. */
 int capstan_portal_client_count(void);
 

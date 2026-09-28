@@ -19,6 +19,7 @@
     "ui_font_rl72.c",
     "ui_font_rm20.c",
     "ui_font_rm26.c",
+    "ui_font_rn120.c",
     "ui_font_rr13.c",
     "ui_font_rr16.c",
     "vars.h"

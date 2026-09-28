@@ -156,7 +156,54 @@ level. Rendered as an arc of five segments.
 Not a distinct platform entity — a heater is a PDM or Switchback channel with
 a flame icon, commanded like any other light.
 
-## Energy, Water, Air quality, Levelling, Doors
+## Air quality
+
+A thin 270° ring near the glass edge with a centred stack inside it, built to
+the design prototype's geometry: a centreline radius of 214 px and a 14 px
+rounded stroke on a 480 panel (44.6% and 2.9% of the diameter), opening 90° at
+the bottom. No cards, no borders, no knob, and the ring is read-only — touch
+cannot move it.
+
+Inside, top to bottom: a small tracked `AIR QUALITY`, the hero numeral, its
+unit, the status word, and three sub-metrics.
+
+**The hero is eCO2 in ppm, not an AQI.** The prototype shows an Air Quality
+Index on a 0–300 scale; there is no AQI on this bus. Borealis publishes eCO2,
+TVOC, temperature, humidity and CO, plus its own threshold verdicts on
+`local/airquality/safety` — which [mqtt.md](mqtt.md) says to use rather than
+re-derive. Computing an index here would have meant inventing a number no
+sensor reports and second-guessing thresholds the module has already
+evaluated. So the ring spans 400–2000 ppm (outdoor air to full) and the status
+word comes from the flags:
+
+| Status | Colour | From |
+|---|---|---|
+| Good | `Success` | nothing flagged |
+| Moderate | `Solar` | `co2_warn` or `co_warn` |
+| Unhealthy | `Danger` | `co2_alarm`, `voc_alarm` or `co_alarm` |
+| `--` | `TextMuted` | Borealis silent or stale |
+
+LPG is deliberately not folded in: a propane leak is a leak, not air quality,
+and it already raises the alert overlay.
+
+The ring and the status word always share one colour, and the ring animates to
+a new reading over 300 ms rather than jumping. Because the ring reads eCO2
+while its colour reads the verdict, the two can legitimately disagree — a VOC
+alarm at 500 ppm draws a short red arc, and the status word is what names
+which is which.
+
+The three sub-metrics are **VOC / Humidity / Temp**. The prototype's third
+column is PM2.5; there is no particulate sensor on this bus, so VOC takes it.
+Temperature is here because `local/airquality/temphumid` is the only ambient
+temperature anywhere on the rig.
+
+All four severity looks are authored in the `.eez-project` as LVGL states, so
+they are visible on EEZ Studio's canvas. `main/ui_data.c` only calls
+`lv_obj_add_state` / `lv_obj_remove_state`; it sets no colours. See the note on
+the `ArcThin` style in `GUI/tmp/gen_eez_project.py` for the state mapping and
+why it is what it is.
+
+## Energy, Water, Levelling, Doors
 
 Read-only, laid out as in the prototype. On Energy the ring pages between
 Battery / Solar / Load.

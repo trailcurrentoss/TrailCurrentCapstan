@@ -46,12 +46,14 @@ static const char *TAG = "config";
 #define K_TCAL_YS    "t_ys"
 #define K_TCAL_YO    "t_yo"
 #define K_TCAL_OK    "t_ok"
+#define K_CONTROLS   "ctrls"
 
 static SemaphoreHandle_t      s_lock;
 static capstan_wifi_cfg_t     s_wifi;
 static capstan_mqtt_cfg_t     s_mqtt;
 static capstan_display_cfg_t  s_display;
 static capstan_touch_cal_t    s_tcal;
+static capstan_controls_t     s_controls;
 
 static const char *const s_sec_names[CAPSTAN_WIFI_SEC_COUNT] = {
     [CAPSTAN_WIFI_SEC_OPEN]          = "Open",
@@ -100,6 +102,10 @@ static void load_defaults(void)
 #endif
     s_display.backlight_percent = 100;
     s_display.idle_timeout_s    = CONFIG_CAPSTAN_IDLE_TIMEOUT_S;
+
+    /* No controls until Headwaters sends some. An empty dial is a correct
+     * first-boot state, not a fault. */
+    memset(&s_controls, 0, sizeof(s_controls));
 
     /* Identity until calibrated -- raw coordinates pass through. */
     s_tcal.x_scale = 1.0f;  s_tcal.x_offset = 0.0f;
@@ -183,6 +189,20 @@ static esp_err_t load_from_nvs(void)
     read_f32(h,  K_TCAL_YO, &s_tcal.y_offset);
     read_bool(h, K_TCAL_OK, &s_tcal.valid);
 
+    /* One blob, not a key per control: 15-character keys leave no room for
+     * an index plus a field name, and a partial list read back after a
+     * power cut mid-write would be worse than none. A size mismatch means
+     * the struct changed across a firmware update -- discard rather than
+     * reinterpret, the retained topic will refill it within seconds of the
+     * broker connecting. */
+    size_t ctrl_len = sizeof(s_controls);
+    capstan_controls_t ctrls;
+    if (nvs_get_blob(h, K_CONTROLS, &ctrls, &ctrl_len) == ESP_OK &&
+        ctrl_len == sizeof(s_controls) &&
+        ctrls.count <= CAPSTAN_MAX_CONTROLS) {
+        s_controls = ctrls;
+    }
+
     read_bool(h, K_DISP_C,    &s_display.celsius);
     read_bool(h, K_DISP_DARK, &s_display.dark_theme);
     read_u8(h,   K_DISP_BL,   &s_display.backlight_percent);
@@ -207,6 +227,7 @@ esp_err_t capstan_config_init(void)
      * serial log outlives the session it was captured in.
      */
     ESP_LOGI(TAG, "touch cal: %s", s_tcal.valid ? "present" : "NONE (raw)");
+    ESP_LOGI(TAG, "device controls: %u", (unsigned)s_controls.count);
     ESP_LOGI(TAG, "wifi: %s (%s), mqtt: %s:%u %s",
              s_wifi.configured ? s_wifi.ssid : "<unset>",
              capstan_wifi_sec_name(s_wifi.security),
@@ -247,6 +268,56 @@ void capstan_config_get_touch_cal(capstan_touch_cal_t *out)
 {
     if (!out) { return; }
     WITH_LOCK(*out = s_tcal);
+}
+
+void capstan_config_get_controls(capstan_controls_t *out)
+{
+    if (!out) { return; }
+    WITH_LOCK(*out = s_controls);
+}
+
+esp_err_t capstan_config_set_controls(const capstan_controls_t *controls)
+{
+    ESP_RETURN_ON_FALSE(controls, ESP_ERR_INVALID_ARG, TAG, "null controls");
+    ESP_RETURN_ON_FALSE(controls->count <= CAPSTAN_MAX_CONTROLS,
+                        ESP_ERR_INVALID_ARG, TAG, "too many controls (%u)",
+                        (unsigned)controls->count);
+
+    /*
+     * Normalise before comparing. The caller fills only `count` entries, so
+     * whatever is in the tail is its business -- but if the tail differs the
+     * memcmp below reports a change that isn't one, and the retained topic
+     * would then rewrite flash on every single broker reconnect.
+     */
+    capstan_controls_t want;
+    memset(&want, 0, sizeof(want));
+    want.count = controls->count;
+    for (uint8_t i = 0; i < controls->count; i++) {
+        want.items[i].id = controls->items[i].id;
+        strncpy(want.items[i].name, controls->items[i].name,
+                CAPSTAN_CONTROL_NAME_MAX - 1);
+        strncpy(want.items[i].icon, controls->items[i].icon,
+                CAPSTAN_CONTROL_ICON_MAX - 1);
+    }
+
+    bool unchanged;
+    WITH_LOCK(unchanged = (memcmp(&want, &s_controls, sizeof(want)) == 0));
+    if (unchanged) {
+        return ESP_OK;
+    }
+
+    nvs_handle_t h;
+    ESP_RETURN_ON_ERROR(nvs_open(NS, NVS_READWRITE, &h), TAG, "nvs_open failed");
+    esp_err_t err = nvs_set_blob(h, K_CONTROLS, &want, sizeof(want));
+    if (err == ESP_OK) {
+        err = nvs_commit(h);
+    }
+    nvs_close(h);
+    ESP_RETURN_ON_ERROR(err, TAG, "control save failed");
+
+    WITH_LOCK(s_controls = want);
+    ESP_LOGI(TAG, "device controls saved: %u", (unsigned)want.count);
+    return ESP_OK;
 }
 
 esp_err_t capstan_config_set_touch_cal(const capstan_touch_cal_t *cal)

@@ -26,6 +26,8 @@
 #include "capstan_mqtt.h"
 #include "capstan_model.h"
 #include "capstan_wifi.h"
+#include "esp_heap_caps.h"
+
 #include "discovery.h"
 #include "ui_nav.h"
 #include "ui_clock.h"
@@ -557,9 +559,20 @@ static void service_task(void *arg)
          * identical on a screen full of `--`. */
         if (++ticks % 500 == 0) {
             const capstan_value_t v = capstan_model_battery_volts();
-            ESP_LOGI(TAG, "service alive: %u B stack free, battery %s",
+            /*
+             * Internal free and largest-contiguous ride along here because
+             * this is the only line that prints unprompted. A discovery
+             * window that cannot start its task fails on a contiguous
+             * internal block, and that is invisible until something asks for
+             * one -- having the baseline on every tick shows whether the
+             * board sits permanently short or is drifting down over hours.
+             */
+            ESP_LOGI(TAG, "service alive: %u B stack free, battery %s, "
+                          "internal %u B free / %u B largest",
                      (unsigned)uxTaskGetStackHighWaterMark(NULL),
-                     v.valid ? "live" : "--");
+                     v.valid ? "live" : "--",
+                     (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+                     (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
         }
 
         vTaskDelay(pdMS_TO_TICKS(20));

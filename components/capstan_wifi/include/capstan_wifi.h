@@ -125,6 +125,19 @@ esp_err_t capstan_wifi_connect(void);
  *  screen, which always does both. */
 esp_err_t capstan_wifi_connect_with(const capstan_wifi_cfg_t *cfg);
 
+/**
+ * Connect with these credentials WITHOUT saving them.
+ *
+ * For provisioning, which must not commit a passphrase to NVS until it has
+ * been shown to work. A panel that saves a wrong one boots believing it is
+ * provisioned and retries forever; the only certain way back is a factory
+ * reset, which is exactly the loop this exists to break.
+ *
+ * On success the caller persists with capstan_config_set_wifi(). On failure
+ * the caller calls capstan_wifi_disconnect() and nothing has changed.
+ */
+esp_err_t capstan_wifi_try(const capstan_wifi_cfg_t *cfg);
+
 /** Stop trying and disconnect. Does not clear the saved credentials. */
 esp_err_t capstan_wifi_disconnect(void);
 

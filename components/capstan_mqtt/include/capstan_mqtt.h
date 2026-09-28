@@ -20,6 +20,8 @@
 #include <stddef.h>
 
 #include "esp_err.h"
+/* capstan_mqtt_cfg_t lives here -- capstan_mqtt_try() takes one. */
+#include "capstan_config.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,6 +74,18 @@ int capstan_mqtt_publish(const char *topic, const char *payload, int len);
  * Call from the main loop. Parsing happens here, off the MQTT task.
  */
 void capstan_mqtt_process(void);
+
+/**
+ * Connect to this broker WITHOUT saving it.
+ *
+ * The provisioning counterpart of capstan_wifi_try(). Provisioning uses it to
+ * find out whether the broker details actually work before committing them,
+ * so a typo cannot be written to NVS and leave the panel on the network
+ * showing no data with no indication of why.
+ *
+ * On success the caller persists with capstan_config_set_mqtt().
+ */
+esp_err_t capstan_mqtt_try(const capstan_mqtt_cfg_t *cfg);
 
 /*
  * The Headwaters discovery broadcast.

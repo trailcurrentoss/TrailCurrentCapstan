@@ -110,6 +110,61 @@ typedef struct {
     uint16_t idle_timeout_s;
 } capstan_display_cfg_t;
 
+/*
+ * Device controls -- which Torrent (PDM) channels and Switchback relays this
+ * particular dial is allowed to switch.
+ *
+ * Configured in the Headwaters PWA (Settings > Network & Modules > the
+ * Capstan's Edit dialog) and delivered, retained, on
+ *
+ *     local/config/capstan/<esp32-XXXXXX>/controls
+ *
+ * It is stored in NVS rather than being read live off the retained topic,
+ * so the dial comes up with its own labelled controls before the broker is
+ * reachable -- the same reason the Wi-Fi and broker settings live here. The
+ * retained message is the source of truth and overwrites this whenever it
+ * changes; the copy is a cache, not a second place to edit.
+ *
+ * `id` is the unified light id the rest of the platform already uses:
+ * PDM channels are 1..N, Switchback relays start at 100. It is what goes in
+ * local/lights/<id>/command and what comes back on
+ * local/lights/<id>/status, so the source of a control never has to be
+ * special-cased -- but it can still be recovered, since id >= 100 means the
+ * control is a relay and therefore toggle-only, with no brightness.
+ *
+ * CAPSTAN_MAX_CONTROLS is bounded by the MQTT message buffer, not by screen
+ * real estate. Eight entries of id/name/icon is about 600 bytes at worst,
+ * inside MSG_DATA_MAX in capstan_mqtt.c with room to spare. Raising it
+ * without checking that limit does not truncate the payload -- an oversized
+ * message is DROPPED whole, so the dial simply never gets its controls and
+ * says so in one log line. The same constant is mirrored in
+ * containers/backend/src/services/capstan-control-sync.js (MAX_CONTROLS) and
+ * the PWA (MAX_CAPSTAN_CONTROLS); all three have to move together.
+ */
+#define CAPSTAN_MAX_CONTROLS       8
+#define CAPSTAN_CONTROL_NAME_MAX   25   /**< 24 chars, the PWA's limit, + NUL */
+#define CAPSTAN_CONTROL_ICON_MAX   24   /**< icon key, e.g. "power-outlet" */
+
+/** Light ids at or above this are Switchback relays: toggle-only. */
+#define CAPSTAN_SWITCHBACK_ID_BASE 100
+
+typedef struct {
+    uint16_t id;
+    char     name[CAPSTAN_CONTROL_NAME_MAX];
+    char     icon[CAPSTAN_CONTROL_ICON_MAX];
+} capstan_control_t;
+
+typedef struct {
+    uint8_t           count;
+    capstan_control_t items[CAPSTAN_MAX_CONTROLS];
+} capstan_controls_t;
+
+/** True when this control is a Switchback relay rather than a PDM channel. */
+static inline bool capstan_control_is_relay(const capstan_control_t *c)
+{
+    return c && c->id >= CAPSTAN_SWITCHBACK_ID_BASE;
+}
+
 /**
  * Open the NVS namespace and load everything into the in-memory cache.
  * Call after nvs_flash_init() and before any getter.
@@ -124,6 +179,13 @@ void capstan_config_get_mqtt(capstan_mqtt_cfg_t *out);
 void capstan_config_get_display(capstan_display_cfg_t *out);
 
 /**
+ * The configured device controls. An unconfigured dial returns count = 0,
+ * which is a legitimate state and not an error -- it is also what a Capstan
+ * that has been removed in the PWA is told to become.
+ */
+void capstan_config_get_controls(capstan_controls_t *out);
+
+/**
  * Setters write through to NVS immediately and commit before returning, so
  * a power cut straight after "Save" cannot lose the value. That costs a
  * flash write per call, which is why these take whole structs -- save a
@@ -132,6 +194,17 @@ void capstan_config_get_display(capstan_display_cfg_t *out);
 esp_err_t capstan_config_set_wifi(const capstan_wifi_cfg_t *cfg);
 esp_err_t capstan_config_set_mqtt(const capstan_mqtt_cfg_t *cfg);
 esp_err_t capstan_config_set_display(const capstan_display_cfg_t *cfg);
+
+/**
+ * Replace the control list and commit it.
+ *
+ * Writes nothing and returns ESP_OK when the list is byte-identical to what
+ * is already stored. That check is not an optimisation: the retained topic
+ * is redelivered on every broker connect, and in a rig where Wi-Fi drops
+ * repeatedly an unconditional write would spend the flash on a value that
+ * never changed.
+ */
+esp_err_t capstan_config_set_controls(const capstan_controls_t *controls);
 
 /** Touch calibration. An uncalibrated unit returns valid=false and the
  *  identity transform, so callers never need to special-case it. */

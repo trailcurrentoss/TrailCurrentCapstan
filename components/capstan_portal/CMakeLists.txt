@@ -9,7 +9,9 @@ idf_component_register(
     REQUIRES
         capstan_config
         capstan_wifi
+        capstan_mqtt
         esp_http_server
+        esp_timer
         esp_wifi
         lwip
         json

@@ -351,17 +351,18 @@ Same GPIO1/GPIO2 rail requirement as the 1.46".
 step angle 12±2°, and "output signal is 1 pulse per 2 detents". Contact
 chatter ≤ 5 ms.
 
-Under full 4× quadrature decode that is **2 counts per detent**, which is the
-`CONFIG_CAPSTAN_ENCODER_STEPS_PER_DETENT` default for this board.
+Under full 4× quadrature decode that would be **2 counts per detent**. The
+datasheet contradicts itself — section 4-2 claims "30 pulses/360° for each
+phase", which gives 4 — and **section 4-2 is the one that matches the
+hardware**. `CONFIG_CAPSTAN_ENCODER_STEPS_PER_DETENT` is **4** for this board,
+verified on hardware: at 2, one detent moved the selection by two. The part
+number `C15H30P3` (15 pulses, 30 detents) reads like it supports the output
+note, and it is wrong. Trust the board.
 
-The datasheet contradicts itself — section 4-2 claims "30 pulses/360° for each
-phase", which would give 4 counts per detent. The part number `C15H30P3`
-(15 pulses, 30 detents) supports the output note, so that is what the default
-follows. Confirm on hardware with `CONFIG_CAPSTAN_ENCODER_DEBUG`.
-
-The 1.46"'s encoder part is **not documented** by the vendor. The same value
-is assumed because the boards are otherwise pin-identical — that is an
-assumption, not a fact.
+The 1.46"'s encoder part is **not documented** by the vendor, and it is **not
+the same encoder**. Verified on hardware at **2** counts per detent; at 4 it
+took two detents to move the selection once. The boards are pin-identical and
+that is the whole trap — neither board's value may be derived from the other's.
 
 ---
 
@@ -417,7 +418,7 @@ firmware rather than read from a datasheet.
 | Touch orientation | all flags off | all flags off | all flags off |
 | Touch input + calibration | yes | yes | yes |
 | Ring direction | **`INVERT=y`** | **`INVERT=n`** | **`INVERT=n`** |
-| Counts per detent | **4** | **2** | **2** (datasheet) |
+| Counts per detent | **4** | **2** | **4** (datasheet says 2; hardware says 4) |
 | Ring press + long press | yes | yes | yes |
 | RGB LED ring | none fitted | 8 LEDs, not driven | 5 LEDs, not driven |
 | Factory firmware backed up | yes | yes | yes |

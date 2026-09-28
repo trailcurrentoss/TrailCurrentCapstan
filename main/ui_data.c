@@ -24,6 +24,7 @@
 #include "capstan_mqtt.h"
 #include "capstan_wifi.h"
 #include "ui_data.h"
+#include "ui_lights.h"
 #include "ui_nav.h"
 #include "ui_setup.h"
 
@@ -278,12 +279,118 @@ static void refresh_water(void)
     }
 }
 
+/*
+ * Air: one ring, one number, one word, three captions.
+ *
+ * WHAT THIS DOES NOT DO
+ *
+ * It sets no colours and no geometry. The four looks the ring and the status
+ * word take -- good, moderate, unhealthy, no data -- are all AUTHORED in the
+ * .eez-project as LVGL states, so the screen a designer opens in EEZ Studio
+ * is the screen the panel draws. All that happens here is add_state /
+ * clear_state, the same device the carousel's page dots use. The mapping
+ * from severity to state, and why four built-in states are borrowed rather
+ * than LV_STATE_USER_1, is documented on the ArcThin style in
+ * GUI/tmp/gen_eez_project.py. Do not "fix" anything on this screen with
+ * lv_obj_set_style_*.
+ */
+
+/* The ring's span, matching rmin/rmax on air_arc in screens_layout.py.
+ * 400 ppm is outdoor air; 2000 ppm fills the ring. */
+#define AIR_PPM_MIN  400
+#define AIR_PPM_MAX  2000
+
+/* The design's 300 ms ease-out. eCO2 arrives every 2 s and this timer runs
+ * four times a second, so without it the ring steps in visible jumps. */
+#define AIR_ARC_ANIM_MS 300
+
+static void air_arc_anim_cb(void *obj, int32_t v)
+{
+    lv_arc_set_value((lv_obj_t *)obj, v);
+}
+
+/*
+ * Severity -> the state that carries its look.
+ *
+ * CHECKED, DISABLED and PRESSED are borrowed as plain style selectors. That
+ * is only safe because neither widget is interactive -- air_arc has
+ * CLICKABLE cleared and a label never had it -- so nothing but this function
+ * can ever put them into one of these states.
+ */
+static void air_set_level(lv_obj_t *obj, capstan_air_level_t level)
+{
+    if (!obj) {
+        return;
+    }
+    lv_obj_remove_state(obj, LV_STATE_CHECKED | LV_STATE_DISABLED |
+                            LV_STATE_PRESSED);
+    switch (level) {
+    case CAPSTAN_AIR_MODERATE:  lv_obj_add_state(obj, LV_STATE_CHECKED);  break;
+    case CAPSTAN_AIR_UNHEALTHY: lv_obj_add_state(obj, LV_STATE_DISABLED); break;
+    case CAPSTAN_AIR_UNKNOWN:   lv_obj_add_state(obj, LV_STATE_PRESSED);  break;
+    case CAPSTAN_AIR_GOOD:      break;   /* DEFAULT */
+    }
+}
+
 static void refresh_air(void)
 {
-    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f F");
-    set_value(objects.air_humidity, capstan_model_humidity(), "%.0f%%");
-    set_value(objects.air_eco2, capstan_model_eco2(), "%.0f ppm");
+    const capstan_value_t eco2 = capstan_model_eco2();
+    const capstan_air_level_t level = capstan_model_air_level();
+
+    set_value(objects.air_value, eco2, "%.0f");
+
+    static const char *const WORD[] = {
+        [CAPSTAN_AIR_UNKNOWN]   = "--",
+        [CAPSTAN_AIR_GOOD]      = "Good",
+        [CAPSTAN_AIR_MODERATE]  = "Moderate",
+        [CAPSTAN_AIR_UNHEALTHY] = "Unhealthy",
+    };
+    set_text(objects.air_status, WORD[level]);
+    air_set_level(objects.air_status, level);
+
+    /*
+     * The ring reads eCO2, but its COLOUR reads the verdict, so the two can
+     * legitimately disagree: Borealis can flag a VOC alarm while eCO2 sits
+     * at 500 ppm, and the ring then draws a short red arc. That is the
+     * intended behaviour -- the ring is the number, the colour is the
+     * warning -- and it is why the status word is there to name which.
+     */
+    if (objects.air_arc) {
+        int32_t target = AIR_PPM_MIN;
+        if (eco2.valid) {
+            target = (int32_t)eco2.value;
+            if (target < AIR_PPM_MIN) { target = AIR_PPM_MIN; }
+            if (target > AIR_PPM_MAX) { target = AIR_PPM_MAX; }
+        }
+        /* An unknown reading parks the ring at its start, where the
+         * indicator has no length. The PRESSED look also takes its opacity
+         * to zero; both, because a zero-length rounded arc still paints a
+         * dot at the 7:30 position. */
+        air_set_level(objects.air_arc, level);
+
+        if (lv_arc_get_value(objects.air_arc) != target) {
+            lv_anim_t a;
+            lv_anim_init(&a);
+            lv_anim_set_var(&a, objects.air_arc);
+            lv_anim_set_exec_cb(&a, air_arc_anim_cb);
+            lv_anim_set_values(&a, lv_arc_get_value(objects.air_arc), target);
+            lv_anim_set_duration(&a, AIR_ARC_ANIM_MS);
+            lv_anim_set_path_cb(&a, lv_anim_path_ease_out);
+            /* Restarting an animation on the same var+cb replaces it, so a
+             * reading that lands mid-sweep re-aims rather than queueing. */
+            lv_anim_start(&a);
+        }
+    }
+
+    /*
+     * The three captions. VOC takes the column the prototype gives PM2.5:
+     * there is no particulate sensor on this bus. Temperature is here rather
+     * than on its own screen because local/airquality/temphumid is the only
+     * ambient temperature anywhere on the rig.
+     */
     set_value(objects.air_voc, capstan_model_tvoc(), "%.0f ppb");
+    set_value(objects.air_humidity, capstan_model_humidity(), "%.0f%%");
+    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f F");
 }
 
 static void refresh_level(void)
@@ -358,6 +465,7 @@ void ui_data_refresh(void)
     refresh_settings();
     ui_setup_tick();         /* portal progress while provisioning */
     refresh_menu();
+    ui_lights_refresh();     /* controls from Headwaters -> rows */
     refresh_energy();
     refresh_water();
     refresh_air();

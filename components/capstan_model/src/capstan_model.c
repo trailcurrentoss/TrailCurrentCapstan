@@ -44,8 +44,41 @@ static metric_t m_tilt_fb, m_tilt_ss;
 
 static char     s_charge_type[16] = "--";
 static bool     s_co_alarm, s_co_warn, s_lpg_alarm, s_lpg_warn;
-static bool     s_light_on[CAPSTAN_MAX_LIGHTS + 1];
-static uint8_t  s_light_bri[CAPSTAN_MAX_LIGHTS + 1];
+static bool     s_co2_alarm, s_co2_warn, s_voc_alarm;
+/*
+ * Light state, keyed by id -- NOT indexed by it.
+ *
+ * This used to be `bool s_light_on[CAPSTAN_MAX_LIGHTS + 1]` indexed directly
+ * by the light id, with a `id > CAPSTAN_MAX_LIGHTS` guard that returned
+ * early. Light ids are not dense: PDM channels are 1..N, but Switchback
+ * relays start at 100 (CAPSTAN_SWITCHBACK_ID_BASE). So every relay status was
+ * dropped on the floor -- silently, because the guard was a plain early
+ * return -- and on a rig whose lights are ALL relays (101..108) that is every
+ * light there is. Commands worked and the row never changed state.
+ *
+ * A table keyed by id has no opinion about the id space. The cost is a linear
+ * scan over at most CAPSTAN_MAX_LIGHTS entries on each status message, which
+ * at a handful of lights is nothing.
+ */
+typedef struct {
+    uint16_t id;
+    bool     on;
+    uint8_t  brightness;
+} light_state_t;
+
+static light_state_t s_lights[CAPSTAN_MAX_LIGHTS];
+static uint8_t       s_light_count;
+
+/** Index of `id`, or -1. Caller holds the lock. */
+static int light_slot(int id)
+{
+    for (uint8_t i = 0; i < s_light_count; i++) {
+        if (s_lights[i].id == (uint16_t)id) {
+            return (int)i;
+        }
+    }
+    return -1;
+}
 static uint16_t s_picket[CAPSTAN_PICKET_ADDRS];
 static int64_t  s_module_seen[CAPSTAN_MOD_COUNT];
 
@@ -119,13 +152,15 @@ void capstan_model_set_tvoc(double v)    { put(&m_tvoc, v); }
 void capstan_model_set_eco2(double v)    { put(&m_eco2, v); }
 void capstan_model_set_co(double v)      { put(&m_co, v); }
 
-void capstan_model_set_safety_flags(bool co_a, bool co_w, bool lpg_a, bool lpg_w)
+void capstan_model_set_safety_flags(bool co_a, bool co_w, bool lpg_a, bool lpg_w,
+                                    bool co2_a, bool co2_w, bool voc_a)
 {
     LOCK();
     /* Thresholds are evaluated on-board Borealis; these booleans are the
      * source of truth and must not be re-derived from the ppm values. */
     s_co_alarm = co_a; s_co_warn = co_w;
     s_lpg_alarm = lpg_a; s_lpg_warn = lpg_w;
+    s_co2_alarm = co2_a; s_co2_warn = co2_w; s_voc_alarm = voc_a;
     s_module_seen[CAPSTAN_MOD_AIR] = esp_timer_get_time();
     UNLOCK();
 }
@@ -143,11 +178,34 @@ void capstan_model_set_tilt(double fb, double ss)
 
 void capstan_model_set_light(int id, bool on, int brightness)
 {
-    if (id < 1 || id > CAPSTAN_MAX_LIGHTS) { return; }
+    /* Only an id of zero or below is meaningless. There is deliberately no
+     * upper bound: see the note on s_lights. */
+    if (id <= 0 || id > UINT16_MAX) { return; }
+
     LOCK();
-    s_light_on[id]  = on;
-    s_light_bri[id] = (uint8_t)(brightness < 0 ? 0 :
-                                brightness > 255 ? 255 : brightness);
+    int slot = light_slot(id);
+    if (slot < 0) {
+        if (s_light_count >= CAPSTAN_MAX_LIGHTS) {
+            /* More distinct lights on the rig than this dial tracks. Say so
+             * -- the alternative is a row that never updates and no reason
+             * given, which is the bug this replaced. */
+            UNLOCK();
+            static int64_t s_last_full_us;
+            const int64_t now = esp_timer_get_time();
+            if (s_last_full_us == 0 || (now - s_last_full_us) > 60LL * 1000000) {
+                s_last_full_us = now;
+                ESP_LOGW(TAG, "tracking %d lights already; id %d ignored -- "
+                              "raise CAPSTAN_MAX_LIGHTS",
+                         CAPSTAN_MAX_LIGHTS, id);
+            }
+            return;
+        }
+        slot = s_light_count++;
+        s_lights[slot].id = (uint16_t)id;
+    }
+    s_lights[slot].on         = on;
+    s_lights[slot].brightness = (uint8_t)(brightness < 0 ? 0 :
+                                          brightness > 255 ? 255 : brightness);
     s_module_seen[CAPSTAN_MOD_LIGHTS] = esp_timer_get_time();
     UNLOCK();
 }
@@ -337,24 +395,64 @@ bool capstan_model_any_alarm(void)
     return a;
 }
 
+capstan_air_level_t capstan_model_air_level(void)
+{
+    /*
+     * Liveness first. The flags are plain bools with no timestamp of their
+     * own, so an all-false set is indistinguishable from a module that has
+     * never spoken -- and reporting "Good" for a sensor that is not there is
+     * exactly the stale-looks-live failure the rest of this file exists to
+     * avoid.
+     */
+    if (!capstan_model_module_alive(CAPSTAN_MOD_AIR)) {
+        return CAPSTAN_AIR_UNKNOWN;
+    }
+
+    bool alarm, warn;
+    LOCK();
+    alarm = s_co2_alarm || s_voc_alarm || s_co_alarm;
+    warn  = s_co2_warn  || s_co_warn;
+    UNLOCK();
+
+    if (alarm) { return CAPSTAN_AIR_UNHEALTHY; }
+    if (warn)  { return CAPSTAN_AIR_MODERATE; }
+    return CAPSTAN_AIR_GOOD;
+}
+
 bool capstan_model_light_on(int id)
 {
-    if (id < 1 || id > CAPSTAN_MAX_LIGHTS) { return false; }
-    bool v; LOCK(); v = s_light_on[id]; UNLOCK(); return v;
+    bool v = false;
+    LOCK();
+    const int slot = light_slot(id);
+    if (slot >= 0) { v = s_lights[slot].on; }
+    UNLOCK();
+    return v;
 }
 
 int capstan_model_light_brightness(int id)
 {
-    if (id < 1 || id > CAPSTAN_MAX_LIGHTS) { return 0; }
-    int v; LOCK(); v = s_light_bri[id]; UNLOCK(); return v;
+    int v = 0;
+    LOCK();
+    const int slot = light_slot(id);
+    if (slot >= 0) { v = s_lights[slot].brightness; }
+    UNLOCK();
+    return v;
+}
+
+bool capstan_model_light_known(int id)
+{
+    LOCK();
+    const bool known = light_slot(id) >= 0;
+    UNLOCK();
+    return known;
 }
 
 int capstan_model_lights_on_count(void)
 {
     int n = 0;
     LOCK();
-    for (int i = 1; i <= CAPSTAN_MAX_LIGHTS; i++) {
-        if (s_light_on[i]) { n++; }
+    for (uint8_t i = 0; i < s_light_count; i++) {
+        if (s_lights[i].on) { n++; }
     }
     UNLOCK();
     return n;
