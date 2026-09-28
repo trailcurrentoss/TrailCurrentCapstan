@@ -1,0 +1,6 @@
+# Board selection for 'crowpanel146'.
+#
+# Everything else board-specific (element order, mirroring, pin map) comes
+# from the Kconfig defaults keyed off this symbol, so this file stays a
+# one-line board pick and the verified values live in one place.
+CONFIG_CAPSTAN_BOARD_CROWPANEL_146=y

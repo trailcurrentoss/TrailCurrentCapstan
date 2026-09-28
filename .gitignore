@@ -1,0 +1,52 @@
+# AI agent configuration (local only — never commit)
+.claude
+.claude/
+.claude.md
+CLAUDE.md
+CLAUDE.MD
+.cursorrules
+.cursor/
+.github/copilot*
+.aider*
+.continue/
+.codeium/
+.tabnine*
+.sourcery.yaml
+
+# ESP-IDF build artifacts
+build/
+build_*/
+build.*/
+
+# Generated configuration (keep sdkconfig.defaults* and boards/*.defaults tracked)
+sdkconfig
+sdkconfig.old
+sdkconfig.crowpanel128
+sdkconfig.crowpanel146
+sdkconfig.matouch21
+
+# ESP-IDF dependency manager
+dependencies.lock
+managed_components/
+
+# EEZ Studio backups + tmp/ working state
+GUI/**/*.eez-project.bak*
+GUI/**/*.eez-project-ui-state
+tmp/
+GUI/tmp/
+**/tmp/
+
+# Local, per-developer config (device port, rig hostname, credentials).
+# Never commit — see scripts/dev.env.example for the template.
+scripts/dev.env
+.env.local
+
+# Factory firmware dumps — 16 MB per board, keep locally, archive elsewhere.
+# The checksum file is ignored too: it lists image filenames, which carry the
+# MAC of the specific unit each one came off. Those are per-developer and
+# have no meaning in another clone.
+DOCS/FactoryFirmware/*.bin
+DOCS/FactoryFirmware/SHA256SUMS.txt
+
+# Logs
+*.log

@@ -1,0 +1,728 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="colors_and_type.css">
+<script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+<style>
+html,body{margin:0;background:#0a0a0a;color:#fff;font-family:var(--font-sans);}
+a{color:var(--tc-link);} a:hover{color:var(--tc-primary-light);}
+</style>
+</helmet>
+<div data-theme="{{ theme }}" style="background:var(--bg-primary);color:var(--text-primary);min-height:100vh;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:56px;padding:40px 24px;box-sizing:border-box;">
+
+  <div ref="{{ deviceRef }}" onPointerDown="{{ onDown }}" onPointerMove="{{ onMove }}" onPointerUp="{{ onUp }}" onPointerCancel="{{ onUp }}" style="position:relative;width:560px;height:560px;border-radius:9999px;background:#c8c8c8;border:1px solid #9e9e9e;box-shadow:0 24px 60px rgba(0,0,0,0.35);touch-action:none;user-select:none;cursor:grab;flex:none;">
+    <div style="position:absolute;inset:6px;border-radius:9999px;background:repeating-conic-gradient(#d8d8d8 0deg 1.5deg,#b2b2b2 1.5deg 3deg);transform:rotate({{ knobDeg }});transition:transform 0.2s ease;">
+      <div style="position:absolute;left:50%;top:5px;width:6px;height:16px;margin-left:-3px;border-radius:3px;background:#7a7a7a;"></div>
+    </div>
+    <div style="position:absolute;inset:6px;border-radius:9999px;background:linear-gradient(135deg,rgba(255,255,255,0.55),rgba(255,255,255,0) 45%,rgba(0,0,0,0.2));pointer-events:none;"></div>
+    <div style="position:absolute;inset:30px;border-radius:9999px;background:#0d0d0d;"></div>
+    <div onClick="{{ screenTap }}" style="position:absolute;inset:38px;border-radius:9999px;background:var(--bg-primary);border:2px solid var(--border-color);overflow:hidden;cursor:default;border-color:#0d0d0d;">
+      <div style="position:absolute;left:0;top:0;width:480px;height:480px;">
+
+      <sc-if value="{{ isIdle }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:76px;text-align:center;color:var(--text-secondary);display:flex;flex-direction:column;gap:2px;"><div style="font-size:22px;">{{ dateDay }}</div><div style="font-size:18px;">{{ dateLong }}</div></div>
+        <div style="position:absolute;left:0;right:0;top:282px;display:flex;flex-direction:column;align-items:center;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:22px;color:var(--text-secondary);"><span>Inside {{ insideDisp }}°</span></div>
+          <div style="display:flex;align-items:center;gap:8px;font-size:17px;color:{{ modeColor }};min-height:22px;">
+            <ion-icon name="{{ modeIcon }}"></ion-icon><span>{{ idleLine }}</span>
+          </div>
+          <div style="display:flex;gap:20px;margin-top:6px;font-size:16px;color:var(--text-muted);">
+            <div style="display:flex;align-items:center;gap:6px;"><ion-icon name="battery-half"></ion-icon><span>82%</span></div>
+            <div style="display:flex;align-items:center;gap:6px;"><ion-icon name="water"></ion-icon><span>72%</span></div>
+            <sc-if value="{{ anyOpen }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;align-items:center;gap:6px;color:#FF5453;"><ion-icon name="lock-open"></ion-icon><span>{{ openCount }}</span></div>
+            </sc-if>
+          </div>
+        </div>
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;pointer-events:none;">
+          <path d="{{ clkMinor }}" style="stroke:var(--border-color)" stroke-width="2" stroke-linecap="round"></path>
+          <path d="{{ clkMajor }}" style="stroke:var(--text-muted)" stroke-width="5" stroke-linecap="round"></path>
+          <path d="{{ handH }}" style="stroke:var(--text-secondary)" stroke-width="10" stroke-linecap="round"></path>
+          <path d="{{ handM }}" style="stroke:var(--text-secondary)" stroke-width="6" stroke-linecap="round"></path>
+          <path d="{{ handS }}" style="stroke:var(--role-primary)" stroke-width="2.5" stroke-linecap="round"></path>
+          <circle cx="240" cy="240" r="9" style="fill:var(--role-primary)"></circle>
+          <circle cx="240" cy="240" r="3.5" style="fill:var(--bg-primary)"></circle>
+        </svg>
+      </sc-if>
+
+      <sc-if value="{{ isHomeCarousel }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ carDots }}" style="fill:var(--text-muted)"></path>
+          <path d="{{ carDotActive }}" style="fill:var(--role-primary)"></path>
+        </svg>
+        <div style="position:absolute;left:34px;top:212px;font-size:44px;color:var(--text-muted);display:flex;"><ion-icon name="{{ carPrev.icon }}"></ion-icon></div>
+        <div style="position:absolute;right:34px;top:212px;font-size:44px;color:var(--text-muted);display:flex;"><ion-icon name="{{ carNext.icon }}"></ion-icon></div>
+        <div onClick="{{ carOpen }}" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">
+          <div style="width:140px;height:140px;border-radius:9999px;background:var(--bg-card);border:2px solid #52A441;box-shadow:0 0 20px rgba(82,164,65,0.5);display:flex;align-items:center;justify-content:center;font-size:68px;color:var(--role-primary);">
+            <ion-icon name="{{ carCur.icon }}"></ion-icon>
+          </div>
+          <div style="font-size:34px;font-weight:500;margin-top:8px;">{{ carCur.label }}</div>
+          <div style="font-size:20px;color:var(--text-secondary);">{{ carCur.summary }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isHomeRadial }}" hint-placeholder-val="{{ false }}">
+        <sc-for list="{{ radialItems }}" as="it" hint-placeholder-count="8">
+          <div onClick="{{ it.onClick }}" style="position:absolute;left:{{ it.x }};top:{{ it.y }};width:64px;height:64px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:30px;cursor:pointer;background:{{ it.bg }};color:{{ it.color }};border:2px solid {{ it.border }};box-shadow:{{ it.shadow }};transition:all 0.2s ease;">
+            <ion-icon name="{{ it.icon }}"></ion-icon>
+          </div>
+        </sc-for>
+        <div onClick="{{ carOpen }}" style="position:absolute;left:120px;top:120px;width:240px;height:240px;border-radius:9999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;text-align:center;">
+          <div style="font-size:32px;font-weight:500;">{{ carCur.label }}</div>
+          <div style="font-size:22px;color:var(--text-secondary);max-width:200px;text-wrap:pretty;">{{ carCur.summary }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isHomeList }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:60px;right:60px;top:204px;height:72px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-color);"></div>
+        <sc-for list="{{ listRows }}" as="r" hint-placeholder-count="5">
+          <div onClick="{{ r.onClick }}" style="position:absolute;left:84px;right:84px;top:{{ r.y }};height:72px;display:flex;align-items:center;gap:16px;cursor:pointer;opacity:{{ r.opacity }};font-size:{{ r.size }};color:{{ r.color }};">
+            <ion-icon name="{{ r.icon }}"></ion-icon>
+            <span style="flex:1;">{{ r.label }}</span>
+            <span style="font-size:18px;color:var(--text-secondary);">{{ r.summary }}</span>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ isClimA }}" hint-placeholder-val="{{ true }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ ticksBg }}" style="stroke:var(--border-color)" stroke-width="3" stroke-linecap="round"></path>
+          <path d="{{ ticksActive }}" stroke="{{ modeColor }}" stroke-width="3.5" stroke-linecap="round"></path>
+          <path d="{{ curTick }}" style="stroke:var(--text-secondary)" stroke-width="4" stroke-linecap="round"></path>
+          <path d="{{ tgtTick }}" style="stroke:var(--text-primary)" stroke-width="6" stroke-linecap="round"></path>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:17px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:{{ modeColor }};"><ion-icon name="{{ modeIcon }}"></ion-icon><span>{{ modeLabel }}</span></div>
+          <div style="font-size:150px;font-weight:300;line-height:1.05;letter-spacing:-5px;">{{ targetDisp }}</div>
+          <div style="display:flex;gap:18px;font-size:19px;color:var(--text-secondary);">
+            <span>Inside {{ insideDisp }}°</span>
+            <sc-if value="{{ eta }}" hint-placeholder-val="{{ false }}"><span style="display:flex;align-items:center;gap:5px;"><ion-icon name="time-outline"></ion-icon>{{ eta }}</span></sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isClimB }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ arcTrack }}" style="stroke:var(--border-color)" stroke-width="22" fill="none" stroke-linecap="round"></path>
+          <path d="{{ climArc }}" stroke="{{ modeColor }}" stroke-width="22" fill="none" stroke-linecap="round"></path>
+          <path d="{{ curDot }}" style="fill:var(--bg-primary)"></path>
+          <path d="{{ thumb }}" style="fill:var(--text-primary)"></path>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;">
+          <div style="width:44px;height:44px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:24px;color:{{ modeColor }};border:2px solid {{ modeColor }};"><ion-icon name="{{ modeIcon }}"></ion-icon></div>
+          <div style="display:flex;align-items:flex-start;margin-top:4px;"><span style="font-size:140px;font-weight:300;line-height:1;letter-spacing:-5px;">{{ targetDisp }}</span><span style="font-size:36px;font-weight:300;margin-top:14px;color:var(--text-secondary);">°{{ unit }}</span></div>
+          <div style="font-size:17px;color:{{ modeColor }};">{{ modeLabel }}<sc-if value="{{ eta }}" hint-placeholder-val="{{ false }}"> · {{ eta }}</sc-if></div>
+          <div style="display:grid;grid-template-columns:1fr 1px 1fr;gap:20px;align-items:center;margin-top:20px;text-align:center;">
+            <div><div style="font-size:14px;color:var(--text-muted);">Inside</div><div style="font-size:26px;">{{ insideDisp }}°</div></div>
+            <div style="height:36px;background:var(--border-color);"></div>
+            <div><div style="font-size:14px;color:var(--text-muted);">Outside</div><div style="font-size:26px;">{{ outsideDisp }}°</div></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isClimC }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;border-radius:9999px;border:4px solid {{ modeColor }};box-sizing:border-box;transition:border-color 0.3s ease;"></div>
+        <div style="position:absolute;left:0;right:0;top:92px;display:flex;justify-content:center;align-items:center;gap:8px;font-size:17px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:{{ modeColor }};"><ion-icon name="{{ modeIcon }}"></ion-icon><span>{{ modeLabel }}</span></div>
+        <div style="position:absolute;left:0;right:0;top:122px;text-align:center;font-size:160px;font-weight:300;line-height:1;letter-spacing:-6px;">{{ targetDisp }}</div>
+        <div style="position:absolute;left:60px;right:60px;top:300px;height:1px;background:var(--border-color);"></div>
+        <div style="position:absolute;left:233px;top:292px;width:14px;height:14px;background:var(--text-primary);transform:rotate(45deg);"></div>
+        <sc-for list="{{ tape }}" as="tp" hint-placeholder-count="7">
+          <div style="position:absolute;top:318px;left:{{ tp.x }};width:64px;margin-left:-32px;text-align:center;font-size:{{ tp.size }};opacity:{{ tp.opacity }};color:{{ tp.color }};">{{ tp.label }}</div>
+        </sc-for>
+        <div style="position:absolute;left:0;right:0;top:370px;display:flex;justify-content:center;gap:16px;font-size:18px;color:var(--text-secondary);">
+          <span>Inside {{ insideDisp }}°</span><span>Outside {{ outsideDisp }}°</span>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMode }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+          <div style="font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Mode</div>
+          <sc-for list="{{ modeRows }}" as="m" hint-placeholder-count="4">
+            <div onClick="{{ m.onClick }}" style="width:240px;height:60px;border-radius:12px;display:flex;align-items:center;gap:14px;padding:0 20px;box-sizing:border-box;font-size:24px;cursor:pointer;background:{{ m.bg }};border:2px solid {{ m.border }};color:{{ m.color }};transition:all 0.2s ease;">
+              <ion-icon name="{{ m.icon }}"></ion-icon><span>{{ m.label }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLightsA }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ lDots }}" style="fill:var(--border-color)"></path>
+          <path d="{{ lDotActive }}" style="fill:var(--role-primary)"></path>
+          <path d="{{ arcTrackThin }}" style="stroke:var(--border-color)" stroke-width="10" fill="none" stroke-linecap="round"></path>
+          <path d="{{ lArc }}" stroke="#52A441" stroke-width="10" fill="none" stroke-linecap="round"></path>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+          <div onClick="{{ lTap }}" style="width:150px;height:150px;border-radius:9999px;display:flex;align-items:center;justify-content:center;font-size:72px;cursor:pointer;background:{{ lCur.bg }};color:{{ lCur.color }};box-shadow:{{ lCur.shadow }};border:2px solid {{ lCur.border }};transition:all 0.2s ease;">
+            <ion-icon name="{{ lCur.icon }}"></ion-icon>
+          </div>
+          <div style="font-size:32px;font-weight:500;margin-top:6px;">{{ lCur.name }}</div>
+          <div style="font-size:20px;color:var(--text-secondary);">{{ lCur.value }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLightsB }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:62px;text-align:center;font-size:18px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Lights · {{ onCount }} on</div>
+        <sc-for list="{{ tiles }}" as="t" hint-placeholder-count="6">
+          <div onClick="{{ t.onClick }}" style="position:absolute;left:{{ t.x }};top:{{ t.y }};width:112px;height:100px;box-sizing:border-box;border-radius:12px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;background:{{ t.bg }};border:2px solid {{ t.border }};box-shadow:{{ t.shadow }};color:{{ t.color }};transition:all 0.2s ease;">
+            <ion-icon name="{{ t.icon }}" style="font-size:28px;"></ion-icon>
+            <div style="font-size:16px;color:var(--text-primary);">{{ t.name }}</div>
+            <div style="font-size:14px;color:var(--text-secondary);">{{ t.value }}</div>
+          </div>
+        </sc-for>
+        <sc-for list="{{ chips }}" as="c" hint-placeholder-count="3">
+          <div onClick="{{ c.onClick }}" style="position:absolute;left:{{ c.x }};top:330px;width:104px;height:44px;box-sizing:border-box;border-radius:16px;display:flex;align-items:center;justify-content:center;gap:6px;font-size:15px;cursor:pointer;background:var(--bg-card);border:2px solid {{ c.border }};color:var(--text-secondary);">
+            <ion-icon name="{{ c.icon }}"></ion-icon><span>{{ c.name }}</span>
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ isHeater }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ hSegOff }}" style="stroke:var(--border-color)" stroke-width="22" fill="none" stroke-linecap="butt"></path>
+          <path d="{{ hSegOn }}" stroke="#FF5453" stroke-width="22" fill="none" stroke-linecap="butt"></path>
+        </svg>
+        <div onClick="{{ hTap }}" style="position:absolute;left:100px;top:100px;width:280px;height:280px;border-radius:9999px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;">
+          <div style="font-size:16px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Diesel Heater</div>
+          <div style="font-size:84px;font-weight:300;line-height:1.1;color:{{ hColor }};">{{ hLabel }}</div>
+          <div style="font-size:18px;color:var(--text-secondary);">{{ hSub }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isEnergy }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ arcTrackThin }}" style="stroke:var(--border-color)" stroke-width="14" fill="none" stroke-linecap="round"></path>
+          <path d="{{ eArc }}" stroke="{{ ep.color }}" stroke-width="14" fill="none" stroke-linecap="round"></path>
+          <path d="{{ eDots }}" style="fill:var(--border-color)"></path>
+          <path d="{{ eDotActive }}" style="fill:var(--text-primary)"></path>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+          <div style="display:flex;align-items:center;gap:8px;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:{{ ep.color }};"><ion-icon name="{{ ep.icon }}"></ion-icon><span>{{ ep.label }}</span></div>
+          <div style="display:flex;align-items:baseline;gap:4px;"><span style="font-size:120px;font-weight:300;line-height:1.05;letter-spacing:-4px;">{{ ep.value }}</span><span style="font-size:30px;color:var(--text-secondary);">{{ ep.unit }}</span></div>
+          <div style="font-size:20px;color:var(--text-secondary);">{{ ep.sub1 }}</div>
+          <div style="font-size:17px;color:var(--text-muted);">{{ ep.sub2 }}</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isWater }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:70px;text-align:center;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Water Tanks</div>
+        <div style="position:absolute;left:90px;right:90px;top:118px;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;">
+          <sc-for list="{{ tanks }}" as="tk" hint-placeholder-count="3">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+              <div style="font-size:26px;">{{ tk.pct }}%</div>
+              <div style="position:relative;width:64px;height:170px;border-radius:12px;background:var(--bg-card);border:1px solid var(--border-color);overflow:hidden;">
+                <div style="position:absolute;left:0;right:0;bottom:0;height:{{ tk.h }};background:{{ tk.fill }};box-shadow:{{ tk.glow }};transition:height 0.3s ease;"></div>
+              </div>
+              <div style="font-size:18px;color:var(--text-secondary);">{{ tk.name }}</div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isAir }}" hint-placeholder-val="{{ false }}">
+        <svg viewBox="0 0 480 480" style="position:absolute;inset:0;width:100%;height:100%;">
+          <path d="{{ arcTrackThin }}" style="stroke:var(--border-color)" stroke-width="14" fill="none" stroke-linecap="round"></path>
+          <path d="{{ aArc }}" stroke="#74FE00" stroke-width="14" fill="none" stroke-linecap="round"></path>
+        </svg>
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;">
+          <div style="font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Air Quality Index</div>
+          <div style="font-size:120px;font-weight:300;line-height:1.05;letter-spacing:-4px;">32</div>
+          <div style="font-size:24px;color:#74FE00;">Good</div>
+          <div style="display:grid;grid-template-columns:repeat(3,auto);gap:22px;margin-top:16px;text-align:center;">
+            <div><div style="font-size:14px;color:var(--text-muted);">CO2</div><div style="font-size:20px;">640 ppm</div></div>
+            <div><div style="font-size:14px;color:var(--text-muted);">Humidity</div><div style="font-size:20px;">44%</div></div>
+            <div><div style="font-size:14px;color:var(--text-muted);">PM2.5</div><div style="font-size:20px;">8 µg</div></div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isLevel }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:64px;text-align:center;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Leveling</div>
+        <div style="position:absolute;left:130px;top:112px;width:220px;height:220px;border-radius:9999px;border:2px solid var(--border-color);background:#0f0f0f;">
+          <div style="position:absolute;left:109px;top:0;bottom:0;width:1px;background:var(--border-color);"></div>
+          <div style="position:absolute;top:109px;left:0;right:0;height:1px;background:var(--border-color);"></div>
+          <div style="position:absolute;left:80px;top:80px;width:60px;height:60px;border-radius:9999px;border:1px solid var(--border-color);box-sizing:border-box;"></div>
+          <div style="position:absolute;left:{{ bubX }};top:{{ bubY }};width:44px;height:44px;border-radius:9999px;background:#FFC107;box-shadow:0 0 20px rgba(255,193,7,0.5);transition:all 0.3s ease;"></div>
+        </div>
+        <div style="position:absolute;left:0;right:0;top:350px;text-align:center;">
+          <div style="font-size:24px;color:#FFC107;">Tilted right</div>
+          <div style="font-size:17px;color:var(--text-secondary);margin-top:4px;">Side 1.2° · Front 0.4°</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isDoors }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+          <div style="font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Doors</div>
+          <sc-for list="{{ doorRows }}" as="d" hint-placeholder-count="4">
+            <div style="width:280px;height:52px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:0 18px;box-sizing:border-box;background:var(--bg-card);border:1px solid {{ d.border }};font-size:20px;">
+              <ion-icon name="{{ d.icon }}" style="color:{{ d.color }};"></ion-icon>
+              <span style="flex:1;">{{ d.n }}</span>
+              <span style="font-size:17px;color:{{ d.color }};">{{ d.status }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isSettings }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;">
+          <div style="font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;">Settings</div>
+          <sc-for list="{{ setRows }}" as="r" hint-placeholder-count="2">
+            <div onClick="{{ r.onClick }}" style="width:320px;height:68px;box-sizing:border-box;border-radius:12px;display:flex;align-items:center;gap:14px;padding:0 18px;cursor:pointer;background:var(--bg-card);border:2px solid {{ r.border }};">
+              <ion-icon name="{{ r.icon }}" style="font-size:26px;color:{{ r.iconColor }};"></ion-icon>
+              <div style="flex:1;min-width:0;"><div style="font-size:20px;">{{ r.label }}</div><div style="font-size:14px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ r.value }}</div></div>
+              <ion-icon name="chevron-forward" style="font-size:20px;color:var(--text-muted);"></ion-icon>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isWifi }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:62px;text-align:center;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">Wi-Fi</div>
+        <div style="position:absolute;left:60px;right:60px;top:90px;text-align:center;font-size:15px;color:{{ wifiStatusColor }};">{{ wifiStatus }}</div>
+        <div style="position:absolute;left:90px;width:300px;top:124px;display:flex;flex-direction:column;gap:6px;">
+          <sc-for list="{{ netRows }}" as="n" hint-placeholder-count="5">
+            <div onClick="{{ n.onClick }}" style="height:48px;box-sizing:border-box;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;background:var(--bg-card);border:2px solid {{ n.border }};font-size:17px;">
+              <ion-icon name="wifi" style="font-size:20px;opacity:{{ n.sig }};color:var(--text-primary);"></ion-icon>
+              <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ n.ssid }}</span>
+              <sc-if value="{{ n.connected }}" hint-placeholder-val="{{ false }}"><ion-icon name="checkmark" style="font-size:20px;color:#52A441;"></ion-icon></sc-if>
+              <sc-if value="{{ n.secure }}" hint-placeholder-val="{{ true }}"><ion-icon name="lock-closed" style="font-size:14px;color:var(--text-muted);"></ion-icon></sc-if>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ isMqtt }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:0;right:0;top:62px;text-align:center;font-size:17px;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);">MQTT Server</div>
+        <div style="position:absolute;left:60px;right:60px;top:90px;text-align:center;font-size:15px;color:{{ mqttStatusColor }};">{{ mqttStatus }}</div>
+        <div style="position:absolute;left:100px;width:280px;top:122px;display:flex;flex-direction:column;gap:6px;">
+          <sc-for list="{{ mqttRows }}" as="f" hint-placeholder-count="4">
+            <div onClick="{{ f.onClick }}" style="height:50px;box-sizing:border-box;border-radius:12px;display:flex;align-items:center;gap:10px;padding:0 14px;cursor:pointer;background:var(--bg-card);border:2px solid {{ f.border }};">
+              <span style="font-size:14px;color:var(--text-muted);width:78px;flex:none;">{{ f.label }}</span>
+              <span style="flex:1;min-width:0;text-align:right;font-size:17px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ f.value }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div onClick="{{ mqttSave }}" style="position:absolute;left:160px;top:350px;width:160px;height:48px;box-sizing:border-box;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:500;cursor:pointer;background:#52A441;color:#fff;border:2px solid {{ saveBorder }};box-shadow:{{ saveShadow }};">Save</div>
+      </sc-if>
+
+      <sc-if value="{{ isKbd }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:80px;right:80px;top:64px;text-align:center;font-size:15px;color:var(--text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">{{ kbTitle }}</div>
+        <div style="position:absolute;left:80px;width:320px;top:94px;height:52px;box-sizing:border-box;border-radius:8px;border:2px solid #52A441;box-shadow:0 0 0 3px rgba(82,164,65,0.2);background:var(--bg-card);display:flex;align-items:center;gap:8px;padding:0 6px 0 14px;">
+          <div style="flex:1;min-width:0;display:flex;align-items:center;overflow:hidden;">
+            <span style="font-size:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:{{ kbShownColor }};">{{ kbShown }}</span>
+            <div style="flex:none;width:2px;height:24px;margin-left:2px;background:#52A441;"></div>
+          </div>
+          <sc-if value="{{ kbSecret }}" hint-placeholder-val="{{ false }}">
+            <div onClick="{{ kbEye }}" style="width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px;color:var(--text-secondary);cursor:pointer;"><ion-icon name="{{ kbEyeIcon }}"></ion-icon></div>
+          </sc-if>
+        </div>
+        <div style="position:absolute;left:80px;right:80px;top:154px;text-align:center;font-size:13px;color:var(--text-muted);">{{ kbNote }}</div>
+        <sc-for list="{{ keys }}" as="k" hint-placeholder-count="36">
+          <div onClick="{{ k.onClick }}" style="position:absolute;left:{{ k.x }};top:{{ k.y }};width:{{ k.w }};height:44px;box-sizing:border-box;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:{{ k.size }};cursor:pointer;background:{{ k.bg }};border:1px solid {{ k.border }};color:{{ k.color }};transition:transform 0.1s ease;" style-active="transform:scale(0.95);">
+            <sc-if value="{{ k.icon }}" hint-placeholder-val="{{ false }}"><ion-icon name="{{ k.icon }}" style="font-size:20px;"></ion-icon></sc-if>{{ k.label }}
+          </div>
+        </sc-for>
+      </sc-if>
+
+      <sc-if value="{{ showBack }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ back }}" style="position:absolute;left:210px;top:412px;width:60px;height:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:24px;color:var(--text-secondary);cursor:pointer;background:var(--bg-card);border:1px solid var(--border-color);">
+          <ion-icon name="{{ backIcon }}"></ion-icon>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ hasAlert }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ press }}" style="position:absolute;inset:0;border-radius:9999px;background:var(--bg-primary);border:4px solid #FF5453;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;">
+          <ion-icon name="lock-open" style="font-size:72px;color:#FF5453;"></ion-icon>
+          <div style="font-size:32px;font-weight:500;">{{ alertTitle }}</div>
+          <div style="font-size:18px;color:var(--text-secondary);">Opened {{ alertTime }}</div>
+          <div style="font-size:16px;color:var(--text-muted);margin-top:14px;">Press or tap to dismiss</div>
+        </div>
+      </sc-if>
+
+      </div>
+    </div>
+  </div>
+
+  <div style="width:340px;max-width:100%;display:flex;flex-direction:column;gap:26px;">
+    <div>
+      <div style="font-size:24px;font-weight:500;">TrailCurrent Dial</div>
+      <div style="font-size:14px;line-height:20px;color:var(--text-secondary);margin-top:6px;">MaTouch ESP32-S3 · 2.1" 480×480 round TFT · rotary encoder with push · capacitive touch</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);">Navigation</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ navOpts }}" as="o" hint-placeholder-count="3">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:14px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.color }};">
+            <span style="font-size:11px;font-weight:600;opacity:0.7;">{{ o.id }}</span><span>{{ o.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:8px;">Thermostat face</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ thermoOpts }}" as="o" hint-placeholder-count="3">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:14px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.color }};">
+            <span style="font-size:11px;font-weight:600;opacity:0.7;">{{ o.id }}</span><span>{{ o.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:8px;">Lights face</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <sc-for list="{{ lightOpts }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:14px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.color }};">
+            <span style="font-size:11px;font-weight:600;opacity:0.7;">{{ o.id }}</span><span>{{ o.label }}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:8px;">Theme</div>
+      <div style="display:flex;gap:8px;">
+        <sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;height:36px;padding:0 14px;border-radius:8px;cursor:pointer;font-size:14px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.color }};">{{ o.label }}</div>
+        </sc-for>
+      </div>
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-top:8px;">Units</div>
+      <div style="display:flex;gap:8px;">
+        <sc-for list="{{ unitOpts }}" as="o" hint-placeholder-count="2">
+          <div onClick="{{ o.onClick }}" style="display:flex;align-items:center;height:36px;padding:0 14px;border-radius:8px;cursor:pointer;font-size:14px;background:{{ o.bg }};border:1px solid {{ o.border }};color:{{ o.color }};">{{ o.label }}</div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:14px;line-height:20px;color:var(--text-secondary);">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);">Controls</div>
+      <div><span style="color:var(--text-primary);">Rotate</span> — scroll over the dial, drag the ring, or ← →</div>
+      <div><span style="color:var(--text-primary);">Press</span> — click the ring or Enter</div>
+      <div><span style="color:var(--text-primary);">Touch</span> — tap items on screen; back chip or Esc returns</div>
+      <div style="color:var(--text-muted);">{{ hint }}</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;font-size:13px;line-height:19px;color:var(--text-secondary);">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);">LVGL 9 build</div>
+      <div style="font-family:var(--font-mono);color:var(--text-secondary);">{{ lvgl }}</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div style="font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);">Simulate</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;">
+        <div onClick="{{ toggleDoor }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:14px;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);"><ion-icon name="{{ doorSimIcon }}"></ion-icon><span>{{ doorSimLabel }}</span></div>
+        <div onClick="{{ goIdle }}" style="display:flex;align-items:center;gap:8px;height:36px;padding:0 12px;border-radius:8px;cursor:pointer;font-size:14px;background:var(--bg-card);border:1px solid var(--border-color);color:var(--text-secondary);"><ion-icon name="moon-outline"></ion-icon><span>Go idle</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;light&quot;,&quot;dark&quot;],&quot;default&quot;:&quot;light&quot;,&quot;tsType&quot;:&quot;'light'|'dark'&quot;},&quot;units&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;F&quot;,&quot;C&quot;],&quot;default&quot;:&quot;F&quot;,&quot;tsType&quot;:&quot;'F'|'C'&quot;},&quot;idleTimeout&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:30,&quot;min&quot;:5,&quot;max&quot;:300,&quot;unit&quot;:&quot;s&quot;,&quot;tsType&quot;:&quot;number&quot;}}">
+const CX=240, A0=135, SPAN=270;
+const FACES=[
+  {id:'climate',icon:'thermometer',label:'Climate'},
+  {id:'lights',icon:'bulb',label:'Lights'},
+  {id:'heater',icon:'flame',label:'Heater'},
+  {id:'energy',icon:'battery-charging',label:'Energy'},
+  {id:'water',icon:'water',label:'Water Tanks'},
+  {id:'air',icon:'cloud',label:'Air Quality'},
+  {id:'level',icon:'speedometer',label:'Leveling'},
+  {id:'doors',icon:'lock-closed',label:'Doors'},
+  {id:'settings',icon:'settings',label:'Settings'}
+];
+const MODES=[
+  {id:'heat',label:'Heat',icon:'flame',color:'#FF5453',active:'Heating',idle:'Heat set to'},
+  {id:'cool',label:'Cool',icon:'snow',color:'#48E6FE',active:'Cooling',idle:'Cool set to'},
+  {id:'auto',label:'Auto',icon:'sync',color:'#7BC96A',active:'Auto',idle:'Auto'},
+  {id:'off',label:'Off',icon:'power',color:'#808080',active:'Off',idle:'Off'}
+];
+const SCENES=[
+  {n:'Evening',icon:'partly-sunny',set:{Kitchen:100,Living:100,Awning:100}},
+  {n:'Night',icon:'moon',set:{Bedroom:100,Bath:100}},
+  {n:'All Off',icon:'power',set:{}}
+];
+const NETS=[{ssid:'Headwaters',rssi:-48,secure:true},{ssid:'Starlink',rssi:-58,secure:true},{ssid:'TrailCurrent-AP',rssi:-63,secure:true},{ssid:'KOA Guest',rssi:-72,secure:false},{ssid:'Campground-5G',rssi:-81,secure:true}];
+const MQF=[{k:'host',label:'Host / IP',note:'Hostname or IPv4 address'},{k:'port',label:'Port',note:'Default 1883 · TLS 8883'},{k:'user',label:'Username',note:'Mosquitto user for this device'},{k:'pass',label:'Password',secret:true,note:'Mosquitto password'}];
+const f1=n=>n.toFixed(1);
+const pt=(a,r)=>{const t=a*Math.PI/180;return [CX+r*Math.cos(t),CX+r*Math.sin(t)];};
+const line=(a,r1,r2)=>{const [x1,y1]=pt(a,r1),[x2,y2]=pt(a,r2);return `M${f1(x1)} ${f1(y1)}L${f1(x2)} ${f1(y2)}`;};
+const arc=(a1,a2,r)=>{if(a2-a1<0.5)a2=a1+0.5;const [x1,y1]=pt(a1,r),[x2,y2]=pt(a2,r);return `M${f1(x1)} ${f1(y1)}A${r} ${r} 0 ${a2-a1>180?1:0} 1 ${f1(x2)} ${f1(y2)}`;};
+const dot=(a,r,s)=>{const [x,y]=pt(a,r);return `M${f1(x-s)} ${f1(y)}a${s} ${s} 0 1 0 ${2*s} 0a${s} ${s} 0 1 0 ${-2*s} 0`;};
+const tA=f=>A0+Math.max(0,Math.min(1,(f-50)/40))*SPAN;
+const wrap=(i,n)=>((i%n)+n)%n;
+const fmtTime=d=>{let h=d.getHours(),m=d.getMinutes();const ap=h>=12?'PM':'AM';h=h%12||12;return `${h}:${String(m).padStart(2,'0')} ${ap}`;};
+
+class Component extends DCLogic {
+  state={screen:'home',face:0,target:72,inside:67.4,outside:54,mode:'heat',modeIdx:0,
+    lights:[{n:'Kitchen',b:100},{n:'Living',b:0},{n:'Bedroom',b:100},{n:'Bath',b:0},{n:'Porch',b:0},{n:'Awning',b:100}],
+    li:0,heat:0,heatLast:3,ep:0,knob:0,last:Date.now(),now:new Date(),t:0,
+    doors:[{n:'Entry Door',open:false},{n:'Baggage Bay',open:false},{n:'Pantry',open:false},{n:'Fridge',open:false}],
+    alert:null,theme:null,setIdx:0,wi:0,mi:0,kb:null,wifiSsid:'Headwaters',wifiTarget:'',wifiState:'connected',wifiErr:'',mqtt:{host:'headwaters.local',port:'1883',user:'dial-kitchen',pass:'trailcurrent'},mqttState:'connected',nav:'carousel',thermo:'ticks',lv:'focus',units:null};
+
+  componentDidMount(){
+    this.kd=e=>{
+      if(e.target&&(e.target.tagName==='INPUT'||e.target.isContentEditable))return;
+      if(e.key==='ArrowRight'||e.key==='ArrowUp'){e.preventDefault();this.rotate(1);}
+      else if(e.key==='ArrowLeft'||e.key==='ArrowDown'){e.preventDefault();this.rotate(-1);}
+      else if(e.key==='Enter'||e.key===' '){e.preventDefault();this.press();}
+      else if(e.key==='Escape'||e.key==='Backspace'){this.back();}
+    };
+    window.addEventListener('keydown',this.kd);
+    this.iv=setInterval(this.tick,500);
+  }
+  componentWillUnmount(){window.removeEventListener('keydown',this.kd);clearInterval(this.iv);}
+
+  get units(){return this.state.units||this.props.units||'F';}
+  activeOf(s){
+    if(s.mode==='off')return null;
+    if(s.target>s.inside+0.2)return 'heat';
+    if(s.target<s.inside-0.2)return 'cool';
+    return null;
+  }
+  tick=()=>this.setState(s=>{
+    const act=this.activeOf(s);let inside=s.inside;
+    if(act==='heat')inside+=0.03;else if(act==='cool')inside-=0.03;else inside+=(s.outside+12-inside)*0.002;
+    inside+=s.heat*0.006;
+    const idleMs=(this.props.idleTimeout??30)*1000;
+    const goIdle=!this.dragging&&s.screen!=='idle'&&s.screen!=='kbd'&&!s.alert&&Date.now()-s.last>idleMs;
+    return {inside,now:new Date(),t:s.t+1,...(goIdle?{screen:'idle'}:{})};
+  });
+  wakeScreen(s){return s.nav==='thermo'?'climate':'home';}
+  input(fn){this.setState(s=>{const base={last:Date.now()};if(s.screen==='idle')return {...base,screen:this.wakeScreen(s)};return {...base,...fn(s)};});}
+  scene(s,k){const set=SCENES[k].set;return {lights:s.lights.map(L=>{return {...L,b:set[L.n]||0};})};}
+  backOf(s){
+    switch(s.screen){
+      case 'mode':return {screen:'climate'};
+      case 'home':return s.nav==='thermo'?{screen:'climate'}:{screen:'idle'};
+      case 'wifi':case 'mqtt':return {screen:'settings'};
+      case 'kbd':return {screen:s.kb&&s.kb.field==='wifi'?'wifi':'mqtt',kb:null};
+      default:return {screen:'home',face:Math.max(0,FACES.findIndex(f=>f.id===s.screen))};
+    }
+  }
+  rotate=d=>{
+    this.setState(s=>({knob:s.knob+d*12}));
+    this.input(s=>{
+      if(s.alert)return {};
+      switch(s.screen){
+        case 'home':return {face:wrap(s.face+d,FACES.length)};
+        case 'climate':{if(s.mode==='off')return {};const st=this.units==='C'?0.9:1;return {target:Math.max(50,Math.min(90,s.target+d*st))};}
+        case 'mode':return {modeIdx:wrap(s.modeIdx+d,MODES.length)};
+        case 'lights':return {li:wrap(s.li+d,s.lights.length+SCENES.length)};
+        case 'heater':return {heat:Math.max(0,Math.min(5,s.heat+d))};
+        case 'settings':return {setIdx:wrap(s.setIdx+d,2)};
+        case 'wifi':return {wi:wrap(s.wi+d,NETS.length)};
+        case 'mqtt':return {mi:wrap(s.mi+d,5)};
+        case 'energy':return {ep:wrap(s.ep+d,3)};
+      }
+      return {};
+    });
+  };
+  press=()=>this.input(s=>{
+    if(s.alert)return {alert:null};
+    switch(s.screen){
+      case 'home':return {screen:FACES[s.face].id};
+      case 'climate':return {screen:'mode',modeIdx:MODES.findIndex(m=>m.id===s.mode)};
+      case 'mode':return {screen:'climate',mode:MODES[s.modeIdx].id};
+      case 'lights':return s.li<s.lights.length?{lights:s.lights.map((L,j)=>j===s.li?{...L,b:L.b>0?0:100}:L)}:this.scene(s,s.li-s.lights.length);
+      case 'heater':return s.heat>0?{heat:0,heatLast:s.heat}:{heat:s.heatLast||3};
+      case 'settings':return {screen:s.setIdx===0?'wifi':'mqtt'};
+      case 'wifi':return this.pickNet(s,s.wi);
+      case 'mqtt':if(s.mi<4)return this.editField(s,s.mi);setTimeout(this.saveMqtt);return {};
+      case 'kbd':setTimeout(this.kbOk);return {};
+    }
+    return this.backOf(s);
+  });
+  back=e=>{if(e&&e.stopPropagation)e.stopPropagation();this.input(s=>s.alert?{alert:null}:this.backOf(s));};
+  open=i=>this.input(()=>({screen:FACES[i].id,face:i}));
+  selectLight=i=>this.input(()=>({li:i}));
+  pickNet(s,i){const n=NETS[i];if(!n.secure){setTimeout(()=>this.connectWifi(n.ssid,''));return {wi:i};}
+    return {wi:i,screen:'kbd',kb:{field:'wifi',ssid:n.ssid,title:'Password for '+n.ssid,note:'WPA2 · at least 8 characters',value:'',secret:true,show:false,shift:false,mode:'abc'}};}
+  editField(s,i){const F=MQF[i];return {mi:i,screen:'kbd',kb:{field:F.k,title:F.label,note:F.note,value:s.mqtt[F.k],secret:!!F.secret,show:false,shift:false,mode:F.k==='port'?'123':'abc'}};}
+  connectWifi(ssid,pass){this.setState({wifiState:'connecting',wifiTarget:ssid,screen:'wifi',kb:null,last:Date.now()});clearTimeout(this.wt);
+    this.wt=setTimeout(()=>{const n=NETS.find(x=>x.ssid===ssid);if(n.secure&&pass.length<8)this.setState({wifiState:'failed',wifiErr:'Failed · password must be 8+ characters'});else this.setState({wifiState:'connected',wifiSsid:ssid,wifiErr:''});},1600);}
+  saveMqtt=()=>{this.setState({mqttState:'connecting',last:Date.now()});clearTimeout(this.mt);this.mt=setTimeout(()=>this.setState(s=>({mqttState:s.wifiState==='connected'&&s.mqtt.host?'connected':'failed'})),1200);};
+  kbOk=()=>{const k=this.state.kb;if(!k)return;if(k.field==='wifi')this.connectWifi(k.ssid,k.value);else this.setState(st=>({mqtt:{...st.mqtt,[k.field]:k.value},screen:'mqtt',kb:null,mqttState:'unsaved',last:Date.now()}));};
+  kbKey=ch=>this.setState(s=>{const k=s.kb;if(!k)return {};const c=k.shift&&k.mode==='abc'?ch.toUpperCase():ch;return {kb:{...k,value:k.value+c,shift:false},last:Date.now()};});
+  kbDo=a=>this.setState(s=>{const k=s.kb;if(!k)return {};const u={last:Date.now()};
+    if(a==='bksp')u.kb={...k,value:k.value.slice(0,-1)};else if(a==='shift'){if(k.mode==='abc')u.kb={...k,shift:!k.shift};}
+    else if(a==='mode')u.kb={...k,mode:k.mode==='abc'?'123':'abc',shift:false};else if(a==='eye')u.kb={...k,show:!k.show};
+    else if(a==='cancel')return {...u,...this.backOf(s)};return u;});
+  settingsVals(s,P){
+    const foc=on=>on?P:'var(--border-color)',mq=s.mqtt;
+    const wifiStatus=s.wifiState==='connected'?'Connected · '+s.wifiSsid:s.wifiState==='connecting'?'Connecting to '+s.wifiTarget+'…':(s.wifiErr||'Not connected');
+    const wifiStatusColor=s.wifiState==='connected'?P:s.wifiState==='connecting'?'var(--text-secondary)':'#FF5453';
+    const mqttStatus={connected:'Connected · '+mq.host+':'+mq.port,connecting:'Connecting…',failed:'Connection failed',unsaved:'Unsaved changes'}[s.mqttState];
+    const mqttStatusColor={connected:P,connecting:'var(--text-secondary)',failed:'#FF5453',unsaved:'#FFC107'}[s.mqttState];
+    const setRows=[{label:'Wi-Fi',icon:'wifi',value:s.wifiState==='connected'?s.wifiSsid:'Not connected'},{label:'MQTT Server',icon:'server',value:mq.host+':'+mq.port}]
+      .map((r,i)=>({...r,border:foc(s.setIdx===i),iconColor:s.setIdx===i?P:'var(--text-secondary)',onClick:e=>{e.stopPropagation();this.input(()=>({setIdx:i,screen:i===0?'wifi':'mqtt'}));}}));
+    const netRows=NETS.map((n,i)=>({...n,connected:s.wifiState==='connected'&&s.wifiSsid===n.ssid,sig:String(n.rssi>-55?1:n.rssi>-67?0.75:n.rssi>-75?0.5:0.3),border:foc(s.wi===i),onClick:e=>{e.stopPropagation();this.input(st=>this.pickNet(st,i));}}));
+    const mqttRows=MQF.map((f,i)=>({label:f.label,value:f.secret?'•'.repeat(Math.min(12,mq[f.k].length))||'--':(mq[f.k]||'--'),border:foc(s.mi===i),onClick:e=>{e.stopPropagation();this.input(st=>this.editField(st,i));}}));
+    const k=s.kb||{value:'',mode:'abc'},abc=k.mode==='abc',keys=[],G=4;
+    const row=(y,items)=>{const W=items.reduce((a,it)=>a+it.w,0)+G*(items.length-1);let x=240-W/2;
+      for(const it of items){keys.push({...it,x:x+'px',y:y+'px',w:it.w+'px',size:it.size||'18px',bg:it.bg||'var(--bg-card)',border:it.border||'var(--border-color)',color:it.color||'var(--text-primary)',icon:it.icon||'',label:it.label||''});x+=it.w+G;}};
+    const ch=c=>({w:34,label:k.shift&&abc?c.toUpperCase():c,onClick:e=>{e.stopPropagation();this.kbKey(c);}});
+    const act=(a,o)=>({...o,onClick:e=>{e.stopPropagation();a==='ok'?this.kbOk():this.kbDo(a);}});
+    row(184,(abc?'qwertyuiop':'1234567890').split('').map(ch));
+    row(232,(abc?'asdfghjkl':'-_.@:/#&!').split('').map(ch));
+    row(280,[act('shift',{w:50,icon:abc?'arrow-up':'',bg:k.shift?'var(--role-primary-container)':'var(--bg-card)',border:k.shift?P:'var(--border-color)'}),...(abc?'zxcvbnm':'()$%*+=').split('').map(ch),act('bksp',{w:50,icon:'backspace-outline'})]);
+    row(328,[act('mode',{w:56,label:abc?'123':'abc',size:'15px'}),{w:176,label:'space',size:'15px',color:'var(--text-muted)',onClick:e=>{e.stopPropagation();this.kbKey(' ');}},act('cancel',{w:56,icon:'close'}),act('ok',{w:72,icon:'checkmark',bg:'#52A441',border:'#52A441',color:'#fff'})]);
+    const empty=!k.value;
+    return {setRows,netRows,mqttRows,wifiStatus,wifiStatusColor,mqttStatus,mqttStatusColor,
+      saveBorder:s.mi===4?'var(--text-primary)':'#52A441',saveShadow:s.mi===4?'0 0 20px rgba(82,164,65,0.5)':'none',
+      mqttSave:e=>{e.stopPropagation();this.setState({mi:4});this.saveMqtt();},
+      keys,kbTitle:k.title||'',kbNote:k.note||'',kbSecret:!!k.secret,kbEyeIcon:k.show?'eye-off-outline':'eye-outline',kbEye:e=>{e.stopPropagation();this.kbDo('eye');},
+      kbShown:empty?'':(k.secret&&!k.show?'•'.repeat(k.value.length):k.value),kbShownColor:'var(--text-primary)'};
+  }
+  screenTap=()=>{if(this.state.screen==='idle')this.input(()=>({}));else this.setState({last:Date.now()});};
+
+  deviceRef=el=>{
+    if(!el||el===this.dev)return;this.dev=el;
+    el.addEventListener('wheel',e=>{e.preventDefault();this.wacc=(this.wacc||0)+e.deltaY;
+      while(this.wacc>40){this.wacc-=40;this.rotate(1);}while(this.wacc<-40){this.wacc+=40;this.rotate(-1);}},{passive:false});
+  };
+  ang(e){const r=this.dev.getBoundingClientRect();return Math.atan2(e.clientY-(r.top+r.height/2),e.clientX-(r.left+r.width/2))*180/Math.PI;}
+  onDown=e=>{
+    const r=this.dev.getBoundingClientRect(),sc=r.width/560;
+    if(Math.hypot(e.clientX-(r.left+r.width/2),e.clientY-(r.top+r.height/2))<242*sc)return;
+    this.dragging=true;this.moved=false;this.a=this.ang(e);this.acc=0;
+    try{this.dev.setPointerCapture(e.pointerId);}catch(_){}
+  };
+  onMove=e=>{
+    if(!this.dragging)return;const a=this.ang(e);let d=a-this.a;if(d>180)d-=360;if(d<-180)d+=360;this.a=a;this.acc+=d;
+    if(Math.abs(this.acc)>4)this.moved=true;
+    while(this.acc>=15){this.acc-=15;this.rotate(1);}while(this.acc<=-15){this.acc+=15;this.rotate(-1);}
+  };
+  onUp=()=>{if(!this.dragging)return;this.dragging=false;if(!this.moved)this.press();};
+  toggleDoor=()=>this.setState(s=>{
+    const open=!s.doors[1].open;
+    return {doors:s.doors.map((d,i)=>i===1?{...d,open}:d),alert:open?{title:'Baggage Bay open',time:fmtTime(new Date())}:null,last:Date.now(),
+      screen:s.screen==='idle'?this.wakeScreen(s):s.screen};
+  });
+
+  renderVals(){
+    const s=this.state,C=this.units==='C',sc=s.screen,theme=s.theme||this.props.theme||'light',P=theme==='light'?'#52A441':'#7BC96A';
+    const fmt=f=>C?String(Math.round((f-32)*5/9*2)/2):String(Math.round(f));
+    const M=MODES.find(m=>m.id===s.mode),act=this.activeOf(s);
+    const AM=act?MODES.find(m=>m.id===act):null;
+    const modeColor=AM?AM.color:(s.mode==='off'?M.color:P);
+    const modeLabel=AM?AM.active:(s.mode==='off'?'Off':'Holding');
+    const modeIcon=AM?AM.icon:(s.mode==='off'?'power':'checkmark-circle');
+    const eta=act?`${Math.max(1,Math.round(Math.abs(s.target-s.inside)*6))} min`:'';
+    const lightsN=s.lights.length,onCount=s.lights.filter(L=>L.b>0).length;
+    const openDoors=s.doors.filter(d=>d.open);
+    const summaries={
+      climate:s.mode==='off'?'Off':`${AM?AM.active:'Holding'} · ${fmt(s.target)}°`,
+      lights:onCount?`${onCount} on`:'All off',
+      heater:s.heat?`Level ${s.heat}`:'Off',
+      energy:'82% · 14h 20m',water:'Fresh 72%',air:'Good · 640 ppm',level:'Tilted right 1.2°',
+      doors:openDoors.length?`${openDoors.length} open`:'All closed',
+      settings:s.wifiState==='connected'?'Wi-Fi · '+s.wifiSsid:'Wi-Fi not connected'
+    };
+    const faceOf=i=>{const f=FACES[wrap(i,FACES.length)];return {...f,summary:summaries[f.id]};};
+
+    // climate
+    const lo=Math.min(s.inside,s.target),hi=Math.max(s.inside,s.target);let ticksBg='',ticksActive='';
+    for(let i=0;i<=80;i++){const f=50+i*0.5,p=line(A0+i*SPAN/80,196,222);if(s.mode!=='off'&&f>=lo-0.25&&f<=hi+0.25)ticksActive+=p;else ticksBg+=p;}
+    const tape=[];const step=C?0.9:1;
+    for(let o=-3;o<=3;o++){const v=s.target+o*step;if(v<50-0.01||v>90.01)continue;tape.push({label:fmt(v),x:(240+o*64)+'px',size:o===0?'30px':'22px',opacity:String(1-Math.abs(o)*0.25),color:o===0?'var(--text-primary)':'var(--text-muted)'});}
+
+    // home
+    const carDots=FACES.map((_,i)=>dot(90+(i-(FACES.length-1)/2)*-6,214,5)).join('');
+    const radialItems=FACES.map((f,i)=>{const [x,y]=pt(-90+i*360/FACES.length,188);const on=i===s.face;
+      return {icon:f.icon,x:(x-32)+'px',y:(y-32)+'px',bg:on?'var(--role-primary-container)':'var(--bg-card)',color:on?P:'var(--text-muted)',border:on?'#52A441':'var(--border-color)',shadow:on?'0 0 20px rgba(82,164,65,0.5)':'none',onClick:e=>{e.stopPropagation();this.open(i);}};});
+    const listRows=[];for(let o=-2;o<=2;o++){const i=wrap(s.face+o,FACES.length),f=faceOf(i);
+      listRows.push({...f,y:(204+o*72)+'px',opacity:String(o===0?1:Math.abs(o)===1?0.55:0.25),size:o===0?'28px':'22px',color:o===0?'var(--text-primary)':'var(--text-secondary)',summary:o===0?f.summary:'',onClick:e=>{e.stopPropagation();this.open(i);}});}
+
+    // lights
+    const nItems=lightsN+SCENES.length;
+    const lDots=Array.from({length:nItems},(_,i)=>dot(270+(i-(nItems-1)/2)*7,222,5)).join('');
+    const isScene=s.li>=lightsN,L=s.lights[Math.min(s.li,lightsN-1)],S=SCENES[s.li-lightsN];
+    const lOn=!isScene&&L.b>0;
+    const lCur=isScene?{name:S.n,value:'Scene · press to apply',icon:S.icon,bg:'var(--bg-card)',color:'var(--text-secondary)',shadow:'none',border:'var(--border-color)'}
+      :{name:L.n,value:L.b?'On':'Off',icon:lOn?'bulb':'bulb-outline',bg:lOn?'var(--role-primary-container)':'var(--bg-card)',color:lOn?P:'var(--text-muted)',shadow:lOn?'0 0 40px rgba(82,164,65,0.5)':'none',border:lOn?'#52A441':'var(--border-color)'};
+    const tiles=s.lights.map((T,i)=>{const on=T.b>0,f=i===s.li;return {name:T.n,value:on?'On':'Off',icon:on?'bulb':'bulb-outline',
+      x:(62+(i%3)*122)+'px',y:(110+Math.floor(i/3)*110)+'px',bg:on?'var(--role-primary-container)':'var(--bg-card)',color:on?P:'var(--text-muted)',
+      border:f?'var(--text-primary)':(on?'#3D7B31':'var(--border-color)'),shadow:on?'0 0 20px rgba(82,164,65,0.35)':'none',onClick:e=>{e.stopPropagation();this.selectLight(i);}};});
+    const chips=SCENES.map((c,k)=>({...c,name:c.n,x:(74+k*114)+'px',border:s.li===lightsN+k?'var(--text-primary)':'var(--border-color)',onClick:e=>{e.stopPropagation();this.selectLight(lightsN+k);}}));
+
+    // heater
+    let hSegOn='',hSegOff='';for(let k=0;k<5;k++){const p=arc(A0+k*55,A0+k*55+50,212);if(k<s.heat)hSegOn+=p;else hSegOff+=p;}
+    const outlet=90+s.heat*8;
+
+    // energy
+    const pages=[
+      {label:'Battery',value:'82',unit:'%',sub1:'13.4 V · Float',sub2:'Time Remaining 14h 20m',frac:0.82,color:'#74FE00',icon:'battery-half'},
+      {label:'Solar Input',value:'320',unit:'W',sub1:'Charge Status · Bulk',sub2:'Today 1.8 kWh',frac:320/600,color:'#FFC107',icon:'sunny'},
+      {label:'Loads',value:String(145+s.heat*8),unit:'W',sub1:'Fridge 60 W',sub2:'Net +'+(175-s.heat*8)+' W',frac:(145+s.heat*8)/600,color:'#48E6FE',icon:'flash'}
+    ];
+    const ep=pages[s.ep];
+
+    const jig=Math.sin(s.t/3)*1.5;
+    const opt=(id,label,on,fn)=>({id,label,onClick:fn,bg:on?'#52A441':'var(--bg-card)',border:on?'#52A441':'var(--border-color)',color:on?'#fff':'var(--text-secondary)'});
+    const inApp=!['home','idle','kbd'].includes(sc)&&!s.alert;
+    const hintMap={idle:'Ambient face. Any input wakes the dial.',home:s.nav==='thermo'?'Menu. Rotate to choose, press to open.':'Rotate to browse, press or tap to open. Esc sleeps.',
+      climate:'Rotate sets temperature. Press for mode.',mode:'Rotate to choose, press to set.',lights:'Rotate or tap to select, press to toggle.',heater:'Rotate sets level, press turns on/off.',energy:'Rotate for Battery, Solar, Loads.',settings:'Rotate to choose, press or tap to open.',wifi:'Rotate to a network, press or tap to enter its password.',mqtt:'Rotate to a field, press or tap to edit. Save tests the connection.',kbd:'Type on the touch keyboard. Press the ring or ✓ to confirm.'};
+
+    return {
+      knobDeg:s.knob+'deg',deviceRef:this.deviceRef,onDown:this.onDown,onMove:this.onMove,onUp:this.onUp,screenTap:this.screenTap,
+      press:e=>{if(e&&e.stopPropagation)e.stopPropagation();this.press();},back:this.back,
+      isIdle:sc==='idle',isHomeCarousel:sc==='home'&&s.nav==='carousel',isHomeRadial:sc==='home'&&s.nav==='radial',isHomeList:sc==='home'&&s.nav==='thermo',
+      isClimA:sc==='climate'&&s.thermo==='ticks',isClimB:sc==='climate'&&s.thermo==='arc',isClimC:sc==='climate'&&s.thermo==='tape',isMode:sc==='mode',
+      isLightsA:sc==='lights'&&s.lv==='focus',isLightsB:sc==='lights'&&s.lv==='grid',isHeater:sc==='heater',
+      isEnergy:sc==='energy',isWater:sc==='water',isAir:sc==='air',isLevel:sc==='level',isDoors:sc==='doors',
+      showBack:inApp,backIcon:sc==='climate'&&s.nav==='thermo'?'apps':'chevron-back',hasAlert:!!s.alert,alertTitle:s.alert?s.alert.title:'',alertTime:s.alert?s.alert.time:'',
+      clock:fmtTime(s.now),
+      dateDay:s.now.toLocaleDateString('en-US',{weekday:'long'}),
+      dateLong:s.now.toLocaleDateString('en-US',{month:'long',day:'numeric',year:'numeric'}),
+      ...(()=>{const n=s.now,sec=n.getSeconds(),min=n.getMinutes()+sec/60,hr=(n.getHours()%12)+min/60;
+        let mj='',mn='';for(let i=0;i<60;i++){const a=i*6-90;if(i%5===0)mj+=line(a,196,222);else mn+=line(a,212,222);}
+        const hand=(a,len,tail)=>{const [x1,y1]=pt(a+180,tail),[x2,y2]=pt(a,len);return `M${f1(x1)} ${f1(y1)}L${f1(x2)} ${f1(y2)}`;};
+        return {clkMajor:mj,clkMinor:mn,handH:hand(hr*30-90,110,0),handM:hand(min*6-90,170,0),handS:hand(sec*6-90,190,30)};})(),unit:C?'C':'F',insideDisp:fmt(s.inside),outsideDisp:fmt(s.outside),targetDisp:s.mode==='off'?'--':fmt(s.target),
+      modeColor,modeIcon,modeLabel,eta,modeGlow:act?(modeColor==='#FF5453'?'rgba(255,84,83,0.25)':'rgba(72,230,254,0.25)'):'rgba(0,0,0,0)',
+      idleLine:AM?`${AM.active} to ${fmt(s.target)}°`:(s.mode==='off'?'Climate off':`Holding ${fmt(s.target)}°`),
+      anyOpen:openDoors.length>0,openCount:openDoors.length+' open',
+      carDots,carDotActive:dot(90+(s.face-(FACES.length-1)/2)*-6,214,6),carCur:faceOf(s.face),carPrev:faceOf(s.face-1),carNext:faceOf(s.face+1),
+      carOpen:e=>{e.stopPropagation();this.open(s.face);},radialItems,listRows,
+      ticksBg,ticksActive,curTick:line(tA(s.inside),190,222),tgtTick:line(tA(s.target),176,226),
+      arcTrack:arc(A0,A0+SPAN,212),arcTrackThin:arc(A0,A0+SPAN,214),climArc:arc(A0,tA(s.target),212),thumb:dot(tA(s.target),212,15),curDot:dot(tA(s.inside),212,4),tape,
+      modeRows:MODES.map((m,i)=>{const f=i===s.modeIdx;return {...m,bg:f?'var(--bg-card)':'transparent',border:f?m.color:'var(--border-color)',color:f?m.color:'var(--text-muted)',
+        onClick:e=>{e.stopPropagation();this.input(()=>({mode:m.id,modeIdx:i,screen:'climate'}));}};}),
+      lDots,lDotActive:dot(270+(s.li-(nItems-1)/2)*7,222,7),lArc:lOn?arc(A0,A0+SPAN,214):'',lCur,
+      lTap:e=>{e.stopPropagation();this.setState({last:Date.now()});},
+      tiles,chips,onCount,
+      hSegOn,hSegOff,hLabel:s.heat?String(s.heat):'Off',hColor:s.heat?'#FF5453':'var(--text-muted)',
+      hSub:s.heat?`Running · Outlet ${fmt(outlet)}°`:'Rotate or tap to start',hTap:e=>{e.stopPropagation();this.input(st=>st.heat>0?{heat:0,heatLast:st.heat}:{heat:st.heatLast||3});},
+      ep,eArc:arc(A0,A0+SPAN*ep.frac,214),eDots:[0,1,2].map(i=>dot(90+(i-1)*-6,200,4)).join(''),eDotActive:dot(90+(s.ep-1)*-6,200,5),
+      tanks:[{name:'Fresh',pct:72,fill:'linear-gradient(to top, #0088cc, #48e6fe)',glow:'0 0 16px rgba(72,230,254,0.4)'},{name:'Grey',pct:41,fill:'var(--tc-grey-water)',glow:'none'},{name:'Black',pct:18,fill:'var(--tc-black-water)',glow:'none'}].map(t=>({...t,h:t.pct+'%'})),
+      aArc:arc(A0,A0+SPAN*32/300,214),
+      bubX:(88+14+jig)+'px',bubY:(88-4+jig*0.4)+'px',
+      doorRows:s.doors.map(d=>({...d,icon:d.open?'lock-open':'lock-closed',color:d.open?'#FF5453':'#74FE00',status:d.open?'Open':'Closed',border:d.open?'#FF5453':'var(--border-color)'})),
+      navOpts:[opt('1a','Carousel',s.nav==='carousel',()=>this.setState({nav:'carousel',screen:'home',last:Date.now()})),opt('1b','Radial',s.nav==='radial',()=>this.setState({nav:'radial',screen:'home',last:Date.now()})),opt('1c','Thermostat home',s.nav==='thermo',()=>this.setState({nav:'thermo',screen:'climate',last:Date.now()}))],
+      thermoOpts:[opt('2a','Ticks',s.thermo==='ticks',()=>this.setState({thermo:'ticks',screen:'climate',last:Date.now()})),opt('2b','Arc',s.thermo==='arc',()=>this.setState({thermo:'arc',screen:'climate',last:Date.now()})),opt('2c','Tape',s.thermo==='tape',()=>this.setState({thermo:'tape',screen:'climate',last:Date.now()}))],
+      lightOpts:[opt('3a','Focus',s.lv==='focus',()=>this.setState({lv:'focus',screen:'lights',last:Date.now()})),opt('3b','Grid',s.lv==='grid',()=>this.setState({lv:'grid',screen:'lights',last:Date.now()}))],
+      theme,themeOpts:[opt('','Light',theme==='light',()=>this.setState({theme:'light'})),opt('','Dark',theme==='dark',()=>this.setState({theme:'dark'}))],
+      unitOpts:[opt('','°F',!C,()=>this.setState({units:'F'})),opt('','°C',C,()=>this.setState({units:'C'}))],
+      isSettings:sc==='settings',isWifi:sc==='wifi',isMqtt:sc==='mqtt',isKbd:sc==='kbd',...this.settingsVals(s,P),
+      lvgl:s.alert?'lv_obj overlay (bg_opa 235, border 4px) · lv_label ×3 · icon label':({
+        idle:'lv_scale ROUND_INNER 60 ticks (12 major) · 3 line needles (lv_scale_set_line_needle_value) · lv_label ×4 · 1 s lv_timer',
+        home:s.nav==='carousel'?'lv_obj circle (radius LV_RADIUS_CIRCLE, shadow) · lv_label ×2 · dot lv_obj ×8':s.nav==='radial'?'lv_button ×8 placed on circle · lv_label ×2 · encoder group focus':'lv_roller (infinite) styled rows · encoder group',
+        climate:s.thermo==='ticks'?'lv_scale ROUND_INNER 81 ticks · lv_scale_section for active range · 2 line needles · lv_label ×3':s.thermo==='arc'?'lv_arc (rounded, knob) · lv_obj dot · lv_label ×6':'lv_obj circle border · lv_label ×7 tape, shifted with lv_anim · rotated lv_obj marker',
+        mode:'lv_button ×4 in flex column · encoder group',
+        lights:s.lv==='focus'?'lv_arc (full when on) · lv_obj circle (shadow when on) · dot lv_obj ×9':'lv_obj ×9 in grid · encoder group focus · LV_STATE_CHECKED for on',
+        heater:'lv_arc ×5 (butt caps) · lv_label ×3',
+        energy:'lv_arc · lv_label ×4 · dot lv_obj ×3',
+        water:'lv_bar ×3 vertical (bg_grad_dir VER on fresh) · lv_label ×6',
+        air:'lv_arc · lv_label ×8',level:'lv_obj circles + lv_line crosshair · bubble lv_obj (shadow) · lv_anim',
+        doors:'lv_obj rows in flex column · lv_label ×3 each',
+        settings:'lv_list with 2 lv_button rows · encoder group',wifi:'lv_list from esp_wifi_scan_get_ap_records · status lv_label',mqtt:'lv_button rows ×4 + Save lv_button · status lv_label',kbd:'lv_textarea (one_line, password_mode) + lv_keyboard with custom 4-row map fitted to the circle'
+      })[sc]||'',
+      hint:s.alert?'Alert. Press or tap to dismiss.':(hintMap[sc]||'Press or back chip returns.'),
+      toggleDoor:this.toggleDoor,goIdle:()=>this.setState({screen:'idle'}),
+      doorSimIcon:s.doors[1].open?'lock-closed-outline':'lock-open-outline',doorSimLabel:s.doors[1].open?'Close Baggage Bay':'Open Baggage Bay'
+    };
+  }
+}
+</script>
+</body>
+</html>

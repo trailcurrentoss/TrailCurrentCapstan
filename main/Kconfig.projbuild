@@ -1,0 +1,398 @@
+menu "Capstan"
+
+comment "Target board"
+
+choice CAPSTAN_BOARD
+    prompt "Rotary display board"
+    default CAPSTAN_BOARD_MATOUCH_21
+    help
+      Selects the panel, touch controller and pin map compiled into
+      components/capstan_board, and the generated UI variant compiled from
+      main/ui<res>/.
+
+      All three boards carry the same ESP32-S3R8 (8 MB octal PSRAM, 16 MB
+      flash, native USB-Serial/JTAG), so nothing outside the board component
+      and the UI variant changes between them.
+
+config CAPSTAN_BOARD_MATOUCH_21
+    bool "Makerfabs MaTouch ESP32-S3 Rotary 2.1in (480x480, ST7701S RGB)"
+    help
+      2.1" round IPS, 480x480, ST7701S over a 16-bit RGB565 parallel bus
+      with an SPI sideband for the init sequence. CST8266 capacitive touch.
+      Needs PSRAM framebuffers and internal-RAM bounce buffers.
+
+config CAPSTAN_BOARD_CROWPANEL_146
+    bool "Elecrow CrowPanel 1.46in Rotary (360x360, JD9855)"
+    help
+      1.46" round IPS, 360x360, JD9855.
+
+config CAPSTAN_BOARD_CROWPANEL_128
+    bool "Elecrow CrowPanel 1.28in Rotary (240x240, GC9A01 SPI)"
+    help
+      1.28" round IPS, 240x240, GC9A01 over SPI. The smallest panel: the UI
+      variant for this board uses a compact keyboard and a list menu rather
+      than the radial carousel, because the 480x480 layouts do not fit.
+
+endchoice
+
+config CAPSTAN_LCD_H_RES
+    int
+    default 480 if CAPSTAN_BOARD_MATOUCH_21
+    default 360 if CAPSTAN_BOARD_CROWPANEL_146
+    default 240 if CAPSTAN_BOARD_CROWPANEL_128
+
+config CAPSTAN_LCD_V_RES
+    int
+    default 480 if CAPSTAN_BOARD_MATOUCH_21
+    default 360 if CAPSTAN_BOARD_CROWPANEL_146
+    default 240 if CAPSTAN_BOARD_CROWPANEL_128
+
+config CAPSTAN_BOARD_NAME
+    string
+    default "matouch21" if CAPSTAN_BOARD_MATOUCH_21
+    default "crowpanel146" if CAPSTAN_BOARD_CROWPANEL_146
+    default "crowpanel128" if CAPSTAN_BOARD_CROWPANEL_128
+
+config CAPSTAN_LCD_BGR
+    bool "Panel expects BGR element order"
+    depends on !CAPSTAN_BOARD_MATOUCH_21
+    default y if CAPSTAN_BOARD_CROWPANEL_128
+    default n
+    help
+      Swaps red and blue on the SPI panels. If the red swatch renders blue
+      and blue renders red while green is correct, this is the control.
+
+      VERIFIED on hardware, per board, by looking at the panel:
+
+        CrowPanel 1.28in (GC9A01)  -- y (BGR)
+        CrowPanel 1.46in (JD9855)  -- n (RGB)
+
+      The two boards genuinely need OPPOSITE values. That is not a bug in
+      the mapping and it is not worth "fixing" into a single default: they
+      are different controllers driving differently-bonded glass, and the
+      only authority on which one a given panel wants is the panel.
+
+      Do not try to derive this from the vendor's LovyanGFX config either.
+      Its `cfg.rgb_order` does not map onto esp_lcd's element order the way
+      the names suggest -- the 1.28in has rgb_order=false and the 1.46in
+      has rgb_order=true, which is the exact inverse of what each board
+      actually needs here.
+
+      History, because this one hid for a long time: an earlier version
+      derived the element order from `rgb_order` directly, giving the
+      1.28in RGB and the 1.46in BGR -- wrong on BOTH boards. It was caught
+      on the 1.46in first, and the 1.28in was then recorded as "verified
+      correct" purely because nobody had yet held a known-red swatch up to
+      it. Colour correctness is not something a screen full of UI chrome
+      will tell you. Check it against a deliberate red/green/blue test
+      pattern or do not claim it.
+
+      The MaTouch is excluded: it is an RGB parallel panel whose channel
+      order is set by the data pin grouping, via CAPSTAN_LCD_SWAP_RB.
+
+config CAPSTAN_LCD_MIRROR_X
+    bool "Mirror the display horizontally"
+    default y if CAPSTAN_BOARD_CROWPANEL_128
+    default n
+    help
+      Flips the panel left-to-right. If text reads backwards -- mirrored
+      rather than upside down -- this is the fix.
+
+      Which way a panel scans depends on how the glass is bonded and how
+      the vendor configured MADCTL, so it differs per board and cannot be
+      inferred from another one.
+
+      CrowPanel 1.28in: VERIFIED on hardware -- text was mirrored without
+      this, so it defaults to y.
+
+      This affects the DISPLAY ONLY. The touch controller has its own
+      independent options below -- see the note there, because the obvious
+      assumption is wrong.
+
+config CAPSTAN_LCD_MIRROR_Y
+    bool "Mirror the display vertically"
+    default n
+    help
+      Flips top-to-bottom. Combined with MIRROR_X this gives a 180-degree
+      rotation, which is what you want if the panel is simply mounted
+      upside down.
+
+config CAPSTAN_LCD_SWAP_XY
+    bool "Swap the X and Y axes"
+    default n
+    help
+      Transposes the display. Only meaningful on a panel whose native scan
+      direction is portrait against a landscape frame -- unlikely on these
+      square, round displays, but the knob exists because the alternative
+      when you need it is editing the driver.
+
+config CAPSTAN_LCD_SWAP_RB
+    bool "Swap the red and blue channels"
+    depends on CAPSTAN_BOARD_MATOUCH_21
+    default n
+    help
+      The MaTouch 2.1in colour-channel order cannot be settled from the
+      vendor documentation: the vendor's own firmware comments label GPIO
+      11/15/12/16/21 as R0..R4, while the vendor's own wiki table labels the
+      same pins B0..B4. They are the same physical wires -- the Arduino
+      driver reconciles it by passing a BGR flag -- so one of the two labels
+      is simply wrong, and which one can only be settled by looking at the
+      panel.
+
+      The pin map follows the wiki convention. If the boot test screen shows
+      its red and blue bars swapped, enable this and rebuild. That is a
+      one-line change here rather than an edit to the pin map, which should
+      keep matching the schematic.
+
+comment "Addressable RGB LED ring"
+
+config CAPSTAN_HAS_RGB_LEDS
+    bool
+    default y if CAPSTAN_BOARD_CROWPANEL_128
+    default y if CAPSTAN_BOARD_CROWPANEL_146
+    default n if CAPSTAN_BOARD_MATOUCH_21
+    help
+      Whether the selected board physically has a ring of addressable
+      (WS2812) LEDs around the display.
+
+      This has no prompt on purpose -- it is a property of the hardware, not
+      a preference, so it is derived from the board choice and cannot be set
+      to something the board cannot do. Use CAPSTAN_RGB_LEDS_ENABLED to turn
+      the feature off on a board that has it.
+
+        Elecrow CrowPanel 1.28in   5 LEDs on GPIO48
+        Elecrow CrowPanel 1.46in   8 LEDs on GPIO48, power enable on GPIO17
+        Makerfabs MaTouch 2.1in    none fitted
+
+config CAPSTAN_RGB_LED_COUNT
+    int
+    default 5 if CAPSTAN_BOARD_CROWPANEL_128
+    default 8 if CAPSTAN_BOARD_CROWPANEL_146
+    default 0
+    help
+      Number of LEDs in the ring. Derived from the board; mirrored from
+      BOARD_WS2812_COUNT in board_pins.h, and a compile-time assertion keeps
+      the two from drifting apart.
+
+config CAPSTAN_RGB_LEDS_ENABLED
+    bool "Use the RGB LED ring"
+    depends on CAPSTAN_HAS_RGB_LEDS
+    default y
+    help
+      Drive the LED ring. Turn this off to leave it dark on a board that has
+      one -- useful for a dark sleeping area, for measuring idle current, or
+      while debugging something the LEDs would distract from.
+
+      The ring is intended to carry state the user can read across a room
+      without looking directly at the screen: the climate call colour while
+      heating or cooling, an alert pulse, a confirmation flash. Per-screen
+      behaviour is not implemented yet -- this setting and the capability
+      flag exist so screens can be written against them.
+
+config CAPSTAN_RGB_LEDS_MAX_BRIGHTNESS
+    int "Maximum LED ring brightness (percent)"
+    depends on CAPSTAN_RGB_LEDS_ENABLED
+    range 1 100
+    default 40
+    help
+      Ceiling applied to every LED write. These rings are bright enough at
+      full scale to be unpleasant on a wall at night, and the 1.46in board
+      fits eight of them. 40 percent is a reasonable default for an indoor
+      wall panel.
+
+comment "Touch orientation"
+
+config CAPSTAN_TOUCH_MIRROR_X
+    bool "Mirror touch horizontally"
+    default n
+    help
+      INDEPENDENT of the display mirror, and usually NOT the same value.
+
+      The intuition is that display and touch must carry the same
+      transform. That is wrong, and testing showed why: the display mirror
+      changes how the framebuffer maps onto the glass, while the touch
+      controller is a separate device whose coordinates are fixed by how
+      ITS layer is bonded. On the CrowPanel 1.28in the touch layer already
+      reports in the corrected orientation, so the display needs
+      MIRROR_X=y and touch needs MIRROR_X=n. Setting both mirrored the
+      touch back to front while the display looked perfect.
+
+      Work them out separately on each board. Correct display + wrong
+      touch is the giveaway that these two were tied together.
+
+config CAPSTAN_TOUCH_MIRROR_Y
+    bool "Mirror touch vertically"
+    default n
+
+config CAPSTAN_TOUCH_SWAP_XY
+    bool "Swap touch X and Y axes"
+    default n
+
+comment "Input"
+
+config CAPSTAN_ENCODER_STEPS_PER_DETENT
+    int "Quadrature counts per detent"
+    range 1 8
+    default 2 if CAPSTAN_BOARD_CROWPANEL_128
+    default 2 if CAPSTAN_BOARD_CROWPANEL_146
+    default 4 if CAPSTAN_BOARD_MATOUCH_21
+    help
+      How many counts the full 4x quadrature decoder produces for one
+      mechanical detent. The UI advances one item per detent, so this is the
+      divisor.
+
+      CrowPanel 1.28in: its EC3501 C15H30P3 is specified as 30 detents with
+      "1 pulse per 2 detents", which is 2 counts per detent under 4x decode.
+      Note the datasheet contradicts itself -- section 4-2 claims 30 pulses
+      per revolution per phase, which would give 4. The part number favours
+      the value set here.
+
+      CrowPanel 1.46in: the encoder part is not documented by the vendor. The
+      1.28in value is assumed because the boards are otherwise pin-identical.
+
+      MaTouch 2.1in: the encoder part is not documented either; 4 is the
+      common case for panel-mount encoders.
+
+      All three of these are starting points, not facts. Turn on
+      CAPSTAN_ENCODER_DEBUG, turn the ring one detent, and read the count.
+
+config CAPSTAN_ENCODER_INVERT
+    bool "Invert rotation direction"
+    default y if CAPSTAN_BOARD_MATOUCH_21
+    default n
+    help
+      Clockwise must increase, counter-clockwise must decrease. That is what
+      people expect, and getting it backwards makes the whole device feel
+      wrong even though nothing is technically broken.
+
+      Which way the raw quadrature counts depends on how the encoder is
+      mounted, so it differs between boards and can differ between
+      production runs of the same board. It has to be checked on hardware.
+
+      MaTouch 2.1in: VERIFIED on hardware -- counts backwards without this,
+      so it defaults to y.
+
+      CrowPanel 1.28in / 1.46in: NOT yet verified. Both default to n, which
+      is a guess. Check with the bring-up test screen and correct it here.
+
+config CAPSTAN_ENCODER_DEBUG
+    bool "Log raw encoder steps"
+    default n
+    help
+      Logs every raw quadrature step and button edge. Use once, to calibrate
+      CAPSTAN_ENCODER_STEPS_PER_DETENT, then turn it off -- it is noisy
+      enough to affect frame rate while the ring is turning.
+
+config CAPSTAN_TOUCH_DEFAULT_ENABLED
+    bool "Enable the touchscreen at boot"
+    default n
+    help
+      Leave this OFF for normal builds.
+
+      The ring is the primary input -- rotate to select, press to confirm,
+      long press to go back -- and on these units the whole panel is the
+      button, so pressing the ring IS pressing the screen. With touch live,
+      one physical press produces both an encoder ENTER and a touch event,
+      and they fight: the press lands on whatever is under the user's finger
+      instead of on whatever the ring had focused.
+
+      Touch is therefore off by default and switched on only by the screens
+      that genuinely need pointer input -- the on-screen keyboard, and any
+      list where hitting a target directly beats rotating to it. Those
+      screens call capstan_board_touch_set_enabled() on entry and again on
+      exit.
+
+      Turn this on only to test the touch controller itself.
+
+config CAPSTAN_LONG_PRESS_MS
+    int "Ring long-press duration (ms)"
+    range 300 3000
+    default 700
+    help
+      Held for at least this long, the ring press returns to the menu
+      instead of confirming.
+
+comment "Behaviour"
+
+config CAPSTAN_IDLE_TIMEOUT_S
+    int "Seconds of inactivity before the idle clock appears"
+    range 5 3600
+    default 30
+
+config CAPSTAN_DEFAULT_UNITS_CELSIUS
+    bool "Default to Celsius"
+    default n
+    help
+      Initial value only. The units setting is stored in NVS and the user can
+      change it on the device.
+
+config CAPSTAN_DEFAULT_THEME_DARK
+    bool "Default to the dark theme"
+    default n
+
+comment "Connectivity"
+
+config CAPSTAN_MQTT_DEFAULT_PORT
+    int "Default MQTT port"
+    default 8883
+    help
+      The Headwaters Mosquitto instance listens only on 8883 with TLS and
+      requires a username and password; there is no plaintext 1883 listener.
+      This is the value the settings screen starts from -- the user can
+      change it, and whatever they set is stored in NVS.
+
+config CAPSTAN_MQTT_TLS_SKIP_VERIFY
+    bool "Accept the broker's self-signed certificate"
+    default y
+    help
+      Headwaters ships a self-signed certificate and no CA is provisioned on
+      the device, so the certificate is not verified. Turn this off only once
+      a CA is actually being flashed, or every connection will fail.
+
+comment "Development"
+
+config CAPSTAN_PANEL_SMOKE_TEST
+    bool "Panel smoke test at boot"
+    default n
+    help
+      Immediately after the panel is initialised -- and before LVGL draws
+      anything -- fill the screen red, then green, then blue, for about a
+      second each, writing straight through esp_lcd.
+
+      This isolates the two halves of a black screen. If the bars appear,
+      the panel, its pin map, its timings and its init sequence are all
+      correct and the fault is above, in LVGL or the flush path. If the
+      screen stays black through all three, the fault is in the panel layer
+      and LVGL is irrelevant.
+
+      It also identifies the colour channel order without involving LVGL at
+      all, which is useful on the MaTouch where the vendor's own firmware
+      and wiki disagree about it.
+
+      Costs about a second of boot time. Leave it off for normal builds.
+
+config CAPSTAN_PANEL_SMOKE_TEST_DWELL_MS
+    int "Smoke test: milliseconds per colour"
+    depends on CAPSTAN_PANEL_SMOKE_TEST
+    range 200 10000
+    default 3000
+
+config CAPSTAN_PANEL_SMOKE_TEST_CYCLES
+    int "Smoke test: number of R/G/B cycles"
+    depends on CAPSTAN_PANEL_SMOKE_TEST
+    range 1 20
+    default 3
+    help
+      Total test time is cycles x 3 x dwell. The defaults give 27 seconds,
+      which is long enough that nobody has to catch it on the first boot.
+
+config CAPSTAN_MOCK_DATA
+    bool "Use mock data instead of MQTT"
+    default n
+    help
+      Drives every screen from a synthetic data source so the UI can be
+      exercised on the bench with no rig and no broker. Each value moves on a
+      different period, deliberately -- values that sweep in lockstep hide
+      layout bugs such as a box too narrow for its widest string.
+
+endmenu

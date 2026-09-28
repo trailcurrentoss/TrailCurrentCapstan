@@ -1,0 +1,11 @@
+# Board selection for 'matouch21'.
+#
+# Everything else board-specific (element order, mirroring, pin map) comes
+# from the Kconfig defaults keyed off this symbol, so this file stays a
+# one-line board pick and the verified values live in one place.
+CONFIG_CAPSTAN_BOARD_MATOUCH_21=y
+
+# MaTouch only. Its channel order is fixed by how the parallel data pins are
+# grouped, not by a controller register, so it has its own control rather
+# than sharing CAPSTAN_LCD_BGR with the SPI panels.
+CONFIG_CAPSTAN_LCD_SWAP_RB=y

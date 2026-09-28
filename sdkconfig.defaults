@@ -1,0 +1,123 @@
+# TrailCurrent Capstan — shared build configuration.
+#
+# NEVER edit `sdkconfig` directly. It is generated and .gitignore'd, so edits
+# there are invisible to git status and to review. Everything goes here, and
+# `sdkconfig.defaults` only SEEDS a NEW `sdkconfig` — ESP-IDF does not re-apply
+# it to an existing one. After changing anything below, regenerate with:
+#
+#     rm sdkconfig && idf.py build
+#
+# Verify the key actually landed (`grep CONFIG_THE_KEY sdkconfig`). A line
+# reading "# ... is not set" here after a "=y" above means the regeneration
+# did not happen.
+
+CONFIG_IDF_TARGET="esp32s3"
+
+# ---------------------------------------------------------------------------
+# Memory — identical across all three boards.
+#
+# Verified by reading the silicon over USB rather than trusting the product
+# pages: the MaTouch 2.1" and CrowPanel 1.28" both report ESP32-S3 QFN56
+# rev v0.2, "Embedded PSRAM 8MB (AP_3v3)" and 16 MB quad flash. That "AP_3v3" is the R8 part, which is OCTAL
+# SPI PSRAM — the product pages say only "8MB PSRAM". Getting this wrong costs
+# roughly 4x the PSRAM bandwidth, which an RGB panel cannot absorb.
+# ---------------------------------------------------------------------------
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_ESPTOOLPY_FLASHFREQ_80M=y
+
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_80M=y
+CONFIG_SPIRAM_USE_MALLOC=y
+# Below this size, allocations stay in internal RAM. LVGL draw buffers and the
+# RGB framebuffers are far above it and land in PSRAM; small, latency-sensitive
+# allocations stay fast.
+CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384
+CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=y
+
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y
+
+# ---------------------------------------------------------------------------
+# Partitions
+# ---------------------------------------------------------------------------
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+# ---------------------------------------------------------------------------
+# Console — all three boards expose the ESP32-S3's native USB-Serial/JTAG on
+# their USB-C port. There is no CP210x or CH34x bridge, so the UART0 console
+# default would be silent.
+# ---------------------------------------------------------------------------
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# ---------------------------------------------------------------------------
+# FreeRTOS — 1 kHz tick so LVGL's own tick and animation timing are smooth
+# while the ring is being turned. At the default 100 Hz the encoder feels
+# notchy because input is only sampled every 10 ms.
+# ---------------------------------------------------------------------------
+CONFIG_FREERTOS_HZ=1000
+
+# ---------------------------------------------------------------------------
+# TLS — the Headwaters Mosquitto instance listens ONLY on 8883 with a
+# self-signed certificate (config/mosquitto/mosquitto.conf: `listener 8883`,
+# `allow_anonymous false`). There is no plaintext 1883 listener on the rig.
+#
+# These two flags are what make the no-CA-on-device path acceptable to
+# esp-tls; without them the handshake fails with mbedtls 0x8017 ("No server
+# verification option set"), which reads like a broker problem and is not.
+# Fireside hit exactly this. See docs/mqtt.md.
+# ---------------------------------------------------------------------------
+CONFIG_ESP_TLS_INSECURE=y
+CONFIG_ESP_TLS_SKIP_SERVER_CERT_VERIFY=y
+CONFIG_MQTT_TASK_STACK_SIZE=6144
+
+# ---------------------------------------------------------------------------
+# LVGL 9 — colour depth and the built-in Montserrat sizes the UI references as
+# `MONTSERRAT_<n>`. Any size referenced from the .eez-project MUST be enabled
+# here or the build fails with an undeclared `lv_font_montserrat_<n>`.
+#
+# Custom families (the large numerals and the icon font) are embedded in the
+# .eez-project and emitted as `ui_font_*` by EEZ Studio's export — they are not
+# configured here.
+# ---------------------------------------------------------------------------
+CONFIG_LV_COLOR_DEPTH_16=y
+CONFIG_LV_USE_PERF_MONITOR=n
+CONFIG_LV_FONT_MONTSERRAT_12=y
+CONFIG_LV_FONT_MONTSERRAT_14=y
+CONFIG_LV_FONT_MONTSERRAT_16=y
+CONFIG_LV_FONT_MONTSERRAT_18=y
+CONFIG_LV_FONT_MONTSERRAT_20=y
+CONFIG_LV_FONT_MONTSERRAT_24=y
+CONFIG_LV_FONT_MONTSERRAT_28=y
+CONFIG_LV_FONT_MONTSERRAT_32=y
+CONFIG_LV_FONT_MONTSERRAT_36=y
+CONFIG_LV_FONT_MONTSERRAT_48=y
+# LVGL's own tick comes from an esp_timer in esp_lvgl_port; do not also call
+# lv_tick_inc() from the application or time runs at double rate.
+CONFIG_LV_TICK_CUSTOM=y
+
+# ---------------------------------------------------------------------------
+# LVGL allocator -- route lv_malloc() to the ESP-IDF heap instead of LVGL's
+# own fixed pool.
+#
+# The built-in allocator is a single static array, CONFIG_LV_MEM_SIZE_KILOBYTES
+# (64 KB by default) and NOT growable. EEZ Studio's export builds every screen
+# up front -- `screensLifetimeSupport` is false, so `ui_init()` calls
+# `create_screens()` for all 17 at boot -- and seventeen screens of widgets do
+# not fit in 64 KB.
+#
+# The failure is nasty. LVGL reports it through LV_ASSERT_MALLOC, whose
+# default handler is an infinite loop, so the symptom is not an allocation
+# error: it is the main task spinning forever at one PC with IDLE0 starved
+# and the task watchdog firing every 5 s. Nothing in the log mentions memory,
+# and the backtrace points at whichever allocation happened to be the one
+# that failed -- lv_timer_create(), in the case that found this -- which is
+# never the code at fault.
+#
+# With CLIB malloc, LVGL allocates from the ESP heap, which (with
+# CONFIG_SPIRAM_USE_MALLOC above) can spill into the 8 MB of PSRAM. Failures
+# then also become reportable rather than fatal.
+CONFIG_LV_USE_CLIB_MALLOC=y
+CONFIG_LV_USE_CLIB_STRING=y
+CONFIG_LV_USE_CLIB_SPRINTF=y

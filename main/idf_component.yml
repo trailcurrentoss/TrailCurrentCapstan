@@ -1,0 +1,36 @@
+## Capstan firmware dependencies.
+##
+## VERSION PINNING IS LOAD-BEARING HERE. EEZ Studio generates different LVGL
+## API calls depending on the `lvglVersion` recorded in the .eez-project --
+## the Spangroup API changes shape between 9.2 and 9.3, for instance. If the
+## pin below and the .eez-project disagree, the generated screens.c either
+## fails to compile or fails to link, and the error lands in generated code
+## you are not allowed to edit, pointing at a symbol nobody wrote.
+##
+## The three values that must agree:
+##   - lvgl/lvgl here
+##   - settings.general.lvglVersion in every GUI/Capstan*.eez-project
+##   - whatever esp_lvgl_port was built against
+##
+## Bump them together or not at all.
+
+dependencies:
+  idf: ">=5.3"
+
+  # LVGL 9.2.2. Pinned to the patch series, not "^9", because a minor bump
+  # would silently change the generated API surface (see above).
+  lvgl/lvgl:
+    version: "~9.2.2"
+    public: true
+
+  # LVGL <-> esp_lcd glue: display flush, touch indev, the LVGL task and its
+  # tick source. Pinned alongside LVGL -- a version of this built against a
+  # newer LVGL fails to compile inside itself, which reads like a broken SDK.
+  espressif/esp_lvgl_port:
+    version: "~2.4"
+    public: true
+
+  # mDNS -- required by the Headwaters discovery handshake, which advertises
+  # _trailcurrent._tcp and serves GET /discovery/confirm. See docs/mqtt.md.
+  espressif/mdns:
+    version: "^1.2"

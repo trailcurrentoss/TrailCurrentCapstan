@@ -1,0 +1,34 @@
+## Panel and touch drivers.
+##
+## Only the driver for the selected board is actually used, but the component
+## manager has no notion of Kconfig-conditional dependencies, so all three are
+## fetched. They are small, and this keeps a board switch to a menuconfig
+## change with no manifest edit.
+##
+## There is deliberately no JD9855 entry: no such component exists, from
+## Espressif or anyone else. That panel is driven by src/panel_jd9855.c in
+## this component, whose register table is transcribed from LovyanGFX.
+
+dependencies:
+  # Common touch interface. Both CST826 (MaTouch) and CST816D/T (CrowPanels)
+  # speak the same register map at the same I2C address, so one driver covers
+  # all three boards.
+  espressif/esp_lcd_touch:
+    version: "^1.1"
+  espressif/esp_lcd_touch_cst816s:
+    version: "^1.0"
+
+  # ST7701S -- MaTouch 2.1" 480x480, RGB565 parallel with a 3-wire SPI
+  # sideband for the init sequence.
+  espressif/esp_lcd_st7701:
+    version: "^1.1"
+
+  # Provides esp_lcd_new_panel_io_3wire_spi() and spi_line_config_t, which
+  # the ST7701's init sideband needs. It is NOT part of esp_lcd_st7701 and
+  # NOT part of ESP-IDF's own esp_lcd -- a separate component, easy to miss.
+  espressif/esp_lcd_panel_io_additions:
+    version: "^1.0"
+
+  # GC9A01 -- CrowPanel 1.28" 240x240, plain 4-wire SPI.
+  espressif/esp_lcd_gc9a01:
+    version: "^2.0"
