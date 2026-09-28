@@ -45,11 +45,8 @@ typedef enum {
     CAPSTAN_SCREEN_LEVEL,
     CAPSTAN_SCREEN_DOORS,
     CAPSTAN_SCREEN_SETTINGS,
-    CAPSTAN_SCREEN_WIFI,       /* network list */
-    CAPSTAN_SCREEN_WIFI_SEC,   /* security type selection */
-    CAPSTAN_SCREEN_MQTT,       /* broker fields */
-    CAPSTAN_SCREEN_KEYBOARD,   /* text entry -- needs touch */
     CAPSTAN_SCREEN_ALERT,      /* full-screen overlay */
+    CAPSTAN_SCREEN_SETUP,      /* soft-AP provisioning instructions */
     CAPSTAN_SCREEN_COUNT
 } capstan_screen_t;
 
@@ -82,14 +79,6 @@ void ui_nav_goto(capstan_screen_t screen);
 
 /** Where a long press or the back chip goes from the current screen. */
 void ui_nav_back(void);
-
-/**
- * Where Back goes from the keyboard.
- *
- * The keyboard is shared, so its return destination belongs to whoever
- * opened it. Set by ui_keyboard_open(); there is no sensible default.
- */
-void ui_nav_set_keyboard_return(capstan_screen_t screen);
 
 /*
  * Ring input.

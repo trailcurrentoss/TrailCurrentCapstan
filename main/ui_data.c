@@ -25,7 +25,7 @@
 #include "capstan_wifi.h"
 #include "ui_data.h"
 #include "ui_nav.h"
-#include "ui_wifi.h"
+#include "ui_setup.h"
 
 #ifndef CAPSTAN_HAVE_UI
 #  error "CAPSTAN_HAVE_UI is not defined -- main/CMakeLists.txt must set it"
@@ -258,7 +258,7 @@ void ui_data_refresh(void)
      * well, and the two drift.
      */
     refresh_settings();
-    ui_wifi_tick();          /* scan results + title, off the event task */
+    ui_setup_tick();         /* portal progress while provisioning */
     refresh_energy();
     refresh_water();
     refresh_air();

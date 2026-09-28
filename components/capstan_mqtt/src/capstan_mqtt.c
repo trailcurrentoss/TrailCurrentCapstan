@@ -439,6 +439,24 @@ static void apply(const msg_t *m)
         num(root, "state", &st);
         num(root, "brightness", &br);
         capstan_model_set_light(id, st != 0, (int)br);
+    } else if (strcmp(m->topic, "local/gps/time") == 0) {
+        /* UTC calendar fields from Milepost's GNSS fix -- the only clock
+         * source on the rig. Every field is required; a partial date is
+         * not a date. */
+        double y, mo, d, h, mi, sec;
+        if (num(root, "year", &y)   && num(root, "month", &mo) &&
+            num(root, "day", &d)    && num(root, "hour", &h)   &&
+            num(root, "minute", &mi)&& num(root, "second", &sec)) {
+            capstan_model_set_gps_time((int)y, (int)mo, (int)d,
+                                       (int)h, (int)mi, (int)sec);
+        }
+    } else if (strcmp(m->topic, "os/timezone/current") == 0) {
+        /* Retained, so this arrives once on connect and again whenever
+         * the user changes it in the Headwaters PWA. */
+        const cJSON *tz = cJSON_GetObjectItemCaseSensitive(root, "tz");
+        if (cJSON_IsString(tz)) {
+            capstan_model_set_timezone(tz->valuestring);
+        }
     } else if (strncmp(m->topic, "local/picket/", 13) == 0) {
         double addr = 0, inputs = 0;
         num(root, "addr", &addr);

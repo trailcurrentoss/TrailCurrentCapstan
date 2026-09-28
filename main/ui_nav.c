@@ -10,10 +10,9 @@
 
 #include "capstan_board.h"
 #include "ui_nav.h"
-#include "ui_keyboard.h"
-#include "ui_mqtt.h"
+#include "ui_clock.h"
 #include "ui_settings.h"
-#include "ui_wifi.h"
+#include "ui_setup.h"
 
 /* From main/CMakeLists.txt -- see the note there and in main.c. Never
  * __has_include: it cannot notice an export that appears later. */
@@ -96,33 +95,20 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_SETTINGS]     = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_MENU,     "settings" },
 
-    /*
-     * Wi-Fi network list. Ring-only by default: the list is short and
-     * rotating it is fine. If bench testing shows picking a network from a
-     * long scan is painful, this is the first line to reconsider -- and
-     * changing it is a one-word edit, with no screen code to touch.
-     */
-    [CAPSTAN_SCREEN_WIFI]         = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_SETTINGS, "wifi" },
-    [CAPSTAN_SCREEN_WIFI_SEC]     = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_WIFI,     "wifi.security" },
-    [CAPSTAN_SCREEN_MQTT]         = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_SETTINGS, "mqtt" },
 
-    /*
-     * Text entry. The one screen that genuinely needs a pointer -- typing a
-     * WPA2 passphrase by rotating to each character in turn is not a real
-     * option. Touch is live here and nowhere else by default.
-     *
-     * `back` is patched at runtime to whichever field invoked the keyboard.
-     */
-    [CAPSTAN_SCREEN_KEYBOARD]     = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_SETTINGS, "keyboard" },
 
     /*
      * Alert overlay. Dismissed by a press, from anywhere. Ring-only, so a
      * stray touch cannot dismiss an alarm the user has not read.
      */
+    /*
+     * Setup. Ring-only: everything the user does here happens on their
+     * phone, and the display is a set of instructions. A touch target
+     * would suggest otherwise.
+     */
+    [CAPSTAN_SCREEN_SETUP]        = { CAPSTAN_INPUT_RING_ONLY,
+                                      CAPSTAN_SCREEN_SETTINGS, "setup" },
+
     [CAPSTAN_SCREEN_ALERT]        = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "alert" },
 };
@@ -173,11 +159,8 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_LEVEL]        = SCREEN_ID_PAGE_LEVEL,
     [CAPSTAN_SCREEN_DOORS]        = SCREEN_ID_PAGE_DOORS,
     [CAPSTAN_SCREEN_SETTINGS]     = SCREEN_ID_PAGE_SETTINGS,
-    [CAPSTAN_SCREEN_WIFI]         = SCREEN_ID_PAGE_WIFI,
-    [CAPSTAN_SCREEN_WIFI_SEC]     = SCREEN_ID_PAGE_WIFI_SECURITY,
-    [CAPSTAN_SCREEN_MQTT]         = SCREEN_ID_PAGE_MQTT,
-    [CAPSTAN_SCREEN_KEYBOARD]     = SCREEN_ID_PAGE_KEYBOARD,
     [CAPSTAN_SCREEN_ALERT]        = SCREEN_ID_PAGE_ALERT,
+    [CAPSTAN_SCREEN_SETUP]        = SCREEN_ID_PAGE_SETUP,
 };
 
 _Static_assert((int)CAPSTAN_SCREEN_COUNT == (int)_SCREEN_ID_LAST,
@@ -276,10 +259,11 @@ void ui_nav_goto(capstan_screen_t screen)
      * Per-screen entry work. Kept to a dispatch: the navigator says WHEN a
      * screen appears, the screen's own module says what that means.
      */
-    if (screen == CAPSTAN_SCREEN_WIFI) {
-        ui_wifi_screen_entered();
-    } else if (screen == CAPSTAN_SCREEN_MQTT) {
-        ui_mqtt_screen_entered();
+    if (screen == CAPSTAN_SCREEN_IDLE) {
+        /* The face only ticks while it is showing, so coming back to it
+         * after ten minutes elsewhere would otherwise display ten-minute
+         * old hands until the next second boundary. */
+        ui_clock_refresh();
     }
 #endif
 
@@ -292,10 +276,6 @@ void ui_nav_back(void)
     /* Swallow the ring press that a touch on the Back chip also makes. */
     s_back_us = esp_timer_get_time();
 
-    if (s_current == CAPSTAN_SCREEN_KEYBOARD) {
-        ui_nav_goto(s_keyboard_return);
-        return;
-    }
     ui_nav_goto(s_policy[s_current].back);
 }
 
@@ -412,9 +392,6 @@ static lv_obj_t *list_container(capstan_screen_t s)
     case CAPSTAN_SCREEN_LIGHTS:       return objects.lights_list;
     case CAPSTAN_SCREEN_DOORS:        return objects.doors_list;
     case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_list;
-    case CAPSTAN_SCREEN_WIFI:         return objects.wifi_list;
-    case CAPSTAN_SCREEN_WIFI_SEC:     return objects.wsec_list;
-    case CAPSTAN_SCREEN_MQTT:         return objects.mqtt_list;
     default:                          return NULL;
     }
 #else
@@ -590,8 +567,25 @@ void ui_nav_press(void)
          * so it gets a confirmation step rather than acting on the press
          * that lands on it. */
         switch (s_sel[CAPSTAN_SCREEN_SETTINGS]) {
-        case 0: ui_nav_goto(CAPSTAN_SCREEN_WIFI); return;
-        case 1: ui_nav_goto(CAPSTAN_SCREEN_MQTT); return;
+        case 0:
+            /*
+             * Wi-Fi means PHONE SETUP. There is no on-device editor
+             * any more: PageWifi, PageWifiSecurity, PageMqtt and
+             * PageKeyboard are gone, along with the modules that drove
+             * them. Entering a WPA2 passphrase by rotating a ring was
+             * built, tried on the bench, and does not work on a panel
+             * this size.
+             *
+             * Raising the portal from here is a convenience. The
+             * documented route is a factory reset, which is what an
+             * unprovisioned device does by itself at boot.
+             */
+            ui_setup_enter();
+            return;
+        case 1:
+            /* Read-only status. Broker details are set in the portal. */
+            ESP_LOGD(TAG, "MQTT row is status only -- use setup mode");
+            return;
         case 3: ui_settings_factory_reset_pressed(); return;
         default:
             ESP_LOGD(TAG, "settings row %d has no action yet",
@@ -599,40 +593,16 @@ void ui_nav_press(void)
             return;
         }
 
-    case CAPSTAN_SCREEN_WIFI:
-        /* Pick a network -> ask for its security type explicitly, rather
-         * than inferring it from the scan record. See docs/screens.md.
-         * The SSID is captured NOW, because a rescan can replace the
-         * rows while the user is still working through the flow. */
-        ui_wifi_select(s_sel[CAPSTAN_SCREEN_WIFI]);
-        ui_nav_goto(CAPSTAN_SCREEN_WIFI_SEC);
-        return;
-
-    case CAPSTAN_SCREEN_WIFI_SEC:
-        /* Opens the keyboard itself, or skips it for an open network. */
-        ui_wifi_set_security_index(s_sel[CAPSTAN_SCREEN_WIFI_SEC]);
-        return;
-
-    case CAPSTAN_SCREEN_MQTT:
-        ui_mqtt_row_pressed(s_sel[CAPSTAN_SCREEN_MQTT]);
-        return;
-
-    case CAPSTAN_SCREEN_CLIMATE_MODE:
-        /* Choosing a mode returns to Climate; the choice itself is applied
-         * by the data layer once the thermostat backend exists. */
-        ui_nav_back();
-        return;
-#endif
-
     case CAPSTAN_SCREEN_ALERT:
         ui_nav_back();      /* a press dismisses an alert from anywhere */
         return;
+#endif
 
     default:
         /*
-         * Screens whose press behaviour arrives with their layout. Doing
-         * nothing is correct for now and is not silent: the log says which
-         * screen swallowed the press.
+         * Screens whose press behaviour arrives with their layout.
+         * Doing nothing is correct for now and is not silent: the log
+         * says which screen swallowed the press.
          */
         ESP_LOGD(TAG, "press on '%s' has no action yet",
                  s_policy[s_current].name);

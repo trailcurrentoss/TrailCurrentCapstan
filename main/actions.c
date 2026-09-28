@@ -36,8 +36,6 @@
 #include "ui.h"
 
 #include "ui_nav.h"
-#include "ui_keyboard.h"
-#include "ui_wifi.h"
 
 /*
  * EEZ Studio emits an `extern void action_<name>(lv_event_t *)` for every
@@ -57,26 +55,6 @@ void action_nav_back(lv_event_t *e)
     /* The Back chip on every screen. ui_nav_back() applies the policy
      * table and swallows the ring press that a touch here also makes. */
     ui_nav_back();
-}
-
-void action_keyboard_ok(lv_event_t *e)
-{
-    (void)e;
-    /* LVGL raises READY on the green key by itself. Who wanted the text
-     * is the keyboard mediator's business, not this file's. */
-    ui_keyboard_accept();
-}
-
-void action_keyboard_cancel(lv_event_t *e)
-{
-    (void)e;
-    ui_keyboard_cancel();
-}
-
-void action_keyboard_reveal(lv_event_t *e)
-{
-    (void)e;
-    ui_keyboard_toggle_reveal();
 }
 
 /* ----------------------------------------------------------------------
@@ -99,13 +77,6 @@ CAPSTAN_ACTION_TODO(action_light_toggle)
 CAPSTAN_ACTION_TODO(action_scene_apply)
 CAPSTAN_ACTION_TODO(action_heater_level)
 CAPSTAN_ACTION_TODO(action_energy_page)
-CAPSTAN_ACTION_TODO(action_wifi_scan)
-CAPSTAN_ACTION_TODO(action_wifi_select)
-CAPSTAN_ACTION_TODO(action_wifi_connect)
-CAPSTAN_ACTION_TODO(action_wifi_security_select)
-CAPSTAN_ACTION_TODO(action_mqtt_field_edit)
-CAPSTAN_ACTION_TODO(action_mqtt_save)
-CAPSTAN_ACTION_TODO(action_keyboard_key)
 CAPSTAN_ACTION_TODO(action_settings_toggle_units)
 CAPSTAN_ACTION_TODO(action_settings_toggle_theme)
 CAPSTAN_ACTION_TODO(action_touch_calibrate_start)

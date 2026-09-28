@@ -396,3 +396,22 @@ config CAPSTAN_MOCK_DATA
       layout bugs such as a box too narrow for its widest string.
 
 endmenu
+
+config CAPSTAN_WIFI_TX_POWER_QDBM
+    int "Wi-Fi maximum transmit power (quarter-dBm)"
+    range 8 80
+    default 80
+    help
+      esp_wifi_set_max_tx_power() takes quarter-dBm, so 80 is 20 dBm
+      (the default and the maximum) and 40 is 10 dBm.
+
+      Lower this only to diagnose or work around a board whose supply
+      cannot sustain transmit bursts. A radio that receives well but
+      cannot be heard is the signature: transmit pulls roughly 300 mA in
+      bursts while receive does not, so a marginal 3V3 rail breaks
+      transmission first and leaves reception looking perfect.
+
+      The MaTouch showed exactly that -- the best receive of the three
+      boards (-13 dBm, 7 networks) while its soft AP never appeared in
+      any scan and it could not associate with a network the other two
+      could see.

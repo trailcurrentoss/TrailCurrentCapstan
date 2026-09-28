@@ -145,11 +145,15 @@ untested. The product screens do not exist yet.
 | RGB LED ring capability | config + runtime flag done; driver not written |
 | NVS settings store | done, boots and loads defaults on hardware |
 | Touch calibration engine | done (affine fit, NVS, versioned); screen is scaffolding |
-| Wi-Fi scan / join / credentials | written, builds; untested on hardware |
-| MQTT client | written, builds; untested on hardware |
-| Data model (staleness, `--`) | written, builds; untested on hardware |
+| Wi-Fi scan / join / credentials | **verified on hardware** — scan, security picker, passphrase, connect, auto-rejoin at boot |
+| MQTT client | **connects on hardware** (TLS 8883, self-signed); subscriptions confirmed |
+| Data model (staleness, `--`) | wired end to end; values seen arriving and correctly expiring |
 | EEZ projects (palette, fonts, styles) | done, open cleanly in EEZ Studio |
-| EEZ screens (layout) | 3 of 17 authored (Idle, Menu, Climate); the rest are empty roots |
+| EEZ screens (layout) | **all 17 authored** across all three resolutions |
+| Ring navigation | **verified** — clamped selection, press, long-press, touch Back |
+| Settings: MQTT fields, factory reset | **verified on hardware** |
+| Energy paging | 5 pages (battery / charge / solar / load / runtime) |
+| Live data on readout screens | Energy, Water, Air, Level bound; Lights and Doors not yet |
 
 Tracked debt:
 
@@ -164,6 +168,29 @@ Tracked debt:
 Factory firmware for all three boards is backed up and checksummed under
 `DOCS/FactoryFirmware/`; each image is identified from its own contents, not
 from the port it came off.
+
+Hard-won constraints worth not rediscovering:
+
+- **Nothing may run on the system event task.** `capstan_wifi`'s state
+  callback runs on `sys_evt`, whose stack is 2304 bytes, and starting a
+  TLS MQTT client from there overflowed it and rebooted all three panels
+  in a loop. Connection state is *polled* instead — from the 6 KB service
+  task and the LVGL refresh timer. Same rule for the scan callback: it
+  copies results and sets a flag, and the painting happens on the LVGL
+  task.
+- **LVGL's allocator is not the ESP heap by default.** The built-in pool
+  is a fixed 64 KB and EEZ builds all 17 screens at boot, which needs
+  ~60 KB. Overrun trips `LV_ASSERT_MALLOC`, whose default handler is an
+  infinite loop — presenting as a watchdog timeout pointing at whatever
+  allocation happened to be unlucky, never at memory.
+  `CONFIG_LV_USE_CLIB_MALLOC=y` routes it to the ESP heap and PSRAM.
+- **`__has_include` cannot detect a file that appears later.** It records
+  no dependency on an absent path, so a unit compiled before the first
+  EEZ export bakes in "no UI" forever. The generated UI's presence is
+  decided in `main/CMakeLists.txt` and passed as `CAPSTAN_HAVE_UI`.
+- **Energy is published on CAN frames, not on a timer.** Without live CAN
+  traffic a value appears and is correctly expired 10 s later. That flicker
+  is the staleness rule working, not a bug.
 
 Known gaps, carried deliberately rather than guessed at:
 

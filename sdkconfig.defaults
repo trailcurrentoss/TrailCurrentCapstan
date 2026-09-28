@@ -59,6 +59,22 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 CONFIG_FREERTOS_HZ=1000
 
 # ---------------------------------------------------------------------------
+# Software-timer task stack.
+#
+# ESP-IDF defaults this to 2048 bytes, which is not enough here. `Tmr Svc` is
+# SHARED: the Wi-Fi retry timer calls esp_wifi_connect() on it, and bringing
+# up the soft AP adds the DHCP server's timers to the same task. It overflowed
+# on the 2.1in as soon as setup mode started:
+#
+#   ***ERROR*** A stack overflow in task Tmr Svc has been detected.
+#
+# The tempting fix is to make our own timer callback frugal, but that only
+# addresses the one user we control -- lwIP's DHCP server and esp_netif also
+# schedule work here and are not ours to change. Raising the shared stack is
+# the correct fix for a shared resource.
+CONFIG_FREERTOS_TIMER_TASK_STACK_DEPTH=4096
+
+# ---------------------------------------------------------------------------
 # TLS — the Headwaters Mosquitto instance listens ONLY on 8883 with a
 # self-signed certificate (config/mosquitto/mosquitto.conf: `listener 8883`,
 # `allow_anonymous false`). There is no plaintext 1883 listener on the rig.

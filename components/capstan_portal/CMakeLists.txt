@@ -1,0 +1,16 @@
+idf_component_register(
+    SRCS
+        "src/capstan_portal.c"
+        "src/portal_dns.c"
+    INCLUDE_DIRS
+        "include"
+    PRIV_INCLUDE_DIRS
+        "src"
+    REQUIRES
+        capstan_config
+        capstan_wifi
+        esp_http_server
+        esp_wifi
+        lwip
+        json
+)

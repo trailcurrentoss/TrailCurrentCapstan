@@ -88,11 +88,10 @@ idf_component_register(
     SRCS
         "main.c"
         "ui_nav.c"
-        "ui_wifi.c"
         "ui_settings.c"
-        "ui_keyboard.c"
-        "ui_mqtt.c"
         "ui_data.c"
+        "ui_setup.c"
+        "ui_clock.c"
         "actions.c"
         "vars.c"
         ${UI_CORE}
@@ -107,6 +106,7 @@ idf_component_register(
         capstan_model
         capstan_wifi
         capstan_mqtt
+        capstan_portal
         nvs_flash
         esp_timer
 )

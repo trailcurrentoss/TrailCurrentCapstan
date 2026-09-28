@@ -23,12 +23,9 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_LEVEL = 10,
     SCREEN_ID_PAGE_DOORS = 11,
     SCREEN_ID_PAGE_SETTINGS = 12,
-    SCREEN_ID_PAGE_WIFI = 13,
-    SCREEN_ID_PAGE_WIFI_SECURITY = 14,
-    SCREEN_ID_PAGE_MQTT = 15,
-    SCREEN_ID_PAGE_KEYBOARD = 16,
-    SCREEN_ID_PAGE_ALERT = 17,
-    _SCREEN_ID_LAST = 17
+    SCREEN_ID_PAGE_ALERT = 13,
+    SCREEN_ID_PAGE_SETUP = 14,
+    _SCREEN_ID_LAST = 14
 };
 
 typedef struct _objects_t {
@@ -44,11 +41,8 @@ typedef struct _objects_t {
     lv_obj_t *page_level;
     lv_obj_t *page_doors;
     lv_obj_t *page_settings;
-    lv_obj_t *page_wifi;
-    lv_obj_t *page_wifi_security;
-    lv_obj_t *page_mqtt;
-    lv_obj_t *page_keyboard;
     lv_obj_t *page_alert;
+    lv_obj_t *page_setup;
     lv_obj_t *idle_ring;
     lv_obj_t *idle_date;
     lv_obj_t *idle_hand_hour;
@@ -246,91 +240,18 @@ typedef struct _objects_t {
     lv_obj_t *settings_item3_title;
     lv_obj_t *settings_back;
     lv_obj_t *settings_back_icon;
-    lv_obj_t *wifi_title;
-    lv_obj_t *wifi_list;
-    lv_obj_t *wifi_item0;
-    lv_obj_t *wifi_item0_icon;
-    lv_obj_t *wifi_item0_title;
-    lv_obj_t *wifi_item0_value;
-    lv_obj_t *wifi_item1;
-    lv_obj_t *wifi_item1_icon;
-    lv_obj_t *wifi_item1_title;
-    lv_obj_t *wifi_item1_value;
-    lv_obj_t *wifi_item2;
-    lv_obj_t *wifi_item2_icon;
-    lv_obj_t *wifi_item2_title;
-    lv_obj_t *wifi_item2_value;
-    lv_obj_t *wifi_item3;
-    lv_obj_t *wifi_item3_icon;
-    lv_obj_t *wifi_item3_title;
-    lv_obj_t *wifi_item3_value;
-    lv_obj_t *wifi_item4;
-    lv_obj_t *wifi_item4_icon;
-    lv_obj_t *wifi_item4_title;
-    lv_obj_t *wifi_item4_value;
-    lv_obj_t *wifi_item5;
-    lv_obj_t *wifi_item5_icon;
-    lv_obj_t *wifi_item5_title;
-    lv_obj_t *wifi_item5_value;
-    lv_obj_t *wifi_item6;
-    lv_obj_t *wifi_item6_icon;
-    lv_obj_t *wifi_item6_title;
-    lv_obj_t *wifi_item6_value;
-    lv_obj_t *wifi_item7;
-    lv_obj_t *wifi_item7_icon;
-    lv_obj_t *wifi_item7_title;
-    lv_obj_t *wifi_item7_value;
-    lv_obj_t *wifi_item8;
-    lv_obj_t *wifi_item8_icon;
-    lv_obj_t *wifi_item8_title;
-    lv_obj_t *wifi_item8_value;
-    lv_obj_t *wifi_item9;
-    lv_obj_t *wifi_item9_icon;
-    lv_obj_t *wifi_item9_title;
-    lv_obj_t *wifi_item9_value;
-    lv_obj_t *wifi_back;
-    lv_obj_t *wifi_back_icon;
-    lv_obj_t *wsec_title;
-    lv_obj_t *wsec_list;
-    lv_obj_t *wsec_item0;
-    lv_obj_t *wsec_item0_title;
-    lv_obj_t *wsec_item1;
-    lv_obj_t *wsec_item1_title;
-    lv_obj_t *wsec_item2;
-    lv_obj_t *wsec_item2_title;
-    lv_obj_t *wsec_item3;
-    lv_obj_t *wsec_item3_title;
-    lv_obj_t *wifi_security_back;
-    lv_obj_t *wifi_security_back_icon;
-    lv_obj_t *mqtt_title;
-    lv_obj_t *mqtt_list;
-    lv_obj_t *mqtt_item0;
-    lv_obj_t *mqtt_item0_title;
-    lv_obj_t *mqtt_item0_value;
-    lv_obj_t *mqtt_item1;
-    lv_obj_t *mqtt_item1_title;
-    lv_obj_t *mqtt_item1_value;
-    lv_obj_t *mqtt_item2;
-    lv_obj_t *mqtt_item2_title;
-    lv_obj_t *mqtt_item2_value;
-    lv_obj_t *mqtt_item3;
-    lv_obj_t *mqtt_item3_title;
-    lv_obj_t *mqtt_item3_value;
-    lv_obj_t *mqtt_item4;
-    lv_obj_t *mqtt_item4_title;
-    lv_obj_t *mqtt_back;
-    lv_obj_t *mqtt_back_icon;
-    lv_obj_t *kb_field;
-    lv_obj_t *kb_eye;
-    lv_obj_t *kb_eye_icon;
-    lv_obj_t *kb_keys;
-    lv_obj_t *keyboard_back;
-    lv_obj_t *keyboard_back_icon;
     lv_obj_t *alert_bg;
     lv_obj_t *alert_icon;
     lv_obj_t *alert_title;
     lv_obj_t *alert_message;
     lv_obj_t *alert_hint;
+    lv_obj_t *setup_title;
+    lv_obj_t *setup_ssid_label;
+    lv_obj_t *setup_ssid;
+    lv_obj_t *setup_pass_label;
+    lv_obj_t *setup_pass;
+    lv_obj_t *setup_url;
+    lv_obj_t *setup_status;
 } objects_t;
 
 extern objects_t objects;
@@ -371,20 +292,11 @@ void tick_screen_page_doors();
 void create_screen_page_settings();
 void tick_screen_page_settings();
 
-void create_screen_page_wifi();
-void tick_screen_page_wifi();
-
-void create_screen_page_wifi_security();
-void tick_screen_page_wifi_security();
-
-void create_screen_page_mqtt();
-void tick_screen_page_mqtt();
-
-void create_screen_page_keyboard();
-void tick_screen_page_keyboard();
-
 void create_screen_page_alert();
 void tick_screen_page_alert();
+
+void create_screen_page_setup();
+void tick_screen_page_setup();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

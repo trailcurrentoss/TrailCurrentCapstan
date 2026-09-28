@@ -2215,971 +2215,6 @@ void create_screen_page_settings() {
 void tick_screen_page_settings() {
 }
 
-void create_screen_page_wifi() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.page_wifi = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 480, 480);
-    add_style_screen_root(obj);
-    {
-        lv_obj_t *parent_obj = obj;
-        {
-            // wifi_title
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.wifi_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
-            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Wi-Fi");
-        }
-        {
-            // wifi_list
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.wifi_list = obj;
-            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(24));
-            lv_obj_set_size(obj, LV_PCT(68), LV_PCT(60));
-            lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
-            lv_obj_set_scroll_dir(obj, LV_DIR_VER);
-            add_style_plain(obj);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // wifi_item0
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item0 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item0_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item0_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item0_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item0_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item0_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item0_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item1
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item1 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(25));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item1_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item1_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item1_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item1_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item1_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item1_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item2
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item2 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(50));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item2_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item2_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item2_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item2_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item2_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item2_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item3
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item3 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(75));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item3_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item3_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item3_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item3_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item3_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item3_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item4
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item4 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(100));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item4_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item4_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item4_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item4_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item4_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item4_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item5
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item5 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(125));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item5_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item5_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item5_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item5_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item5_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item5_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item6
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item6 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(150));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item6_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item6_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item6_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item6_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item6_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item6_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item7
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item7 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(175));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item7_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item7_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item7_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item7_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item7_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item7_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item8
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item8 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(200));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item8_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item8_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item8_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item8_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item8_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item8_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // wifi_item9
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wifi_item9 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(225));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wifi_item9_icon
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item9_icon = obj;
-                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
-                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                            add_style_label_icon_sm(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
-                        }
-                        {
-                            // wifi_item9_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item9_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                        {
-                            // wifi_item9_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wifi_item9_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-            }
-        }
-        {
-            // wifi_back
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.wifi_back = obj;
-            lv_obj_set_pos(obj, LV_PCT(42), LV_PCT(84));
-            lv_obj_set_size(obj, LV_PCT(16), LV_PCT(11));
-            lv_obj_add_event_cb(obj, action_nav_back, LV_EVENT_CLICKED, (void *)0);
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // wifi_back_icon
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.wifi_back_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(20));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(60));
-                    lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon_sm(obj);
-                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
-                }
-            }
-        }
-    }
-    
-    tick_screen_page_wifi();
-}
-
-void tick_screen_page_wifi() {
-}
-
-void create_screen_page_wifi_security() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.page_wifi_security = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 480, 480);
-    add_style_screen_root(obj);
-    {
-        lv_obj_t *parent_obj = obj;
-        {
-            // wsec_title
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.wsec_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
-            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Security");
-        }
-        {
-            // wsec_list
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.wsec_list = obj;
-            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(24));
-            lv_obj_set_size(obj, LV_PCT(68), LV_PCT(60));
-            lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
-            lv_obj_set_scroll_dir(obj, LV_DIR_VER);
-            add_style_plain(obj);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // wsec_item0
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wsec_item0 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wsec_item0_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wsec_item0_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "Open");
-                        }
-                    }
-                }
-                {
-                    // wsec_item1
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wsec_item1 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(25));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wsec_item1_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wsec_item1_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "WEP");
-                        }
-                    }
-                }
-                {
-                    // wsec_item2
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wsec_item2 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(50));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wsec_item2_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wsec_item2_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "WPA/WPA2");
-                        }
-                    }
-                }
-                {
-                    // wsec_item3
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.wsec_item3 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(75));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // wsec_item3_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.wsec_item3_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "WPA3");
-                        }
-                    }
-                }
-            }
-        }
-        {
-            // wifi_security_back
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.wifi_security_back = obj;
-            lv_obj_set_pos(obj, LV_PCT(42), LV_PCT(84));
-            lv_obj_set_size(obj, LV_PCT(16), LV_PCT(11));
-            lv_obj_add_event_cb(obj, action_nav_back, LV_EVENT_CLICKED, (void *)0);
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // wifi_security_back_icon
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.wifi_security_back_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(20));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(60));
-                    lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon_sm(obj);
-                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
-                }
-            }
-        }
-    }
-    
-    tick_screen_page_wifi_security();
-}
-
-void tick_screen_page_wifi_security() {
-}
-
-void create_screen_page_mqtt() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.page_mqtt = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 480, 480);
-    add_style_screen_root(obj);
-    {
-        lv_obj_t *parent_obj = obj;
-        {
-            // mqtt_title
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.mqtt_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
-            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "MQTT");
-        }
-        {
-            // mqtt_list
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.mqtt_list = obj;
-            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(24));
-            lv_obj_set_size(obj, LV_PCT(68), LV_PCT(60));
-            lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
-            lv_obj_set_scroll_dir(obj, LV_DIR_VER);
-            add_style_plain(obj);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // mqtt_item0
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.mqtt_item0 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // mqtt_item0_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item0_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "Host");
-                        }
-                        {
-                            // mqtt_item0_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item0_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // mqtt_item1
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.mqtt_item1 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(25));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // mqtt_item1_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item1_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "Port");
-                        }
-                        {
-                            // mqtt_item1_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item1_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "8883");
-                        }
-                    }
-                }
-                {
-                    // mqtt_item2
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.mqtt_item2 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(50));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // mqtt_item2_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item2_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "User");
-                        }
-                        {
-                            // mqtt_item2_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item2_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // mqtt_item3
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.mqtt_item3 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(75));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // mqtt_item3_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item3_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "Password");
-                        }
-                        {
-                            // mqtt_item3_value
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item3_value = obj;
-                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_muted(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "--");
-                        }
-                    }
-                }
-                {
-                    // mqtt_item4
-                    lv_obj_t *obj = lv_obj_create(parent_obj);
-                    objects.mqtt_item4 = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(100));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(23));
-                    add_style_card(obj);
-                    {
-                        lv_obj_t *parent_obj = obj;
-                        {
-                            // mqtt_item4_title
-                            lv_obj_t *obj = lv_label_create(parent_obj);
-                            objects.mqtt_item4_title = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(24));
-                            lv_obj_set_size(obj, LV_PCT(62), LV_PCT(52));
-                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-                            add_style_label_body(obj);
-                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text(obj, "Save");
-                        }
-                    }
-                }
-            }
-        }
-        {
-            // mqtt_back
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.mqtt_back = obj;
-            lv_obj_set_pos(obj, LV_PCT(42), LV_PCT(84));
-            lv_obj_set_size(obj, LV_PCT(16), LV_PCT(11));
-            lv_obj_add_event_cb(obj, action_nav_back, LV_EVENT_CLICKED, (void *)0);
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // mqtt_back_icon
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.mqtt_back_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(20));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(60));
-                    lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon_sm(obj);
-                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
-                }
-            }
-        }
-    }
-    
-    tick_screen_page_mqtt();
-}
-
-void tick_screen_page_mqtt() {
-}
-
-void create_screen_page_keyboard() {
-    lv_obj_t *obj = lv_obj_create(0);
-    objects.page_keyboard = obj;
-    lv_obj_set_pos(obj, 0, 0);
-    lv_obj_set_size(obj, 480, 480);
-    add_style_screen_root(obj);
-    {
-        lv_obj_t *parent_obj = obj;
-        {
-            // kb_field
-            lv_obj_t *obj = lv_textarea_create(parent_obj);
-            objects.kb_field = obj;
-            lv_obj_set_pos(obj, LV_PCT(13), LV_PCT(20));
-            lv_obj_set_size(obj, LV_PCT(56), LV_PCT(11));
-            lv_textarea_set_max_length(obj, 64);
-            lv_textarea_set_placeholder_text(obj, "Password");
-            lv_textarea_set_one_line(obj, true);
-            lv_textarea_set_password_mode(obj, true);
-            add_style_field(obj);
-        }
-        {
-            // kb_eye
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.kb_eye = obj;
-            lv_obj_set_pos(obj, LV_PCT(71), LV_PCT(20));
-            lv_obj_set_size(obj, LV_PCT(14), LV_PCT(11));
-            lv_obj_add_event_cb(obj, action_keyboard_reveal, LV_EVENT_CLICKED, (void *)0);
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 6, LV_PART_MAIN | LV_STATE_DEFAULT);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // kb_eye_icon
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.kb_eye_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(18));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(64));
-                    lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon_sm(obj);
-                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
-                }
-            }
-        }
-        {
-            // kb_keys
-            lv_obj_t *obj = lv_keyboard_create(parent_obj);
-            objects.kb_keys = obj;
-            lv_obj_set_pos(obj, LV_PCT(10), LV_PCT(34));
-            lv_obj_set_size(obj, LV_PCT(80), LV_PCT(45));
-            lv_obj_add_event_cb(obj, action_keyboard_ok, LV_EVENT_READY, (void *)0);
-            lv_obj_add_event_cb(obj, action_keyboard_cancel, LV_EVENT_CANCEL, (void *)0);
-            lv_obj_set_style_align(obj, LV_ALIGN_DEFAULT, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_min_width(obj, 384, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_max_width(obj, 384, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_min_height(obj, 216, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_obj_set_style_max_height(obj, 216, LV_PART_MAIN | LV_STATE_DEFAULT);
-        }
-        {
-            // keyboard_back
-            lv_obj_t *obj = lv_obj_create(parent_obj);
-            objects.keyboard_back = obj;
-            lv_obj_set_pos(obj, LV_PCT(42), LV_PCT(84));
-            lv_obj_set_size(obj, LV_PCT(16), LV_PCT(11));
-            lv_obj_add_event_cb(obj, action_nav_back, LV_EVENT_CLICKED, (void *)0);
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
-            {
-                lv_obj_t *parent_obj = obj;
-                {
-                    // keyboard_back_icon
-                    lv_obj_t *obj = lv_label_create(parent_obj);
-                    objects.keyboard_back_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(20));
-                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(60));
-                    lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon_sm(obj);
-                    lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
-                }
-            }
-        }
-    }
-    lv_keyboard_set_textarea(objects.kb_keys, objects.kb_field);
-    
-    tick_screen_page_keyboard();
-}
-
-void tick_screen_page_keyboard() {
-}
-
 void create_screen_page_alert() {
     lv_obj_t *obj = lv_obj_create(0);
     objects.page_alert = obj;
@@ -3251,6 +2286,99 @@ void create_screen_page_alert() {
 void tick_screen_page_alert() {
 }
 
+void create_screen_page_setup() {
+    lv_obj_t *obj = lv_obj_create(0);
+    objects.page_setup = obj;
+    lv_obj_set_pos(obj, 0, 0);
+    lv_obj_set_size(obj, 480, 480);
+    add_style_screen_root(obj);
+    {
+        lv_obj_t *parent_obj = obj;
+        {
+            // setup_title
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_title = obj;
+            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_title(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "Wi-Fi Setup");
+        }
+        {
+            // setup_ssid_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_ssid_label = obj;
+            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(25));
+            lv_obj_set_size(obj, LV_PCT(68), LV_PCT(7));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_muted(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "Join this network");
+        }
+        {
+            // setup_ssid
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_ssid = obj;
+            lv_obj_set_pos(obj, LV_PCT(12), LV_PCT(32));
+            lv_obj_set_size(obj, LV_PCT(76), LV_PCT(10));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_title(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "Capstan-------");
+        }
+        {
+            // setup_pass_label
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_pass_label = obj;
+            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(45));
+            lv_obj_set_size(obj, LV_PCT(68), LV_PCT(7));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_muted(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "Password");
+        }
+        {
+            // setup_pass
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_pass = obj;
+            lv_obj_set_pos(obj, LV_PCT(12), LV_PCT(52));
+            lv_obj_set_size(obj, LV_PCT(76), LV_PCT(10));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_title(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "--------");
+        }
+        {
+            // setup_url
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_url = obj;
+            lv_obj_set_pos(obj, LV_PCT(10), LV_PCT(65));
+            lv_obj_set_size(obj, LV_PCT(80), LV_PCT(8));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_body(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "http://192.168.4.1");
+        }
+        {
+            // setup_status
+            lv_obj_t *obj = lv_label_create(parent_obj);
+            objects.setup_status = obj;
+            lv_obj_set_pos(obj, LV_PCT(12), LV_PCT(74));
+            lv_obj_set_size(obj, LV_PCT(76), LV_PCT(8));
+            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+            add_style_label_muted(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_label_set_text(obj, "Waiting for phone...");
+        }
+    }
+    
+    tick_screen_page_setup();
+}
+
+void tick_screen_page_setup() {
+}
+
 typedef void (*tick_screen_func_t)();
 tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_page_idle,
@@ -3265,14 +2393,11 @@ tick_screen_func_t tick_screen_funcs[] = {
     tick_screen_page_level,
     tick_screen_page_doors,
     tick_screen_page_settings,
-    tick_screen_page_wifi,
-    tick_screen_page_wifi_security,
-    tick_screen_page_mqtt,
-    tick_screen_page_keyboard,
     tick_screen_page_alert,
+    tick_screen_page_setup,
 };
 void tick_screen(int screen_index) {
-    if (screen_index >= 0 && screen_index < 17) {
+    if (screen_index >= 0 && screen_index < 14) {
         tick_screen_funcs[screen_index]();
     }
 }
@@ -3423,11 +2548,8 @@ void change_color_theme(uint32_t theme_index) {
     lv_obj_invalidate(objects.page_level);
     lv_obj_invalidate(objects.page_doors);
     lv_obj_invalidate(objects.page_settings);
-    lv_obj_invalidate(objects.page_wifi);
-    lv_obj_invalidate(objects.page_wifi_security);
-    lv_obj_invalidate(objects.page_mqtt);
-    lv_obj_invalidate(objects.page_keyboard);
     lv_obj_invalidate(objects.page_alert);
+    lv_obj_invalidate(objects.page_setup);
 }
 uint32_t theme_colors[2][28] = {
     { 0xffe8e8e8, 0xffe4e4e4, 0xffffffff, 0xffededed, 0xffffffff, 0xffc8c8c8, 0xff1a1a1a, 0xff4a4a4a, 0xff696969, 0xff52a441, 0xffcbe3c6, 0xffffc107, 0xfffff4d1, 0xff48e6fe, 0xffff5453, 0xff74fe00, 0xff505050, 0xff0088cc, 0xff48e6fe, 0xff777777, 0xffb5b5b5, 0xff333333, 0xff666666, 0xff9e9e9e, 0xff424242, 0xffe5e5e5, 0xffffffff, 0xff000000 },
@@ -3459,9 +2581,6 @@ void create_screens() {
     create_screen_page_level();
     create_screen_page_doors();
     create_screen_page_settings();
-    create_screen_page_wifi();
-    create_screen_page_wifi_security();
-    create_screen_page_mqtt();
-    create_screen_page_keyboard();
     create_screen_page_alert();
+    create_screen_page_setup();
 }

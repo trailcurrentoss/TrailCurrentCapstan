@@ -7,7 +7,11 @@
 #include "esp_check.h"
 #include "esp_event.h"
 #include "esp_log.h"
+#include "esp_mac.h"
 #include "esp_netif.h"
+#include "esp_random.h"
+#include "nvs.h"
+#include "nvs_flash.h"
 #include "esp_wifi.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
@@ -233,6 +237,24 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
             finish_scan();
             break;
 
+        case WIFI_EVENT_AP_STACONNECTED: {
+            const wifi_event_ap_staconnected_t *e = data;
+            ESP_LOGI(TAG, "setup AP: station " MACSTR " joined (aid %u)",
+                     MAC2STR(e->mac), (unsigned)e->aid);
+            break;
+        }
+
+        case WIFI_EVENT_AP_STADISCONNECTED: {
+            /* The reason code is the only place that distinguishes a
+             * wrong passphrase from a full AP or a phone that simply
+             * wandered off, and none of them look different on the
+             * phone itself. */
+            const wifi_event_ap_stadisconnected_t *e = data;
+            ESP_LOGW(TAG, "setup AP: station " MACSTR " left, reason %u",
+                     MAC2STR(e->mac), (unsigned)e->reason);
+            break;
+        }
+
         case WIFI_EVENT_STA_DISCONNECTED: {
             const wifi_event_sta_disconnected_t *d = data;
             const char *why = disconnect_reason(d->reason);
@@ -274,6 +296,188 @@ static void wifi_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     }
 }
 
+/* ----------------------------------------------------------------------
+ * Soft AP, for phone-based setup
+ * ---------------------------------------------------------------------- */
+
+static esp_netif_t *s_ap_netif;
+static char s_ap_ssid[33];
+static char s_ap_pass[16];
+
+/*
+ * The AP name must be unique per device.
+ *
+ * Two panels being set up side by side -- on a production line, or by an
+ * owner who bought a pair -- would otherwise advertise the same SSID, and
+ * a phone would silently join whichever was stronger. The suffix is the
+ * last three bytes of the AP MAC, the same identifier the MQTT client
+ * uses for its hostname, so a device is called the same thing everywhere.
+ */
+static void build_ap_ssid(void)
+{
+    uint8_t mac[6] = {0};
+    esp_wifi_get_mac(WIFI_IF_AP, mac);
+    snprintf(s_ap_ssid, sizeof(s_ap_ssid), "Capstan-%02X%02X%02X",
+             mac[3], mac[4], mac[5]);
+}
+
+/*
+ * A random passphrase, generated once and then KEPT.
+ *
+ * Not derived from the MAC: the MAC is broadcast in every beacon, so
+ * anything computed from it is public and a neighbour could join the
+ * setup network and hand the panel their own credentials. Random means
+ * possession of the display is what grants access.
+ *
+ * But it is PERSISTED, where the first version regenerated it on every
+ * entry to setup. That was wrong in a way only hardware showed: a phone
+ * remembers the network, and on the second visit silently retries the
+ * password it cached, which no longer matched. The phone reports
+ * "incorrect password" and blames the user, who is reading the correct
+ * password off the glass in front of them. There is no way to work that
+ * out from either side.
+ *
+ * Stored in the same NVS namespace the rest of the settings use, so a
+ * factory reset clears it and the next setup gets a fresh one -- which
+ * is the one moment a stale phone profile is expected and acceptable.
+ */
+#define AP_PASS_NVS_KEY "ap_pass"
+
+static void build_ap_password(void)
+{
+    nvs_handle_t h;
+    size_t len = sizeof(s_ap_pass);
+
+    if (nvs_open("capstan", NVS_READWRITE, &h) == ESP_OK) {
+        if (nvs_get_str(h, AP_PASS_NVS_KEY, s_ap_pass, &len) == ESP_OK &&
+            strlen(s_ap_pass) >= 8) {
+            nvs_close(h);
+            return;             /* reuse -- the phone may have it cached */
+        }
+
+        /* No 0/O/1/I/l: this gets read off a round 240 px panel and
+         * typed into a phone, and those are the characters people get
+         * wrong. */
+        static const char alphabet[] = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+        for (int i = 0; i < 8; i++) {
+            s_ap_pass[i] = alphabet[esp_random() % (sizeof(alphabet) - 1)];
+        }
+        s_ap_pass[8] = '\0';
+
+        nvs_set_str(h, AP_PASS_NVS_KEY, s_ap_pass);
+        nvs_commit(h);
+        nvs_close(h);
+        ESP_LOGI(TAG, "generated a new setup passphrase");
+        return;
+    }
+
+    /* NVS unavailable: still raise an AP rather than none, but it will
+     * differ next boot -- which is worth a warning, because that is the
+     * exact failure this function exists to avoid. */
+    static const char alphabet[] = "23456789ABCDEFGHJKLMNPQRSTUVWXYZ";
+    for (int i = 0; i < 8; i++) {
+        s_ap_pass[i] = alphabet[esp_random() % (sizeof(alphabet) - 1)];
+    }
+    s_ap_pass[8] = '\0';
+    ESP_LOGW(TAG, "NVS unavailable -- setup passphrase will not persist");
+}
+
+esp_err_t capstan_wifi_ap_start(void)
+{
+    build_ap_ssid();
+    build_ap_password();
+
+    wifi_config_t ap = { 0 };
+    strlcpy((char *)ap.ap.ssid, s_ap_ssid, sizeof(ap.ap.ssid));
+    ap.ap.ssid_len = strlen(s_ap_ssid);
+    strlcpy((char *)ap.ap.password, s_ap_pass, sizeof(ap.ap.password));
+    ap.ap.authmode = WIFI_AUTH_WPA2_PSK;
+    ap.ap.channel = 1;
+    /*
+     * Four, not one.
+     *
+     * One phone at a time is the right POLICY, but enforcing it in the
+     * radio is not how to express it. A station entry lingers after a
+     * phone walks away or retries, so the next association is refused
+     * for lack of a slot -- and Android reports a refused association
+     * as "incorrect password", which sends the user to re-read a
+     * passphrase that was never the problem. Headroom costs nothing and
+     * removes a failure that is impossible to diagnose from the phone.
+     */
+    ap.ap.max_connection = 4;
+
+    /*
+     * Be explicit about the cipher rather than leaving it zeroed.
+     *
+     * A zeroed pairwise_cipher is WIFI_CIPHER_TYPE_NONE, and relying on
+     * the driver to substitute something sane for a WPA2 AP is exactly
+     * the kind of assumption that works on one phone and not another.
+     */
+    ap.ap.pairwise_cipher = WIFI_CIPHER_TYPE_CCMP;
+    ap.ap.beacon_interval = 100;
+
+    /*
+     * APSTA, not AP. The portal has to SCAN for networks to offer, and
+     * scanning needs the station interface: in pure AP mode
+     * esp_wifi_scan_start() fails, which would leave the portal with an
+     * empty list and no way to explain why.
+     */
+    ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_APSTA), TAG,
+                        "apsta mode failed");
+    ESP_RETURN_ON_ERROR(esp_wifi_set_config(WIFI_IF_AP, &ap), TAG,
+                        "ap config failed");
+
+    /*
+     * Read the config BACK from the driver.
+     *
+     * esp_wifi_set_config() returning ESP_OK only means the call was
+     * accepted. On the MaTouch the AP reported "up" and never appeared
+     * in a scan, and there was no way to tell from the log whether the
+     * SSID, channel and authmode had actually taken. Reading them back
+     * separates "we asked for the wrong thing" from "we asked for the
+     * right thing and the radio is not transmitting it".
+     */
+    wifi_config_t back = { 0 };
+    wifi_mode_t mode = WIFI_MODE_NULL;
+    int8_t txp = 0;
+    esp_wifi_get_config(WIFI_IF_AP, &back);
+    esp_wifi_get_mode(&mode);
+    esp_wifi_get_max_tx_power(&txp);
+
+    uint8_t prim = 0;
+    wifi_second_chan_t sec = WIFI_SECOND_CHAN_NONE;
+    esp_wifi_get_channel(&prim, &sec);
+
+    ESP_LOGI(TAG, "setup AP up: SSID '%s' ch %u auth %d hidden %u "
+                  "max_conn %u | mode %d, radio ch %u, tx %.1f dBm",
+             (char *)back.ap.ssid, (unsigned)back.ap.channel,
+             (int)back.ap.authmode, (unsigned)back.ap.ssid_hidden,
+             (unsigned)back.ap.max_connection,
+             (int)mode, (unsigned)prim, txp / 4.0f);
+    return ESP_OK;
+}
+
+esp_err_t capstan_wifi_ap_stop(void)
+{
+    ESP_RETURN_ON_ERROR(esp_wifi_set_mode(WIFI_MODE_STA), TAG,
+                        "sta mode failed");
+    ESP_LOGI(TAG, "setup AP down");
+    return ESP_OK;
+}
+
+const char *capstan_wifi_ap_ssid(void) { return s_ap_ssid; }
+const char *capstan_wifi_ap_password(void) { return s_ap_pass; }
+
+const char *capstan_wifi_ap_ip(void)
+{
+    static char ip[16] = "192.168.4.1";
+    esp_netif_ip_info_t info;
+    if (s_ap_netif && esp_netif_get_ip_info(s_ap_netif, &info) == ESP_OK) {
+        snprintf(ip, sizeof(ip), IPSTR, IP2STR(&info.ip));
+    }
+    return ip;
+}
+
 /* --------------------------------------------------------------------- */
 
 esp_err_t capstan_wifi_init(void)
@@ -287,6 +491,11 @@ esp_err_t capstan_wifi_init(void)
     }
 
     esp_netif_create_default_wifi_sta();
+    /* The AP netif is created up front even though the AP is usually off:
+     * creating it later, after esp_wifi_start(), needs the driver stopped
+     * and restarted, which drops any station association. Setup mode can
+     * then be entered from a running device without a reconnect. */
+    s_ap_netif = esp_netif_create_default_wifi_ap();
 
     wifi_init_config_t cfg = WIFI_INIT_CONFIG_DEFAULT();
     ESP_RETURN_ON_ERROR(esp_wifi_init(&cfg), TAG, "wifi init failed");
@@ -311,6 +520,16 @@ esp_err_t capstan_wifi_init(void)
     ESP_RETURN_ON_ERROR(esp_wifi_set_ps(WIFI_PS_NONE), TAG, "ps failed");
 
     ESP_RETURN_ON_ERROR(esp_wifi_start(), TAG, "start failed");
+
+    /* Must be set AFTER esp_wifi_start(); before it the call is accepted
+     * and then reset to the default by the driver's own init. */
+    if (CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM < 80) {
+        esp_wifi_set_max_tx_power(CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM);
+        int8_t got = 0;
+        esp_wifi_get_max_tx_power(&got);
+        ESP_LOGW(TAG, "tx power limited to %.1f dBm (asked %.1f)",
+                 got / 4.0f, CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM / 4.0f);
+    }
 
     s_retry_timer = xTimerCreate("wifi_retry", pdMS_TO_TICKS(1000), pdFALSE,
                                  NULL, retry_timer_cb);

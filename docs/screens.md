@@ -56,6 +56,19 @@ per second on a 1 s `lv_timer`.
 
 The date sits **high on the face** so the hands do not cover it.
 
+The EEZ Studio export draws the needles as fixed two-point `lv_line`s and the
+date as literal text — a static export cannot move a needle — so the face is
+driven from `main/ui_clock.c`, which rewrites all three point arrays and the
+date label once a second while the idle screen is showing, and once more on
+entry so returning to it never shows a stale position.
+
+There is no RTC and no SNTP client. The clock is set from `local/gps/time`
+(UTC calendar fields from Milepost's fix) and rendered in the zone from the
+retained `os/timezone/current`; both are parsed in `capstan_mqtt` and applied
+in `capstan_model`, which owns the system clock and the IANA → POSIX `TZ`
+translation. Until a fix arrives the hands park at 12:00 and the date reads
+`--`, for the same reason every other unknown reading does.
+
 Shown after `CONFIG_CAPSTAN_IDLE_TIMEOUT_S` of no input. Any input wakes it —
 to the menu normally, or straight to Climate if the device is configured as a
 thermostat-first dial (the prototype's `wakeScreen`).

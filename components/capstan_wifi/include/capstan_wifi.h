@@ -65,6 +65,39 @@ typedef void (*capstan_wifi_scan_cb_t)(const capstan_wifi_ap_t *aps,
  */
 esp_err_t capstan_wifi_init(void);
 
+/* ----------------------------------------------------------------------
+ * Soft AP — phone-based setup
+ *
+ * Typing a WPA2 passphrase by rotating a ring to each character in turn
+ * is not a real option on a 240 px panel, so setup moves to a phone: the
+ * device raises its own network, shows the name and password on the
+ * glass, and serves a captive portal that does the scanning and typing.
+ * ---------------------------------------------------------------------- */
+
+/**
+ * Raise the setup access point.
+ *
+ * Switches to APSTA — the portal must still scan, and scanning needs the
+ * station interface — so an existing connection is not dropped.
+ *
+ * The SSID is unique per device (`Capstan-XXXXXX`, from the AP MAC) so
+ * several panels can be set up at once without a phone joining the wrong
+ * one. The passphrase is random per session and is never stored.
+ */
+esp_err_t capstan_wifi_ap_start(void);
+
+/** Drop the setup AP and return to station-only. */
+esp_err_t capstan_wifi_ap_stop(void);
+
+/** Setup SSID, valid after capstan_wifi_ap_start(). */
+const char *capstan_wifi_ap_ssid(void);
+
+/** Setup passphrase for this session. Shown on the display, never saved. */
+const char *capstan_wifi_ap_password(void);
+
+/** The portal's address on the setup network, e.g. "192.168.4.1". */
+const char *capstan_wifi_ap_ip(void);
+
 void capstan_wifi_set_state_callback(capstan_wifi_state_cb_t cb, void *ctx);
 
 /**

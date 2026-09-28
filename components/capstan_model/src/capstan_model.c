@@ -2,7 +2,10 @@
  * The data layer the UI observes. See capstan_model.h.
  */
 
+#include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -165,6 +168,115 @@ void capstan_model_note_trigger(const char *topic, const char *payload)
      * somewhere to hand them. */
     ESP_LOGI(TAG, "trigger %s = %s", topic ? topic : "?", payload ? payload : "");
 }
+
+/* ---- clock ---------------------------------------------------------- */
+/*
+ * WHY THE ZONE IS A TABLE AND NOT A ZONEINFO LOOKUP
+ *
+ * `os/timezone/current` carries an IANA name because that is what the
+ * Headwaters OS daemon has -- it reads /etc/timezone. Newlib on the ESP32
+ * has no zoneinfo database, so an IANA name means nothing to it; it wants a
+ * POSIX TZ string with the DST rule spelled out. The translation has to
+ * happen somewhere, and a table of the zones the product actually ships to
+ * is smaller than the alternative by several hundred kilobytes.
+ *
+ * Same list, same rules as Fireside's apply_timezone(). Post-2007 US
+ * convention: DST from the 2nd Sunday of March to the 1st Sunday of
+ * November; Phoenix never observes it.
+ */
+static const struct { const char *iana; const char *posix; } ZONES[] = {
+    { "America/New_York",    "EST5EDT,M3.2.0,M11.1.0" },
+    { "America/Chicago",     "CST6CDT,M3.2.0,M11.1.0" },
+    { "America/Denver",      "MST7MDT,M3.2.0,M11.1.0" },
+    { "America/Los_Angeles", "PST8PDT,M3.2.0,M11.1.0" },
+    { "America/Phoenix",     "MST7"                   },
+    { "America/Anchorage",   "AKST9AKDT,M3.2.0,M11.1.0" },
+    { "Pacific/Honolulu",    "HST10"                  },
+    { "UTC",                 "UTC0"                   },
+};
+
+static bool s_time_valid;
+
+bool capstan_model_set_timezone(const char *iana)
+{
+    if (!iana || !*iana) {
+        return false;
+    }
+    for (size_t i = 0; i < sizeof(ZONES) / sizeof(*ZONES); i++) {
+        if (strcmp(iana, ZONES[i].iana) == 0) {
+            setenv("TZ", ZONES[i].posix, 1);
+            tzset();
+            ESP_LOGI(TAG, "timezone %s -> %s", iana, ZONES[i].posix);
+            return true;
+        }
+    }
+    ESP_LOGW(TAG, "unknown timezone '%s'; keeping the current one", iana);
+    return false;
+}
+
+void capstan_model_set_gps_time(int year, int month, int day,
+                                int hour, int minute, int second)
+{
+    /* No fix yet. Milepost still publishes, with a placeholder date. */
+    if (year < 2020) {
+        return;
+    }
+
+    struct tm t = {
+        .tm_year = year - 1900, .tm_mon = month - 1, .tm_mday = day,
+        .tm_hour = hour, .tm_min = minute, .tm_sec = second,
+        .tm_isdst = 0,
+    };
+
+    /*
+     * The fix is UTC, but mktime() reads its argument as LOCAL time under
+     * whatever TZ is currently installed. Calling it directly would fold
+     * the local offset into the epoch -- the clock would be wrong by the
+     * offset, and localtime_r() would then render UTC hours no matter
+     * which zone the user is in, which looks exactly like "the timezone
+     * setting does nothing". Pin TZ to UTC across the conversion only.
+     */
+    const char *saved = getenv("TZ");
+    char saved_buf[48] = { 0 };
+    if (saved) {
+        strncpy(saved_buf, saved, sizeof(saved_buf) - 1);
+    }
+    setenv("TZ", "UTC0", 1);
+    tzset();
+    const time_t epoch = mktime(&t);
+    if (saved_buf[0]) setenv("TZ", saved_buf, 1);
+    else              unsetenv("TZ");
+    tzset();
+
+    if (epoch <= 0) {
+        return;
+    }
+
+    /*
+     * Only step the clock when it is actually wrong. Milepost publishes at
+     * ~1 Hz, and settimeofday() on every message would drag the second
+     * hand backwards and forwards by the message latency, visibly, on a
+     * face whose whole job is to look calm.
+     */
+    struct timeval now;
+    if (s_time_valid && gettimeofday(&now, NULL) == 0) {
+        const long drift = (long)(epoch - now.tv_sec);
+        if (drift > -2 && drift < 2) {
+            return;
+        }
+    }
+
+    struct timeval tv = { .tv_sec = epoch, .tv_usec = 0 };
+    settimeofday(&tv, NULL);
+
+    if (!s_time_valid) {
+        ESP_LOGI(TAG, "clock set from GNSS: %04d-%02d-%02d %02d:%02d:%02dZ",
+                 year, month, day, hour, minute, second);
+    }
+    s_time_valid = true;
+}
+
+bool capstan_model_time_valid(void) { return s_time_valid; }
 
 /* ---- getters -------------------------------------------------------- */
 capstan_value_t capstan_model_battery_volts(void) { return get(&m_batt_v); }

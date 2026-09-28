@@ -89,6 +89,38 @@ void capstan_model_set_light(int id, bool on, int brightness);
 void capstan_model_set_picket_inputs(int addr, uint16_t mask);
 void capstan_model_note_trigger(const char *topic, const char *payload);
 
+/* ---- clock --------------------------------------------------------- */
+/*
+ * The rig has no RTC and no SNTP. Time arrives on `local/gps/time` as a
+ * UTC calendar date from Milepost's GNSS fix, and the zone to render it in
+ * arrives separately on the retained `os/timezone/current`. Both land here
+ * because the idle clock reads the model like every other screen does.
+ */
+
+/**
+ * Set the system clock from a GNSS fix. Fields are UTC, as published.
+ *
+ * Years before 2020 are rejected: a GNSS module that has not achieved a
+ * fix publishes 1980 or 2000 epochs, and accepting one would jump the
+ * clock backwards by decades every time the receiver loses the sky.
+ */
+void capstan_model_set_gps_time(int year, int month, int day,
+                                int hour, int minute, int second);
+
+/**
+ * Install a timezone from its IANA name, e.g. "America/Denver".
+ *
+ * Returns false for a zone this build does not know, in which case the
+ * previously installed zone is kept -- rendering UTC silently would be
+ * worse than rendering a slightly stale offset.
+ */
+bool capstan_model_set_timezone(const char *iana);
+
+/** True once the clock has been set from a fix. The idle face parks its
+ *  hands and shows `--` until then, rather than confidently drawing
+ *  whatever the un-set system clock happens to say. */
+bool capstan_model_time_valid(void);
+
 /* ---- getters, called from the LVGL task ---------------------------- */
 capstan_value_t capstan_model_battery_volts(void);
 capstan_value_t capstan_model_battery_pct(void);

@@ -4,3 +4,17 @@
 # from the Kconfig defaults keyed off this symbol, so this file stays a
 # one-line board pick and the verified values live in one place.
 CONFIG_CAPSTAN_BOARD_CROWPANEL_146=y
+
+# Back transmit off to 11 dBm, as on the MaTouch.
+#
+# Same signature: beacons intermittently visible, associations accepted,
+# then the WPA2 four-way handshake times out (802.11 reason 15). EAPOL
+# frames are unicast and must be acknowledged, so they fail before
+# beacons do -- which is why the AP can look present and still be
+# unusable. An iPhone that provisioned the other two boards without
+# trouble could not complete a handshake with this one.
+#
+# Two of three boards needing this suggests the common factor is the
+# USB supply rather than the boards themselves; if a powered hub fixes
+# it, this can come back out.
+CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM=44

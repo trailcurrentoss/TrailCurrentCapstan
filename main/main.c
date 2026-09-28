@@ -27,8 +27,9 @@
 #include "capstan_model.h"
 #include "capstan_wifi.h"
 #include "ui_nav.h"
+#include "ui_clock.h"
 #include "ui_data.h"
-#include "ui_wifi.h"
+#include "ui_setup.h"
 
 /*
  * The generated UI may not exist yet -- main/ui/<res>/ is disposable and is
@@ -489,6 +490,26 @@ static void build_calibration_screen(void)
 #define CAPSTAN_SERVICE_TASK_STACK 6144
 #define CAPSTAN_SERVICE_TASK_PRIO  4
 
+/* Set at boot when NVS holds no network; acted on once the UI is up. */
+static bool s_needs_setup;
+
+static void rf_health_cb(const capstan_wifi_ap_t *aps, size_t count, void *ctx)
+{
+    (void)ctx;
+    int8_t best = -127;
+    for (size_t i = 0; i < count; i++) {
+        if (aps[i].rssi > best) {
+            best = aps[i].rssi;
+        }
+    }
+    if (count) {
+        ESP_LOGI(TAG, "RF health: hears %u networks, strongest %d dBm",
+                 (unsigned)count, (int)best);
+    } else {
+        ESP_LOGW(TAG, "RF health: hears NOTHING -- check the antenna");
+    }
+}
+
 static void service_task(void *arg)
 {
     (void)arg;
@@ -563,9 +584,32 @@ void app_main(void)
             ESP_LOGI(TAG, "rejoining saved network '%s'", wcfg.ssid);
             capstan_wifi_connect();
         } else {
-            ESP_LOGI(TAG, "no saved network -- waiting for setup");
+            /*
+             * Nothing saved: this is a new or factory-reset device, so
+             * it goes straight into phone-based setup rather than
+             * sitting on a menu with no way to get on the network.
+             * Entering it is deferred until the UI exists -- the
+             * instructions are the whole point, and starting the AP
+             * before there is a screen to print them on would leave a
+             * nameless network in the air.
+             */
+            ESP_LOGI(TAG, "no saved network -- entering setup mode");
+            s_needs_setup = true;
         }
     }
+
+    /*
+     * One-shot RF health check.
+     *
+     * Logs how many networks this board can hear and how strong the
+     * best one is. Identical across all three panels, so the numbers
+     * are directly comparable -- which is the only way to tell a board
+     * with a poor antenna from a firmware problem. A board that hears
+     * far less than its siblings sitting on the same bench has a
+     * hardware fault, and no amount of driver configuration will fix
+     * it.
+     */
+    capstan_wifi_scan_start(rf_health_cb, NULL);
 
     /* The data layer, then the broker client. Neither connects here:
      * capstan_mqtt_connect() needs an IP, so it is driven off the Wi-Fi
@@ -596,8 +640,14 @@ void app_main(void)
         ui_init();
         lv_timer_create(ui_tick_timer_cb, 20, NULL);
         ui_nav_init();          /* owns screen transitions AND touch policy */
-        ui_wifi_init();         /* connection-state -> Wi-Fi screen title */
         ui_data_init();         /* model -> widgets, and mqtt connect-on-IP */
+
+        if (s_needs_setup) {
+            /* Raise the setup AP now that the Setup screen exists to
+             * show its name and password. */
+            ui_setup_enter();
+        }
+        ui_clock_init();        /* idle face -> GNSS time, once a second */
 
         const size_t heap_after = esp_get_free_heap_size();
         ESP_LOGI(TAG, "generated UI initialised -- %u KB heap used, "

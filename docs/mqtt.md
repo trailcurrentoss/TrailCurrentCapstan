@@ -243,6 +243,33 @@ Publish anything to `local/config/request` to force a re-publish.
 { "channels": [ /* … */ ] }
 ```
 
+**`local/gps/time`** — the rig's only clock source. Fields are **UTC**, from
+Milepost's GNSS fix, republished at ~1 Hz. All six are required; a partial
+date is not a date.
+
+```json
+{ "year": 2026, "month": 9, "day": 28,
+  "hour": 17, "minute": 4, "second": 31 }
+```
+
+Before the receiver has a fix it still publishes, with a placeholder year, so
+anything under 2020 is discarded rather than stepping the clock back decades.
+Because `mktime()` reads its argument as *local* time, `TZ` is pinned to UTC
+across the conversion — skipping that folds the local offset into the epoch,
+which looks exactly like the timezone setting doing nothing.
+
+**`os/timezone/current`** — retained, published by the Headwaters OS daemon
+from `/etc/timezone`.
+
+```json
+{ "tz": "America/Denver" }
+```
+
+Newlib has no zoneinfo database, so the IANA name is translated to a POSIX
+`TZ` string against a table of shipped zones in `capstan_model.c`. An unknown
+zone is logged and ignored, keeping whatever was installed — silently
+rendering UTC would be worse.
+
 ## Commands
 
 The display publishes to:
