@@ -112,6 +112,9 @@ void capstan_model_set_safety_flags(bool co_alarm, bool co_warn,
 
 void capstan_model_set_tank(capstan_tank_t t, double pct);
 void capstan_model_set_tilt(double front_back, double side_to_side);
+/** Plateau's height differences across the vehicle, mm, from the same
+ *  `local/level/tilt` frame (front_back_diff_mm, left_right_diff_mm). */
+void capstan_model_set_tilt_diff(double front_back_mm, double left_right_mm);
 void capstan_model_set_light(int id, bool on, int brightness);
 void capstan_model_set_picket_inputs(int addr, uint16_t mask);
 /** Switchback digital inputs, from `local/spoor/<addr>/inputs` (8 bits). */
@@ -208,6 +211,8 @@ capstan_air_level_t capstan_model_air_level(void);
 capstan_value_t capstan_model_tank(capstan_tank_t t);
 capstan_value_t capstan_model_tilt_front_back(void);
 capstan_value_t capstan_model_tilt_side_to_side(void);
+capstan_value_t capstan_model_tilt_diff_front_back(void);   /* mm */
+capstan_value_t capstan_model_tilt_diff_left_right(void);   /* mm */
 
 bool capstan_model_light_on(int id);
 

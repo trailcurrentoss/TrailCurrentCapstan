@@ -23,7 +23,8 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_SETTINGS = 10,
     SCREEN_ID_PAGE_ALERT = 11,
     SCREEN_ID_PAGE_SETUP = 12,
-    _SCREEN_ID_LAST = 12
+    SCREEN_ID_PAGE_LOCALE = 13,
+    _SCREEN_ID_LAST = 13
 };
 
 typedef struct _objects_t {
@@ -39,6 +40,7 @@ typedef struct _objects_t {
     lv_obj_t *page_settings;
     lv_obj_t *page_alert;
     lv_obj_t *page_setup;
+    lv_obj_t *page_locale;
     lv_obj_t *idle_ring;
     lv_obj_t *idle_date;
     lv_obj_t *idle_hand_hour;
@@ -171,6 +173,7 @@ typedef struct _objects_t {
     lv_obj_t *settings_dot3;
     lv_obj_t *settings_dot4;
     lv_obj_t *settings_dot5;
+    lv_obj_t *settings_dot6;
     lv_obj_t *alert_bg;
     lv_obj_t *alert_icon;
     lv_obj_t *alert_title;
@@ -183,6 +186,16 @@ typedef struct _objects_t {
     lv_obj_t *setup_pass;
     lv_obj_t *setup_url;
     lv_obj_t *setup_status;
+    lv_obj_t *locale_title;
+    lv_obj_t *locale_list;
+    lv_obj_t *locale_item0;
+    lv_obj_t *locale_item0_icon;
+    lv_obj_t *locale_item0_title;
+    lv_obj_t *locale_item0_value;
+    lv_obj_t *locale_item1;
+    lv_obj_t *locale_item1_icon;
+    lv_obj_t *locale_item1_title;
+    lv_obj_t *locale_item1_value;
 } objects_t;
 
 extern objects_t objects;
@@ -230,6 +243,9 @@ void tick_screen_page_alert();
 
 void create_screen_page_setup();
 void tick_screen_page_setup();
+
+void create_screen_page_locale();
+void tick_screen_page_locale();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

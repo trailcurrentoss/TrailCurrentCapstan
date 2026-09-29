@@ -100,8 +100,8 @@ the whole panel is the button. With both live, one press produces an encoder
 `ENTER` *and* a touch event, and the press lands on whatever is under the
 user's finger rather than on whatever the ring had focused.
 
-So touch has to be live on some screens (the keyboard is unusable without it)
-and dead on nearly all the others. The wrong way to build that is to have
+So touch may need to be live on some screens (it was, for an on-device
+keyboard that has since gone) and dead on the others. The wrong way to build that is to have
 each screen enable touch on entry and remember to disable it on exit — one
 missed exit path, one early return, one alert overlay stealing the
 transition, and touch is silently live on a screen that fights it. That bug
@@ -123,10 +123,15 @@ Instead:
 Calling `loadScreen()` or `lv_screen_load()` directly bypasses the policy and
 leaves touch in whatever state the previous screen wanted.
 
-Default to `RING_ONLY`. Today only the keyboard is `RING_AND_TOUCH` — typing
-a WPA2 passphrase by rotating to each character is not a real option.
-Changing any other screen's mind is a one-word edit in the table, with no
-screen code to touch.
+Default to `RING_ONLY`. Today **every** screen is: the on-device keyboard is
+gone (Wi-Fi and MQTT are set from a phone), and the Back chip that followed it
+was removed in favour of the long press. With nothing touchable, the touch
+controller is not even started — `CONFIG_CAPSTAN_TOUCH_ENABLED` is off by
+default, which also saves its I2C bus, its RAM and, on the CrowPanels, the
+interrupt that woke the LVGL task on every press of the glass. Bringing a touch
+target back means turning that on and making the screen's row
+`RING_AND_TOUCH` — a one-word edit in the table, with no screen code to
+touch.
 
 ### 4. Rotation is decoded in hardware
 
@@ -239,7 +244,7 @@ LVGL 9 grid layout with `FR()` tracks and percentage sizing does reflow at
 runtime, and is used throughout — but it does not scale *contents*. Fonts,
 arc widths and tick lengths are absolute pixels, which is why a 480×480
 layout cannot simply be stretched to 240×240 and why the smallest panel gets
-a compact keyboard and a smaller type scale.
+a smaller type scale.
 
 The app menu used to be on that list and no longer is. A layout that had to
 differ per panel was the wrong shape, not an unavoidable cost of the smallest

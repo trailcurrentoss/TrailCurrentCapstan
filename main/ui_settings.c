@@ -276,6 +276,7 @@ const char *ui_settings_theme_text(void)
 #define G_WIFI    "\xEF\x87\xAB"   /* 0xF1EB wifi                 */
 #define G_SERVER  "\xEF\x88\xB3"   /* 0xF233 server               */
 #define G_THEME   "\xEF\x86\x86"   /* 0xF186 moon                 */
+#define G_LOCALE  "\xEF\x82\xAC"   /* 0xF0AC globe                */
 #define G_BELL    "\xEF\x83\xB3"   /* 0xF0F3 bell                 */
 #define G_CLOCK   "\xEF\x80\x97"   /* 0xF017 clock                */
 #define G_ALERT   "\xEF\x81\xB1"   /* 0xF071 triangle-exclamation */
@@ -289,6 +290,7 @@ static const struct {
     { G_WIFI,   "Wi-Fi"         },
     { G_SERVER, "MQTT"          },
     { G_THEME,  "Theme"         },
+    { G_LOCALE, "Locale"        },
     { G_BELL,   "Alarm Snooze"  },
     { G_CLOCK,  "Clock Timeout" },
     { G_ALERT,  "Factory Reset" },
@@ -344,8 +346,12 @@ static const char *mqtt_value(bool *ok)
     return m.configured ? "Offline" : "Not set";
 }
 
+static void locale_refresh(void);
+
 void ui_settings_refresh(void)
 {
+    locale_refresh();   /* change-only, so free when nothing moved */
+
     const int sel = wrap(ui_nav_selection_of(CAPSTAN_SCREEN_SETTINGS));
 
     ui_lv_set_text(objects.settings_hero_icon, s_items[sel].icon);
@@ -369,6 +375,10 @@ void ui_settings_refresh(void)
         break;
     case UI_SETTINGS_THEME:
         value = ui_settings_theme_text();
+        break;
+    case UI_SETTINGS_LOCALE:
+        ui_settings_locale_text(buf, sizeof(buf));
+        value = buf;
         break;
     case UI_SETTINGS_SNOOZE:
         ui_settings_snooze_text(buf, sizeof(buf));
@@ -404,11 +414,53 @@ void ui_settings_refresh(void)
     lv_obj_t *const dots[UI_SETTINGS_ITEM_COUNT] = {
         objects.settings_dot0, objects.settings_dot1, objects.settings_dot2,
         objects.settings_dot3, objects.settings_dot4, objects.settings_dot5,
+        objects.settings_dot6,
     };
     for (int i = 0; i < UI_SETTINGS_ITEM_COUNT; i++) {
         ui_lv_set_state_in(dots[i], LV_STATE_CHECKED,
                            i == sel ? LV_STATE_CHECKED : 0);
     }
+}
+
+/* ----------------------------------------------------------------------
+ * Locale
+ * ---------------------------------------------------------------------- */
+
+void ui_settings_locale_text(char *out, size_t len)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    snprintf(out, len, "%s \xC2\xB7 %s",
+             d.celsius ? "\xC2\xB0" "C" : "\xC2\xB0" "F",
+             d.level_mm ? "mm" : "in");
+}
+
+static void locale_refresh(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    ui_lv_set_text(objects.locale_item0_value,
+                   d.celsius ? "\xC2\xB0" "C" : "\xC2\xB0" "F");
+    ui_lv_set_text(objects.locale_item1_value, d.level_mm ? "mm" : "in");
+}
+
+void ui_settings_locale_pressed(int row)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    switch (row) {
+    case UI_LOCALE_TEMPERATURE: d.celsius  = !d.celsius;  break;
+    case UI_LOCALE_LEVELING:    d.level_mm = !d.level_mm; break;
+    default: return;
+    }
+    const esp_err_t err = capstan_config_set_display(&d);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "locale save failed: %s", esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "locale -> %s, %s", d.celsius ? "C" : "F",
+             d.level_mm ? "mm" : "in");
+    locale_refresh();
 }
 
 bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b)
@@ -430,6 +482,8 @@ bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b)
 #else
 
 void ui_settings_refresh(void) { }
+void ui_settings_locale_pressed(int row) { (void)row; }
+void ui_settings_locale_text(char *out, size_t len) { if (len) out[0] = '\0'; }
 bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b)
 {
     (void)r; (void)g; (void)b;

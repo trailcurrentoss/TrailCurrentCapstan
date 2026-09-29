@@ -107,6 +107,10 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
 
     [CAPSTAN_SCREEN_ALERT]        = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "alert" },
+
+    /* Units, a short list opened from Settings > Locale. */
+    [CAPSTAN_SCREEN_LOCALE]       = { CAPSTAN_INPUT_RING_ONLY,
+                                      CAPSTAN_SCREEN_SETTINGS, "locale" },
 };
 
 static capstan_screen_t s_current = CAPSTAN_SCREEN_IDLE;
@@ -155,6 +159,7 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_SETTINGS]     = SCREEN_ID_PAGE_SETTINGS,
     [CAPSTAN_SCREEN_ALERT]        = SCREEN_ID_PAGE_ALERT,
     [CAPSTAN_SCREEN_SETUP]        = SCREEN_ID_PAGE_SETUP,
+    [CAPSTAN_SCREEN_LOCALE]       = SCREEN_ID_PAGE_LOCALE,
 };
 
 _Static_assert((int)CAPSTAN_SCREEN_COUNT == (int)_SCREEN_ID_LAST,
@@ -435,6 +440,7 @@ static lv_obj_t *list_container(capstan_screen_t s)
 #if HAVE_GENERATED_UI
     switch (s) {
     case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.cmode_list;
+    case CAPSTAN_SCREEN_LOCALE:       return objects.locale_list;
     default:                          return NULL;
     }
 #else
@@ -689,6 +695,10 @@ void ui_nav_press(void)
              */
             return;
         case UI_SETTINGS_THEME:   ui_settings_theme_pressed();   break;
+        case UI_SETTINGS_LOCALE:
+            s_sel[CAPSTAN_SCREEN_LOCALE] = 0;
+            ui_nav_goto(CAPSTAN_SCREEN_LOCALE);
+            return;
         case UI_SETTINGS_SNOOZE:  ui_settings_snooze_pressed();  break;
         case UI_SETTINGS_TIMEOUT: ui_settings_timeout_pressed(); break;
         case UI_SETTINGS_RESET:   ui_settings_factory_reset_pressed(); break;
@@ -700,6 +710,11 @@ void ui_nav_press(void)
 
     case CAPSTAN_SCREEN_ALERT:
         ui_alerts_acknowledge();   /* snooze, back to the interrupted screen */
+        return;
+
+    case CAPSTAN_SCREEN_LOCALE:
+        /* Press steps the selected row's unit; see ui_settings.c. */
+        ui_settings_locale_pressed(s_sel[CAPSTAN_SCREEN_LOCALE]);
         return;
 #endif
 

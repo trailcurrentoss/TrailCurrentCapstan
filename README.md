@@ -3,7 +3,7 @@
 Firmware for the TrailCurrent **rotary touchscreen controller** — a round IPS
 touch display inside a rotatable, pressable ring, wall-mounted in an RV or
 trailer. It shows live state from the rig (climate, lights, energy, water,
-air quality, levelling, doors) and controls what it can, talking to the
+air quality, levelling) and controls what it can, talking to the
 TrailCurrent Headwaters gateway over MQTT.
 
 One source tree builds for **three different panels**. The board is chosen in
@@ -139,21 +139,22 @@ untested. The product screens do not exist yet.
 | GC9A01 display bring-up (1.28") | **working on hardware** |
 | JD9855 display bring-up (1.46") | **working on hardware** (hand-written driver) |
 | JD9855 driver | written; register table verified against upstream, untested |
-| Touch (CST816 family) | **working on all three**, with per-unit calibration |
+| Touch (CST816 family) | **working on all three**, with per-unit calibration; **not started by default** (`CONFIG_CAPSTAN_TOUCH_ENABLED`) — nothing in the UI is touchable |
 | Ring encoder (PCNT quadrature) | **working on all three**, direction + detents verified per board |
 | Bring-up test screen | done, runs on hardware |
-| RGB LED ring capability | config + runtime flag done; driver not written |
+| RGB LED ring (1.46", 1.28") | **working** — alarms, Climate, Devices, Energy, Water, Settings; see [docs/screens.md](docs/screens.md#led-ring) |
 | NVS settings store | done, boots and loads defaults on hardware |
 | Touch calibration engine | done (affine fit, NVS, versioned); screen is scaffolding |
-| Wi-Fi scan / join / credentials | **verified on hardware** — scan, security picker, passphrase, connect, auto-rejoin at boot |
+| Wi-Fi / MQTT provisioning | **verified on hardware** — phone setup portal at first boot and after a factory reset; auto-rejoin at boot |
 | MQTT client | **connects on hardware** (TLS 8883, self-signed); subscriptions confirmed |
 | Data model (staleness, `--`) | wired end to end; values seen arriving and correctly expiring |
 | EEZ projects (palette, fonts, styles) | done, open cleanly in EEZ Studio |
-| EEZ screens (layout) | **all 17 authored** across all three resolutions |
-| Ring navigation | **verified** — clamped selection, press, long-press, touch Back |
-| Settings: MQTT fields, factory reset | **verified on hardware** |
-| Energy paging | 5 pages (battery / charge / solar / load / runtime) |
-| Live data on readout screens | Energy, Water, Air, Level bound; Devices carousel bound; Doors not yet |
+| EEZ screens (layout) | **all 12 authored** across all three resolutions, matched to the design prototype except where [docs/screens.md](docs/screens.md#departures-from-the-prototype) says otherwise |
+| Ring navigation | **verified** — three wrapping carousels (menu, devices, settings), press, long press = back everywhere |
+| Settings | **verified on hardware** — Wi-Fi / MQTT status, theme, alarm snooze, clock timeout, factory reset |
+| Energy paging | 3 pages (battery / solar input / loads) |
+| Live data on readout screens | Energy, Water, Air, Level, Climate (inside temp) bound; Devices carousel bound |
+| Alarms | **verified on hardware** — per-dial config from Headwaters, full-screen overlay, snooze |
 
 Tracked debt:
 
@@ -179,7 +180,7 @@ Hard-won constraints worth not rediscovering:
   copies results and sets a flag, and the painting happens on the LVGL
   task.
 - **LVGL's allocator is not the ESP heap by default.** The built-in pool
-  is a fixed 64 KB and EEZ builds all 17 screens at boot, which needs
+  is a fixed 64 KB and EEZ builds every screen at boot, which needs
   ~60 KB. Overrun trips `LV_ASSERT_MALLOC`, whose default handler is an
   infinite loop — presenting as a watchdog timeout pointing at whatever
   allocation happened to be unlucky, never at memory.

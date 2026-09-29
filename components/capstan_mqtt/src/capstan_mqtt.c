@@ -891,6 +891,13 @@ static void apply(const msg_t *m)
         if (num(root, "front_back", &fb) && num(root, "side_to_side", &ss)) {
             capstan_model_set_tilt(fb, ss);
         }
+        /* Optional: an older gateway sends only the angles, and the Level
+         * screen then shows degrees. */
+        double dfb, dlr;
+        if (num(root, "front_back_diff_mm", &dfb) &&
+            num(root, "left_right_diff_mm", &dlr)) {
+            capstan_model_set_tilt_diff(dfb, dlr);
+        }
     } else if (strncmp(m->topic, "local/lights/", 13) == 0) {
         /* Torrent (PDM) channels. `local/lights/<n>/status` is published per
          * channel with n = TORRENT_LIGHT_OFFSET[canId] + i + 1, and n IS the

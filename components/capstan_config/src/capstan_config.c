@@ -38,6 +38,7 @@ static const char *TAG = "config";
 #define K_MQTT_PASS  "m_pass"
 #define K_MQTT_OK    "m_ok"
 #define K_DISP_C     "d_celsius"
+#define K_DISP_LVLMM "d_lvl_mm"
 #define K_DISP_DARK  "d_dark"
 #define K_DISP_BL    "d_backlight"
 #define K_DISP_IDLE  "d_idle"
@@ -157,6 +158,9 @@ static void load_defaults(void)
 #else
         false;
 #endif
+    /* Metric heights with metric temperatures by default; either can then
+     * be changed on its own in Settings > Locale. */
+    s_display.level_mm = s_display.celsius;
     s_display.dark_theme =
 #ifdef CONFIG_CAPSTAN_DEFAULT_THEME_DARK
         true;
@@ -285,6 +289,7 @@ static esp_err_t load_from_nvs(void)
     }
 
     read_bool(h, K_DISP_C,    &s_display.celsius);
+    read_bool(h, K_DISP_LVLMM, &s_display.level_mm);
     read_bool(h, K_DISP_DARK, &s_display.dark_theme);
     read_u8(h,   K_DISP_BL,   &s_display.backlight_percent);
     read_u16(h,  K_DISP_IDLE, &s_display.idle_timeout_s);
@@ -590,6 +595,7 @@ esp_err_t capstan_config_set_display(const capstan_display_cfg_t *cfg)
 
     esp_err_t err = ESP_OK;
     err |= nvs_set_u8(h,  K_DISP_C,    cfg->celsius ? 1 : 0);
+    err |= nvs_set_u8(h,  K_DISP_LVLMM, cfg->level_mm ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_DARK, cfg->dark_theme ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_BL,   cfg->backlight_percent);
     err |= nvs_set_u16(h, K_DISP_IDLE, cfg->idle_timeout_s);

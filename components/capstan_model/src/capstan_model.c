@@ -42,6 +42,7 @@ static metric_t m_batt_w;
 static metric_t m_temp_f, m_temp_c, m_humid, m_tvoc, m_eco2, m_co;
 static metric_t m_tank[CAPSTAN_TANK_COUNT];
 static metric_t m_tilt_fb, m_tilt_ss;
+static metric_t m_diff_fb, m_diff_lr;   /* height differences, mm */
 
 static char     s_charge_type[16] = "--";
 static bool     s_co_alarm, s_co_warn, s_lpg_alarm, s_lpg_warn;
@@ -105,6 +106,7 @@ void capstan_model_init(void)
         m_tank[i].mod = CAPSTAN_MOD_WATER;
     }
     m_tilt_fb.mod = m_tilt_ss.mod = CAPSTAN_MOD_LEVEL;
+    m_diff_fb.mod = m_diff_lr.mod = CAPSTAN_MOD_LEVEL;
     ESP_LOGI(TAG, "model ready; all values unset");
 }
 
@@ -180,6 +182,12 @@ void capstan_model_set_tilt(double fb, double ss)
 {
     put(&m_tilt_fb, fb);
     put(&m_tilt_ss, ss);
+}
+
+void capstan_model_set_tilt_diff(double fb_mm, double lr_mm)
+{
+    put(&m_diff_fb, fb_mm);
+    put(&m_diff_lr, lr_mm);
 }
 
 void capstan_model_set_light(int id, bool on, int brightness)
@@ -392,6 +400,8 @@ capstan_value_t capstan_model_eco2(void)          { return get(&m_eco2); }
 capstan_value_t capstan_model_co(void)            { return get(&m_co); }
 capstan_value_t capstan_model_tilt_front_back(void) { return get(&m_tilt_fb); }
 capstan_value_t capstan_model_tilt_side_to_side(void) { return get(&m_tilt_ss); }
+capstan_value_t capstan_model_tilt_diff_front_back(void) { return get(&m_diff_fb); }
+capstan_value_t capstan_model_tilt_diff_left_right(void) { return get(&m_diff_lr); }
 
 capstan_value_t capstan_model_tank(capstan_tank_t t)
 {

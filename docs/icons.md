@@ -71,7 +71,7 @@ have no named sibling widget to inherit a meaning from.
 | Cooling call; Mode: Cool | `snowflake` | `U+F2DC` |
 | Mode: Auto | `arrows-rotate` | `U+F021` |
 | Levelling | `gauge-high` | `U+F3FD` |
-| Doors | `lock` | `U+F023` |
+| Doors (screen removed for now) | `lock` | `U+F023` |
 | Alert | `triangle-exclamation` | `U+F071` |
 | Confirm / OK | `check` | `U+F00C` |
 | Cancel | `xmark` | `U+F00D` |

@@ -105,6 +105,9 @@ typedef struct {
 
 typedef struct {
     bool celsius;
+    /** Leveling height differences in millimetres rather than inches
+     *  (Settings > Locale). Tilt angles are always degrees. */
+    bool level_mm;
     bool dark_theme;
     uint8_t backlight_percent;
     uint16_t idle_timeout_s;

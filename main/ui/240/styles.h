@@ -232,6 +232,12 @@ lv_style_t *get_style_settings_value_MAIN_DISABLED();
 void add_style_settings_value(lv_obj_t *obj);
 void remove_style_settings_value(lv_obj_t *obj);
 
+// Style: ListRow
+lv_style_t *get_style_list_row_MAIN_DEFAULT();
+lv_style_t *get_style_list_row_MAIN_CHECKED();
+void add_style_list_row(lv_obj_t *obj);
+void remove_style_list_row(lv_obj_t *obj);
+
 // Style: MenuName
 lv_style_t *get_style_menu_name_MAIN_DEFAULT();
 void add_style_menu_name(lv_obj_t *obj);

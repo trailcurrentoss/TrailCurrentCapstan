@@ -73,6 +73,7 @@ enum {
     UI_SETTINGS_WIFI = 0,
     UI_SETTINGS_MQTT,
     UI_SETTINGS_THEME,
+    UI_SETTINGS_LOCALE,
     UI_SETTINGS_SNOOZE,
     UI_SETTINGS_TIMEOUT,
     UI_SETTINGS_RESET,
@@ -86,6 +87,23 @@ enum {
  * selection change and on the data refresh. LVGL lock held.
  */
 void ui_settings_refresh(void);
+
+/* The Locale screen's rows -- LOCALE_ITEMS in GUI/tmp/screens_layout.py. */
+enum {
+    UI_LOCALE_TEMPERATURE = 0,
+    UI_LOCALE_LEVELING,
+    UI_LOCALE_ITEM_COUNT
+};
+
+/**
+ * A press on Locale row `row`: flip that unit (°F/°C, in/mm), save it to
+ * NVS and repaint. Everything that shows the unit reads the saved setting,
+ * so the change shows everywhere on the next refresh. LVGL lock held.
+ */
+void ui_settings_locale_pressed(int row);
+
+/** "°F · in" -- the Locale item's value in the Settings carousel. */
+void ui_settings_locale_text(char *out, size_t len);
 
 /**
  * The LED ring colour Settings wants: on Wi-Fi or MQTT, green when

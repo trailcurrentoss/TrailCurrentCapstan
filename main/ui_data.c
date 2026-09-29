@@ -384,6 +384,36 @@ static const char *level_word(float fb, float ss, float *worst)
     return fb > 0 ? "Tilted forward" : "Tilted back";
 }
 
+/* A height difference in the Locale's unit: +0.8" or -35 mm, "--" if the
+ * gateway sends none (an older one publishes only the angles). */
+static void fmt_height(char *out, size_t len, capstan_value_t mm)
+{
+    if (!mm.valid) {
+        snprintf(out, len, "--");
+        return;
+    }
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    const char *sign = mm.value > 0.0f ? "+" : "";
+    if (d.level_mm) {
+        snprintf(out, len, "%s%.0f mm", sign, (double)mm.value);
+    } else {
+        snprintf(out, len, "%s%.1f\"", sign, (double)(mm.value / 25.4f));
+    }
+}
+
+/* A temperature held in Fahrenheit, in the Locale's unit: "68°F" / "20°C". */
+static void fmt_temp(char *out, size_t len, float f)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    if (d.celsius) {
+        snprintf(out, len, "%.0f\xC2\xB0" "C", (double)((f - 32.0f) * 5.0f / 9.0f));
+    } else {
+        snprintf(out, len, "%.0f\xC2\xB0" "F", (double)f);
+    }
+}
+
 /*
  * The carousel's centre readout.
  *
@@ -455,7 +485,7 @@ static void refresh_menu(void)
     case 4: {   /* Air */
         const capstan_value_t t = capstan_model_temp_f();
         if (t.valid) {
-            snprintf(buf, sizeof(buf), "%.0f\xC2\xB0" "F", t.value);
+            fmt_temp(buf, sizeof(buf), t.value);
         }
         break;
     }
@@ -464,14 +494,21 @@ static void refresh_menu(void)
         const capstan_value_t fb = capstan_model_tilt_front_back();
         const capstan_value_t ss = capstan_model_tilt_side_to_side();
         if (fb.valid && ss.valid) {
-            /* The prototype's "Tilted right 1.2°". */
+            /* The prototype's "Tilted right 1.2°", with the height on the
+             * dominant axis instead of the angle -- see refresh_level(). */
             float worst;
             const char *word = level_word(fb.value, ss.value, &worst);
-            if (worst < LEVEL_OK_DEG) {
+            const capstan_value_t h = fabsf(ss.value) >= fabsf(fb.value)
+                ? capstan_model_tilt_diff_left_right()
+                : capstan_model_tilt_diff_front_back();
+            if (worst < LEVEL_OK_DEG || !h.valid) {
                 snprintf(buf, sizeof(buf), "%s", word);
             } else {
-                snprintf(buf, sizeof(buf), "%s %.1f\xC2\xB0", word,
-                         (double)worst);
+                char hb[16];
+                capstan_value_t mag = h;
+                mag.value = fabsf(h.value);
+                fmt_height(hb, sizeof(hb), mag);
+                snprintf(buf, sizeof(buf), "%s %s", word, hb);
             }
         }
         break;
@@ -640,7 +677,14 @@ static void refresh_air(void)
      */
     set_value(objects.air_voc, capstan_model_tvoc(), "%.0f ppb");
     set_value(objects.air_humidity, capstan_model_humidity(), "%.0f%%");
-    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f\xC2\xB0" "F");
+    {
+        const capstan_value_t t = capstan_model_temp_f();
+        char tb[12];
+        if (t.valid) {
+            fmt_temp(tb, sizeof(tb), t.value);
+        }
+        set_text(objects.air_temp, t.valid ? tb : "--");
+    }
 }
 
 /*
@@ -725,16 +769,25 @@ static void refresh_level(void)
     /* Status word: the dominant axis, as the prototype's "Tilted right". */
     float worst;
     const char *word = level_word(fb.value, ss.value, &worst);
-    const float afb = fabsf(fb.value), ass = fabsf(ss.value);
     ui_lv_set_state_in(objects.level_status, status_mask,
                        worst < LEVEL_OK_DEG   ? 0                  /* green */
                        : worst > LEVEL_FULL_DEG ? LV_STATE_DISABLED  /* red */
                                                 : LV_STATE_CHECKED); /* amber */
     set_text(objects.level_status, word);
 
-    char detail[48];
-    snprintf(detail, sizeof(detail), "Side %.1f\xC2\xB0 \xC2\xB7 Front %.1f\xC2\xB0",
-             (double)ass, (double)afb);
+    /*
+     * The detail is how much higher or lower each side is -- Plateau's
+     * height differences, in inches or mm per Settings > Locale, signed as
+     * Headwaters and Milepost show them. Never degrees: nobody levelling a
+     * trailer can turn 2 degrees into "raise the driver's side 2 inches"
+     * without knowing its track and wheelbase, which Plateau does.
+     */
+    const capstan_value_t dlr = capstan_model_tilt_diff_left_right();
+    const capstan_value_t dfb = capstan_model_tilt_diff_front_back();
+    char side[16], front[16], detail[48];
+    fmt_height(side, sizeof(side), dlr);
+    fmt_height(front, sizeof(front), dfb);
+    snprintf(detail, sizeof(detail), "Side %s \xC2\xB7 Front %s", side, front);
     set_text(objects.level_detail, detail);
 }
 

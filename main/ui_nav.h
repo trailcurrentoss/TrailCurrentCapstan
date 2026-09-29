@@ -45,6 +45,7 @@ typedef enum {
     CAPSTAN_SCREEN_SETTINGS,
     CAPSTAN_SCREEN_ALERT,      /* full-screen overlay */
     CAPSTAN_SCREEN_SETUP,      /* soft-AP provisioning instructions */
+    CAPSTAN_SCREEN_LOCALE,     /* units, opened from Settings */
     CAPSTAN_SCREEN_COUNT
 } capstan_screen_t;
 
