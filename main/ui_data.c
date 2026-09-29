@@ -14,6 +14,7 @@
  * at, and four updates a second already looks instant.
  */
 
+#include <math.h>
 #include <stdio.h>
 
 #include "esp_log.h"
@@ -23,9 +24,11 @@
 #include "capstan_model.h"
 #include "capstan_mqtt.h"
 #include "capstan_wifi.h"
+#include "ui_alerts.h"
 #include "ui_data.h"
 #include "ui_devices.h"
 #include "ui_nav.h"
+#include "ui_settings.h"
 #include "ui_setup.h"
 
 #ifndef CAPSTAN_HAVE_UI
@@ -121,16 +124,44 @@ static void refresh_energy(void)
         break;
 
     case 4: {
-        /* Time-to-go arrives in minutes; hours are what a person wants
-         * once it is past an hour or two. */
+        /*
+         * Time-to-go arrives in minutes. Shown in whichever unit keeps the
+         * number short -- minutes, then hours, then days -- with the unit
+         * label following it and the exact breakdown on the line below.
+         * Stopping at hours gave "240.0 hours" for ten days, which is a
+         * number nobody reads at a glance.
+         */
         const capstan_value_t mins = capstan_model_runtime_min();
         title = "Runtime";
-        if (mins.valid && mins.value >= 120.0f) {
-            v.value = mins.value / 60.0f; v.valid = true;
-            unit = "hours"; fmt = "%.1f";
+        v = mins;
+        if (mins.valid) {
+            const float m = mins.value < 0.0f ? 0.0f : mins.value;
+            const unsigned total = (unsigned)lroundf(m);
+            if (m < 60.0f) {
+                unit = "min"; fmt = "%.0f";
+                snprintf(sub, sizeof(sub), "%u min left", total);
+            } else if (m < 48.0f * 60.0f) {
+                v.value = m / 60.0f;
+                unit = "hours"; fmt = v.value < 10.0f ? "%.1f" : "%.0f";
+                snprintf(sub, sizeof(sub), "%uh %um left",
+                         total / 60u, total % 60u);
+            } else {
+                v.value = m / (24.0f * 60.0f);
+                unit = "days"; fmt = v.value < 10.0f ? "%.1f" : "%.0f";
+                if (v.value > 99.0f) {
+                    /* Not draining in any meaningful sense (charging, or a
+                     * near-zero load); a four-digit day count is noise. */
+                    set_text(objects.energy_title, title);
+                    set_text(objects.energy_value, ">99");
+                    set_text(objects.energy_unit, unit);
+                    set_text(objects.energy_sub, "Not draining");
+                    return;
+                }
+                snprintf(sub, sizeof(sub), "%ud %uh left",
+                         total / 1440u, (total % 1440u) / 60u);
+            }
         } else {
-            v = mins;
-            unit = "min"; fmt = "%.0f";
+            unit = "min";
         }
         break;
     }
@@ -393,10 +424,90 @@ static void refresh_air(void)
     set_value(objects.air_temp, capstan_model_temp_f(), "%.0f F");
 }
 
+/*
+ * Levelling: the bubble, the status word and the Side/Front line.
+ *
+ * DIRECTION follows Headwaters' own level indicator
+ * (containers/frontend/public/js/components/level-indicator.js): a positive
+ * side_to_side moves the bubble right, and front_back moves it along the
+ * other axis -- positive towards the top of the well (the front).
+ *
+ * SCALE: LEVEL_FULL_DEG of tilt reaches the rim. 5 deg is where Headwaters
+ * turns the reading red, so "bubble at the rim" and "red" mean the same thing,
+ * and at that scale LEVEL_OK_DEG (0.5 deg) is roughly the centre ring: a
+ * bubble inside the ring reads "Level". The offset is clamped to a circle,
+ * not a square, so a diagonal tilt stops at the rim too.
+ *
+ * The bubble is authored at dead centre in the EEZ project and moved here by
+ * TRANSLATION ONLY -- never lv_obj_set_pos -- so the authored position stays
+ * the canvas-correct rest state (level), and this is purely the live value,
+ * like a clock hand. It is the one runtime geometry write on this screen.
+ */
+#define LEVEL_FULL_DEG 5.0f
+#define LEVEL_OK_DEG   0.5f
+
 static void refresh_level(void)
 {
-    set_value(objects.level_pitch, capstan_model_tilt_front_back(), "%.1f");
-    set_value(objects.level_roll, capstan_model_tilt_side_to_side(), "%.1f");
+    const capstan_value_t fb = capstan_model_tilt_front_back();
+    const capstan_value_t ss = capstan_model_tilt_side_to_side();
+    lv_obj_t *const bubble = objects.level_bubble;
+    lv_obj_t *const well   = objects.level_well;
+
+    lv_obj_remove_state(objects.level_status, LV_STATE_CHECKED |
+                        LV_STATE_DISABLED | LV_STATE_PRESSED);
+
+    if (!fb.valid || !ss.valid) {
+        lv_obj_add_state(objects.level_status, LV_STATE_PRESSED);  /* muted */
+        set_text(objects.level_status, "--");
+        set_text(objects.level_detail, "No level data");
+        if (bubble) {
+            lv_obj_set_style_translate_x(bubble, 0, LV_PART_MAIN);
+            lv_obj_set_style_translate_y(bubble, 0, LV_PART_MAIN);
+        }
+        return;
+    }
+
+    /* Room the bubble can travel: from centre to where its edge meets the
+     * well's inner edge. Read from the laid-out widgets so it is right on
+     * all three panels without a per-board constant. */
+    if (bubble && well) {
+        const int32_t travel = (lv_obj_get_content_width(well) -
+                                lv_obj_get_width(bubble)) / 2;
+        float dx = ss.value / LEVEL_FULL_DEG;
+        float dy = -fb.value / LEVEL_FULL_DEG;     /* front = up */
+        const float mag = sqrtf(dx * dx + dy * dy);
+        if (mag > 1.0f) {
+            dx /= mag;
+            dy /= mag;
+        }
+        lv_obj_set_style_translate_x(bubble, (int32_t)lroundf(dx * travel),
+                                     LV_PART_MAIN);
+        lv_obj_set_style_translate_y(bubble, (int32_t)lroundf(dy * travel),
+                                     LV_PART_MAIN);
+    }
+
+    /* Status word: the dominant axis, as the prototype's "Tilted right". */
+    const float afb = fabsf(fb.value), ass = fabsf(ss.value);
+    const float worst = afb > ass ? afb : ass;
+    const char *word;
+    if (worst < LEVEL_OK_DEG) {
+        word = "Level";                                  /* DEFAULT: green */
+    } else {
+        if (ass >= afb) {
+            word = ss.value > 0 ? "Tilted right" : "Tilted left";
+        } else {
+            word = fb.value > 0 ? "Tilted forward" : "Tilted back";
+        }
+        lv_obj_add_state(objects.level_status,
+                         worst > LEVEL_FULL_DEG ? LV_STATE_DISABLED   /* red */
+                                                : LV_STATE_CHECKED);  /* amber */
+    }
+    set_text(objects.level_status, word);
+
+    char detail[48];
+    snprintf(detail, sizeof(detail), "Side %.1f\xC2\xB0 \xC2\xB7 Front %.1f\xC2\xB0",
+             (double)ass, (double)afb);
+    set_text(objects.level_detail, detail);
 }
 
 /*
@@ -449,6 +560,10 @@ static void refresh_settings(void)
         mq = m.configured ? "Offline" : "Not set";
     }
     set_text(objects.settings_item1_value, mq);
+
+    char snooze[16];
+    ui_settings_snooze_text(snooze, sizeof(snooze));
+    set_text(objects.settings_item3_value, snooze);
 }
 
 void ui_data_refresh(void)
@@ -470,6 +585,7 @@ void ui_data_refresh(void)
     refresh_water();
     refresh_air();
     refresh_level();
+    ui_alerts_tick();        /* last: may switch to the alert overlay */
 }
 
 static void refresh_timer_cb(lv_timer_t *t)

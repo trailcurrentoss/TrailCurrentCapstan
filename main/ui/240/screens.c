@@ -1437,53 +1437,86 @@ void create_screen_page_level() {
             // level_title
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.level_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_pos(obj, LV_PCT(25), LV_PCT(13));
+            lv_obj_set_size(obj, LV_PCT(50), LV_PCT(8));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Level");
+            lv_label_set_text(obj, "LEVELING");
         }
         {
             // level_well
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.level_well = obj;
-            lv_obj_set_pos(obj, LV_PCT(30), LV_PCT(26));
-            lv_obj_set_size(obj, LV_PCT(40), LV_PCT(40));
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_pos(obj, LV_PCT(27), LV_PCT(23));
+            lv_obj_set_size(obj, LV_PCT(46), LV_PCT(46));
+            add_style_level_well(obj);
             {
                 lv_obj_t *parent_obj = obj;
+                {
+                    // level_cross_v
+                    lv_obj_t *obj = lv_line_create(parent_obj);
+                    objects.level_cross_v = obj;
+                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
+                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(100));
+                    static lv_point_precise_t line_points[] = {
+                        { 53, 0 },
+                        { 53, 106 }
+                    };
+                    lv_line_set_points(obj, line_points, 2);
+                    add_style_level_line(obj);
+                }
+                {
+                    // level_cross_h
+                    lv_obj_t *obj = lv_line_create(parent_obj);
+                    objects.level_cross_h = obj;
+                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
+                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(100));
+                    static lv_point_precise_t line_points[] = {
+                        { 0, 53 },
+                        { 106, 53 }
+                    };
+                    lv_line_set_points(obj, line_points, 2);
+                    add_style_level_line(obj);
+                }
+                {
+                    // level_ring
+                    lv_obj_t *obj = lv_obj_create(parent_obj);
+                    objects.level_ring = obj;
+                    lv_obj_set_pos(obj, 38, 38);
+                    lv_obj_set_size(obj, 30, 30);
+                    add_style_level_ring(obj);
+                }
                 {
                     // level_bubble
                     lv_obj_t *obj = lv_obj_create(parent_obj);
                     objects.level_bubble = obj;
-                    lv_obj_set_pos(obj, LV_PCT(40), LV_PCT(40));
-                    lv_obj_set_size(obj, LV_PCT(20), LV_PCT(20));
-                    add_style_pivot(obj);
+                    lv_obj_set_pos(obj, 42, 42);
+                    lv_obj_set_size(obj, 22, 22);
+                    add_style_level_bubble(obj);
                 }
             }
         }
         {
-            // level_pitch
+            // level_status
             lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.level_pitch = obj;
-            lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(70));
-            lv_obj_set_size(obj, LV_PCT(34), LV_PCT(9));
+            objects.level_status = obj;
+            lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(71));
+            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(8));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_body(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+            add_style_label_status(obj);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_label_set_text(obj, "--");
         }
         {
-            // level_roll
+            // level_detail
             lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.level_roll = obj;
-            lv_obj_set_pos(obj, LV_PCT(50), LV_PCT(70));
-            lv_obj_set_size(obj, LV_PCT(34), LV_PCT(9));
+            objects.level_detail = obj;
+            lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(79));
+            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(8));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_body(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
+            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
             lv_label_set_text(obj, "--");
         }
         {
@@ -2026,12 +2059,56 @@ void create_screen_page_settings() {
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_icon_sm(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
+                            lv_label_set_text_static(obj, "");
                         }
                         {
                             // settings_item3_title
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.settings_item3_title = obj;
+                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
+                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+                            add_style_label_body(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text(obj, "Alarm Snooze");
+                        }
+                        {
+                            // settings_item3_value
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item3_value = obj;
+                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
+                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+                            add_style_label_muted(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text(obj, "--");
+                        }
+                    }
+                }
+                {
+                    // settings_item4
+                    lv_obj_t *obj = lv_obj_create(parent_obj);
+                    objects.settings_item4 = obj;
+                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(133));
+                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(31));
+                    add_style_card(obj);
+                    {
+                        lv_obj_t *parent_obj = obj;
+                        {
+                            // settings_item4_icon
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item4_icon = obj;
+                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
+                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
+                            add_style_label_icon_sm(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text_static(obj, "");
+                        }
+                        {
+                            // settings_item4_title
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item4_title = obj;
                             lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
                             lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
@@ -2089,38 +2166,37 @@ void create_screen_page_alert() {
             objects.alert_bg = obj;
             lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
             lv_obj_set_size(obj, LV_PCT(100), LV_PCT(100));
-            add_style_card(obj);
-            lv_obj_set_style_radius(obj, 0, LV_PART_MAIN | LV_STATE_DEFAULT);
+            add_style_alert_ring(obj);
             {
                 lv_obj_t *parent_obj = obj;
                 {
                     // alert_icon
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.alert_icon = obj;
-                    lv_obj_set_pos(obj, LV_PCT(40), LV_PCT(24));
-                    lv_obj_set_size(obj, LV_PCT(20), LV_PCT(14));
+                    lv_obj_set_pos(obj, LV_PCT(30), LV_PCT(27));
+                    lv_obj_set_size(obj, LV_PCT(40), LV_PCT(16));
                     lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
-                    add_style_label_icon(obj);
+                    add_style_alert_icon(obj);
                     lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text_static(obj, "");
+                    lv_label_set_text_static(obj, "");
                 }
                 {
                     // alert_title
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.alert_title = obj;
-                    lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(42));
-                    lv_obj_set_size(obj, LV_PCT(68), LV_PCT(10));
+                    lv_obj_set_pos(obj, LV_PCT(12), LV_PCT(46));
+                    lv_obj_set_size(obj, LV_PCT(76), LV_PCT(9));
                     lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
                     add_style_label_title(obj);
                     lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text(obj, "Alert");
+                    lv_label_set_text(obj, "--");
                 }
                 {
                     // alert_message
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.alert_message = obj;
-                    lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(54));
-                    lv_obj_set_size(obj, LV_PCT(68), LV_PCT(18));
+                    lv_obj_set_pos(obj, LV_PCT(12), LV_PCT(56));
+                    lv_obj_set_size(obj, LV_PCT(76), LV_PCT(13));
                     add_style_label_body(obj);
                     lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
                     lv_label_set_text_static(obj, "--");
@@ -2129,12 +2205,12 @@ void create_screen_page_alert() {
                     // alert_hint
                     lv_obj_t *obj = lv_label_create(parent_obj);
                     objects.alert_hint = obj;
-                    lv_obj_set_pos(obj, LV_PCT(16), LV_PCT(76));
-                    lv_obj_set_size(obj, LV_PCT(68), LV_PCT(8));
+                    lv_obj_set_pos(obj, LV_PCT(15), LV_PCT(70));
+                    lv_obj_set_size(obj, LV_PCT(70), LV_PCT(7));
                     lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
                     add_style_label_muted(obj);
                     lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                    lv_label_set_text(obj, "press to dismiss");
+                    lv_label_set_text(obj, "Press to dismiss");
                 }
             }
         }
@@ -2392,6 +2468,16 @@ void change_color_theme(uint32_t theme_index) {
     lv_style_set_text_color(get_style_device_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));
     lv_style_set_text_color(get_style_device_icon_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_text_color(get_style_device_neighbour_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));
+    lv_style_set_bg_color(get_style_alert_ring_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][1]));
+    lv_style_set_border_color(get_style_alert_ring_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][14]));
+    lv_style_set_text_color(get_style_alert_ring_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][6]));
+    lv_style_set_bg_color(get_style_level_well_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][27]));
+    lv_style_set_border_color(get_style_level_well_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][5]));
+    lv_style_set_border_color(get_style_level_ring_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][5]));
+    lv_style_set_line_color(get_style_level_line_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][5]));
+    lv_style_set_bg_color(get_style_level_bubble_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][11]));
+    lv_style_set_shadow_color(get_style_level_bubble_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][11]));
+    lv_style_set_text_color(get_style_alert_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][14]));
     lv_style_set_bg_color(get_style_dot_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));
     lv_style_set_bg_color(get_style_dot_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_bg_color(get_style_pivot_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][9]));

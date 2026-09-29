@@ -102,6 +102,36 @@ lv_style_t *get_style_device_neighbour_icon_MAIN_DEFAULT();
 void add_style_device_neighbour_icon(lv_obj_t *obj);
 void remove_style_device_neighbour_icon(lv_obj_t *obj);
 
+// Style: AlertRing
+lv_style_t *get_style_alert_ring_MAIN_DEFAULT();
+void add_style_alert_ring(lv_obj_t *obj);
+void remove_style_alert_ring(lv_obj_t *obj);
+
+// Style: LevelWell
+lv_style_t *get_style_level_well_MAIN_DEFAULT();
+void add_style_level_well(lv_obj_t *obj);
+void remove_style_level_well(lv_obj_t *obj);
+
+// Style: LevelRing
+lv_style_t *get_style_level_ring_MAIN_DEFAULT();
+void add_style_level_ring(lv_obj_t *obj);
+void remove_style_level_ring(lv_obj_t *obj);
+
+// Style: LevelLine
+lv_style_t *get_style_level_line_MAIN_DEFAULT();
+void add_style_level_line(lv_obj_t *obj);
+void remove_style_level_line(lv_obj_t *obj);
+
+// Style: LevelBubble
+lv_style_t *get_style_level_bubble_MAIN_DEFAULT();
+void add_style_level_bubble(lv_obj_t *obj);
+void remove_style_level_bubble(lv_obj_t *obj);
+
+// Style: AlertIcon
+lv_style_t *get_style_alert_icon_MAIN_DEFAULT();
+void add_style_alert_icon(lv_obj_t *obj);
+void remove_style_alert_icon(lv_obj_t *obj);
+
 // Style: Dot
 lv_style_t *get_style_dot_MAIN_DEFAULT();
 lv_style_t *get_style_dot_MAIN_CHECKED();

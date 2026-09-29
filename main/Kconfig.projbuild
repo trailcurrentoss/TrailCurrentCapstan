@@ -331,6 +331,16 @@ config CAPSTAN_IDLE_TIMEOUT_S
     range 5 3600
     default 30
 
+config CAPSTAN_ALARM_SNOOZE_MIN
+    int "Minutes an acknowledged alarm stays quiet"
+    range 1 240
+    default 10
+    help
+      Initial value only. Pressing the overlay acknowledges every alarm on
+      it; one that is still active after this long is raised again. The
+      user changes it on the device under Settings > Alarm Snooze, and the
+      value is stored in NVS.
+
 config CAPSTAN_DEFAULT_UNITS_CELSIUS
     bool "Default to Celsius"
     default n

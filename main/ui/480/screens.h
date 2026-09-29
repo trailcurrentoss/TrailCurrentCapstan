@@ -163,9 +163,12 @@ typedef struct _objects_t {
     lv_obj_t *air_back_icon;
     lv_obj_t *level_title;
     lv_obj_t *level_well;
+    lv_obj_t *level_cross_v;
+    lv_obj_t *level_cross_h;
+    lv_obj_t *level_ring;
     lv_obj_t *level_bubble;
-    lv_obj_t *level_pitch;
-    lv_obj_t *level_roll;
+    lv_obj_t *level_status;
+    lv_obj_t *level_detail;
     lv_obj_t *level_back;
     lv_obj_t *level_back_icon;
     lv_obj_t *doors_title;
@@ -213,6 +216,10 @@ typedef struct _objects_t {
     lv_obj_t *settings_item3;
     lv_obj_t *settings_item3_icon;
     lv_obj_t *settings_item3_title;
+    lv_obj_t *settings_item3_value;
+    lv_obj_t *settings_item4;
+    lv_obj_t *settings_item4_icon;
+    lv_obj_t *settings_item4_title;
     lv_obj_t *settings_back;
     lv_obj_t *settings_back_icon;
     lv_obj_t *alert_bg;

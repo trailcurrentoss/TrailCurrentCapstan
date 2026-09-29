@@ -13,6 +13,7 @@
 #include "ui_nav.h"
 #include "ui_clock.h"
 #include "ui_icons.h"
+#include "ui_alerts.h"
 #include "ui_devices.h"
 #include "ui_settings.h"
 #include "ui_setup.h"
@@ -282,6 +283,14 @@ void ui_nav_back(void)
 {
     /* Swallow the ring press that a touch on the Back chip also makes. */
     s_back_us = esp_timer_get_time();
+
+    /* Leaving the alert by any route acknowledges it. A long press that
+     * simply closed the overlay would silence the alarm with no snooze
+     * timer behind it -- until it happened to clear. */
+    if (s_current == CAPSTAN_SCREEN_ALERT) {
+        ui_alerts_acknowledge();
+        return;
+    }
 
     ui_nav_goto(s_policy[s_current].back);
 }
@@ -705,7 +714,8 @@ void ui_nav_press(void)
             /* Read-only status. Broker details are set in the portal. */
             ESP_LOGD(TAG, "MQTT row is status only -- use setup mode");
             return;
-        case 3: ui_settings_factory_reset_pressed(); return;
+        case 3: ui_settings_snooze_pressed(); return;
+        case 4: ui_settings_factory_reset_pressed(); return;
         default:
             ESP_LOGD(TAG, "settings row %d has no action yet",
                      s_sel[CAPSTAN_SCREEN_SETTINGS]);
@@ -713,7 +723,7 @@ void ui_nav_press(void)
         }
 
     case CAPSTAN_SCREEN_ALERT:
-        ui_nav_back();      /* a press dismisses an alert from anywhere */
+        ui_alerts_acknowledge();   /* snooze, back to the interrupted screen */
         return;
 #endif
 

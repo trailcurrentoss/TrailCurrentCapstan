@@ -80,6 +80,9 @@ static int light_slot(int id)
     return -1;
 }
 static uint16_t s_picket[CAPSTAN_PICKET_ADDRS];
+static uint16_t s_spoor[CAPSTAN_SPOOR_ADDRS];
+/* Bit per address: has this board ever reported? See capstan_model_input_word(). */
+static uint8_t  s_picket_seen, s_spoor_seen;
 static int64_t  s_module_seen[CAPSTAN_MOD_COUNT];
 
 #define LOCK()   xSemaphoreTake(s_lock, portMAX_DELAY)
@@ -215,7 +218,17 @@ void capstan_model_set_picket_inputs(int addr, uint16_t mask)
     if (addr < 0 || addr >= CAPSTAN_PICKET_ADDRS) { return; }
     LOCK();
     s_picket[addr] = mask;
+    s_picket_seen |= (uint8_t)(1u << addr);
     s_module_seen[CAPSTAN_MOD_DOORS] = esp_timer_get_time();
+    UNLOCK();
+}
+
+void capstan_model_set_spoor_inputs(int addr, uint16_t mask)
+{
+    if (addr < 0 || addr >= CAPSTAN_SPOOR_ADDRS) { return; }
+    LOCK();
+    s_spoor[addr] = mask & 0xFFu;
+    s_spoor_seen |= (uint8_t)(1u << addr);
     UNLOCK();
 }
 
@@ -462,6 +475,21 @@ uint16_t capstan_model_picket_inputs(int addr)
 {
     if (addr < 0 || addr >= CAPSTAN_PICKET_ADDRS) { return 0; }
     uint16_t v; LOCK(); v = s_picket[addr]; UNLOCK(); return v;
+}
+
+bool capstan_model_input_word(bool switchback, int addr, uint16_t *out)
+{
+    const int n = switchback ? CAPSTAN_SPOOR_ADDRS : CAPSTAN_PICKET_ADDRS;
+    uint16_t v = 0;
+    bool seen = false;
+    if (addr >= 0 && addr < n) {
+        LOCK();
+        seen = ((switchback ? s_spoor_seen : s_picket_seen) >> addr) & 1u;
+        if (seen) { v = switchback ? s_spoor[addr] : s_picket[addr]; }
+        UNLOCK();
+    }
+    if (out) { *out = v; }
+    return seen;
 }
 
 bool capstan_model_module_alive(capstan_module_t m)

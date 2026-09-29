@@ -77,7 +77,8 @@ have no named sibling widget to inherit a meaning from.
 | Back | `chevron-left` | `U+F053` |
 | Scene: all off | `power-off` | `U+F011` |
 | Password reveal | `eye` | `U+F06E` |
-| Idle clock | `clock` | `U+F017` |
+| Idle clock, alarm snooze | `clock` | `U+F017` |
+| Alarm (default icon) | `bell` | `U+F0F3` |
 
 ## No Capstan additions
 

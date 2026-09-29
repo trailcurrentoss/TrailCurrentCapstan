@@ -66,6 +66,7 @@ typedef enum {
  */
 #define CAPSTAN_MAX_LIGHTS  56
 #define CAPSTAN_PICKET_ADDRS 8
+#define CAPSTAN_SPOOR_ADDRS  8   /**< Switchback DI boards, local/spoor/<addr>/inputs */
 
 /** A reading plus whether it is still trustworthy. */
 typedef struct {
@@ -106,6 +107,8 @@ void capstan_model_set_tank(capstan_tank_t t, double pct);
 void capstan_model_set_tilt(double front_back, double side_to_side);
 void capstan_model_set_light(int id, bool on, int brightness);
 void capstan_model_set_picket_inputs(int addr, uint16_t mask);
+/** Switchback digital inputs, from `local/spoor/<addr>/inputs` (8 bits). */
+void capstan_model_set_spoor_inputs(int addr, uint16_t mask);
 void capstan_model_note_trigger(const char *topic, const char *payload);
 
 /* ---- clock --------------------------------------------------------- */
@@ -207,6 +210,17 @@ int  capstan_model_light_brightness(int id);
 int  capstan_model_lights_on_count(void);
 
 uint16_t capstan_model_picket_inputs(int addr);
+
+/**
+ * A board's raw input word, and whether it has ever reported.
+ *
+ * The flag is the point. An alarm with a `low` verdict fires while its input
+ * is NOT asserted, and a board that has never published reads as all-zero --
+ * so without it every `low` alarm would fire at boot, before the first input
+ * broadcast, and keep firing on a rig whose board is not fitted at all.
+ * Returns false (and *out = 0) for a board never heard from.
+ */
+bool capstan_model_input_word(bool switchback, int addr, uint16_t *out);
 
 /** True if the module has produced anything within its timeout. Drives the
  *  "module offline" treatment on a screen, as distinct from a single

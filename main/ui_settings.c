@@ -1,11 +1,10 @@
 /*
- * Settings screen behaviour.
- *
- * Today that is one thing: factory reset, and the confirmation in front
- * of it.
+ * Settings screen behaviour: the alarm snooze interval, and factory reset
+ * with the confirmation in front of it.
  */
 
 #include <stdbool.h>
+#include <stdio.h>
 
 #include "esp_log.h"
 #include "esp_system.h"
@@ -51,8 +50,8 @@ static int64_t s_armed_us;
 
 static void set_row_label(const char *text)
 {
-    if (objects.settings_item3_title) {
-        lv_label_set_text(objects.settings_item3_title, text);
+    if (objects.settings_item4_title) {
+        lv_label_set_text(objects.settings_item4_title, text);
     }
 }
 
@@ -115,9 +114,50 @@ void ui_settings_factory_reset_pressed(void)
     }
 }
 
+/*
+ * Alarm snooze. A handful of steps rather than a free value: this is set
+ * with one ring press at a time, and nobody needs 17 minutes.
+ */
+static const uint16_t SNOOZE_STEPS_MIN[] = { 5, 10, 15, 30, 60 };
+#define SNOOZE_STEP_COUNT (sizeof(SNOOZE_STEPS_MIN) / sizeof(*SNOOZE_STEPS_MIN))
+
+void ui_settings_snooze_text(char *out, size_t len)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    snprintf(out, len, "%u min", (unsigned)d.alarm_snooze_min);
+}
+
+void ui_settings_snooze_pressed(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+
+    /* Next step above the current value, wrapping. A value that is not on
+     * the list (a different Kconfig default) steps to the first one above
+     * it, so the cycle is always reachable. */
+    uint16_t next = SNOOZE_STEPS_MIN[0];
+    for (size_t i = 0; i < SNOOZE_STEP_COUNT; i++) {
+        if (SNOOZE_STEPS_MIN[i] > d.alarm_snooze_min) {
+            next = SNOOZE_STEPS_MIN[i];
+            break;
+        }
+    }
+    d.alarm_snooze_min = next;
+
+    const esp_err_t err = capstan_config_set_display(&d);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "snooze save failed: %s", esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "alarm snooze -> %u min", (unsigned)next);
+}
+
 #else
 
 void ui_settings_factory_reset_pressed(void) { }
 void ui_settings_disarm_reset(void) { }
+void ui_settings_snooze_pressed(void) { }
+void ui_settings_snooze_text(char *out, size_t len) { if (len) out[0] = '\0'; }
 
 #endif

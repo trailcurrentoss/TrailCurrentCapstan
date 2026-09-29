@@ -41,6 +41,7 @@ static const char *TAG = "config";
 #define K_DISP_DARK  "d_dark"
 #define K_DISP_BL    "d_backlight"
 #define K_DISP_IDLE  "d_idle"
+#define K_DISP_SNOOZE "d_snooze"
 #define K_TCAL_XS    "t_xs"
 #define K_TCAL_XO    "t_xo"
 #define K_TCAL_YS    "t_ys"
@@ -164,6 +165,7 @@ static void load_defaults(void)
 #endif
     s_display.backlight_percent = 100;
     s_display.idle_timeout_s    = CONFIG_CAPSTAN_IDLE_TIMEOUT_S;
+    s_display.alarm_snooze_min  = CONFIG_CAPSTAN_ALARM_SNOOZE_MIN;
 
     /* No controls and no alarms until Headwaters sends some. An empty dial is
      * a correct first-boot state, not a fault -- and disarmed is the only
@@ -286,6 +288,12 @@ static esp_err_t load_from_nvs(void)
     read_bool(h, K_DISP_DARK, &s_display.dark_theme);
     read_u8(h,   K_DISP_BL,   &s_display.backlight_percent);
     read_u16(h,  K_DISP_IDLE, &s_display.idle_timeout_s);
+    read_u16(h,  K_DISP_SNOOZE, &s_display.alarm_snooze_min);
+    if (s_display.alarm_snooze_min == 0) {
+        /* 0 would mean re-raise on the very next refresh -- an alarm that
+         * cannot be acknowledged. Treat it as unset. */
+        s_display.alarm_snooze_min = CONFIG_CAPSTAN_ALARM_SNOOZE_MIN;
+    }
 
     nvs_close(h);
     return ESP_OK;
@@ -585,6 +593,7 @@ esp_err_t capstan_config_set_display(const capstan_display_cfg_t *cfg)
     err |= nvs_set_u8(h,  K_DISP_DARK, cfg->dark_theme ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_BL,   cfg->backlight_percent);
     err |= nvs_set_u16(h, K_DISP_IDLE, cfg->idle_timeout_s);
+    err |= nvs_set_u16(h, K_DISP_SNOOZE, cfg->alarm_snooze_min);
     if (err == ESP_OK) {
         err = nvs_commit(h);
     }

@@ -108,6 +108,13 @@ typedef struct {
     bool dark_theme;
     uint8_t backlight_percent;
     uint16_t idle_timeout_s;
+    /**
+     * Minutes an acknowledged alarm stays quiet before it is raised again,
+     * if it is still active. Set on the device (Settings > Alarm Snooze).
+     * An alarm that clears on its own drops its snooze, so the next time it
+     * fires it is raised at once rather than when an old window runs out.
+     */
+    uint16_t alarm_snooze_min;
 } capstan_display_cfg_t;
 
 /*
@@ -213,8 +220,9 @@ capstan_mode_t capstan_mode_from_name(const char *name, capstan_mode_t fallback)
  *
  * Hence a verdict per mode rather than a single armed flag plus a polarity.
  * The same panel evaluates the same input three different ways depending on
- * what the rig is doing, and a dial on a nightstand can hold IGNORE in every
- * mode for an alarm the kitchen panel handles.
+ * what the rig is doing. NONE in every mode is read as HIGH in every mode on
+ * arrival (see apply_alarms()): armed, as Headwaters and Milepost mean it. A
+ * dial that should not handle a sensor leaves it off its list.
  *
  * WHY THE SOURCE IS ALWAYS A DIGITAL INPUT, never a relay or PDM channel's
  * reported state. A relay can report ON while a failed contact passes no

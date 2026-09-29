@@ -9,6 +9,7 @@
 
 #include "cJSON.h"
 #include "esp_check.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_mac.h"
 #include "esp_timer.h"
@@ -73,6 +74,23 @@ static const char *TAG = "mqtt";
 #define MSG_DATA_MAX    1024
 #define MQTT_RX_BUFFER  (MSG_DATA_MAX + MSG_TOPIC_MAX + 128)
 
+/*
+ * Configuration gets a queue of its own.
+ *
+ * The main queue discards its OLDEST entry when full, which is right for
+ * sensor traffic -- a newer reading supersedes it -- and wrong for this
+ * panel's controls and alarms. Those are retained and arrive exactly once per
+ * connect, in the same burst as every other retained topic on the broker, so
+ * under drop-oldest they were the likeliest thing to be discarded: nothing
+ * supersedes them until the user next hits Save in the PWA. The symptom was
+ * a dial that never picked up the alarms configured for it, while the log
+ * showed nothing, because coalescing is logged at DEBUG.
+ *
+ * Nothing is ever discarded from this queue to make room. Four slots hold
+ * one of each config topic with headroom; overflow is logged as an error.
+ */
+#define CFG_QUEUE_DEPTH 4
+
 typedef struct {
     char topic[MSG_TOPIC_MAX];
     char data[MSG_DATA_MAX];
@@ -81,6 +99,7 @@ typedef struct {
 
 static esp_mqtt_client_handle_t s_client;
 static QueueHandle_t            s_queue;
+static QueueHandle_t            s_cfg_queue;
 static SemaphoreHandle_t        s_lock;
 static capstan_mqtt_state_t     s_state;
 static capstan_mqtt_state_cb_t  s_state_cb;
@@ -272,6 +291,18 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
         m.data[e->data_len] = '\0';
         m.len = e->data_len;
 
+        const bool is_cfg =
+            (s_alarms_topic[0]   && strcmp(m.topic, s_alarms_topic) == 0) ||
+            (s_controls_topic[0] && strcmp(m.topic, s_controls_topic) == 0) ||
+            strcmp(m.topic, "local/mode/current") == 0;
+        if (is_cfg) {
+            if (xQueueSend(s_cfg_queue, &m, 0) != pdTRUE) {
+                ESP_LOGE(TAG, "config queue full -- '%s' lost until the next "
+                              "connect or PWA save", m.topic);
+            }
+            break;
+        }
+
         if (xQueueSend(s_queue, &m, 0) != pdTRUE) {
             /* Full: discard the oldest and keep the newest. With nothing
              * retained, the latest reading is the only useful one. */
@@ -304,8 +335,21 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
 esp_err_t capstan_mqtt_init(void)
 {
     if (!s_queue) {
-        s_queue = xQueueCreate(MSG_QUEUE_DEPTH, sizeof(msg_t));
+        /* PSRAM, not internal RAM. The two queues are ~31 KB, and internal
+         * RAM is what TLS needs a ~16 KB contiguous block of to connect: on
+         * the 1.28" and 1.46" the largest free internal block had fallen to
+         * 19 KB, and the broker handshake started failing intermittently.
+         * Both queues are touched only from tasks, never from an ISR, which
+         * is the one thing that would rule PSRAM out. */
+        s_queue = xQueueCreateWithCaps(MSG_QUEUE_DEPTH, sizeof(msg_t),
+                                       MALLOC_CAP_SPIRAM);
         ESP_RETURN_ON_FALSE(s_queue, ESP_ERR_NO_MEM, TAG, "queue alloc failed");
+    }
+    if (!s_cfg_queue) {
+        s_cfg_queue = xQueueCreateWithCaps(CFG_QUEUE_DEPTH, sizeof(msg_t),
+                                           MALLOC_CAP_SPIRAM);
+        ESP_RETURN_ON_FALSE(s_cfg_queue, ESP_ERR_NO_MEM, TAG,
+                            "config queue alloc failed");
     }
     if (!s_lock) {
         s_lock = xSemaphoreCreateMutex();
@@ -727,6 +771,25 @@ static void apply_alarms(const cJSON *root)
                 : CAPSTAN_VERDICT_NONE;
         }
 
+        /*
+         * No verdict in any mode means "armed, alarm when ON" -- the meaning
+         * arming a sensor has on Headwaters and Milepost. An alarm ignored in
+         * every mode can never do anything (a dial that should not handle a
+         * sensor simply leaves it off its list), and it is exactly what the
+         * PWA used to save by default: the user added the cabinet doors, both
+         * Headwaters and Milepost showed them open, and every dial stayed
+         * quiet. Explicit per-mode verdicts are untouched.
+         */
+        bool any_verdict = false;
+        for (int mi = 0; mi < CAPSTAN_MODE_COUNT; mi++) {
+            any_verdict |= a.modes[mi] != CAPSTAN_VERDICT_NONE;
+        }
+        if (!any_verdict) {
+            for (int mi = 0; mi < CAPSTAN_MODE_COUNT; mi++) {
+                a.modes[mi] = CAPSTAN_VERDICT_HIGH;
+            }
+        }
+
         if (cJSON_IsString(name) && name->valuestring) {
             strncpy(a.name, name->valuestring, sizeof(a.name) - 1);
         }
@@ -742,6 +805,13 @@ static void apply_alarms(const cJSON *root)
             strncpy(a.icon, "bell", sizeof(a.icon) - 1);
         }
 
+        ESP_LOGI(TAG, "  alarm %u: %s %s:%u:%u camping=%s driving=%s storage=%s",
+                 (unsigned)cfg.count, a.name,
+                 a.src == CAPSTAN_ALARM_SRC_SWITCHBACK ? "switchback" : "picket",
+                 (unsigned)a.addr, (unsigned)a.sensor,
+                 capstan_verdict_name(a.modes[CAPSTAN_MODE_CAMPING]),
+                 capstan_verdict_name(a.modes[CAPSTAN_MODE_DRIVING]),
+                 capstan_verdict_name(a.modes[CAPSTAN_MODE_STORAGE]));
         cfg.items[cfg.count++] = a;
     }
 
@@ -885,6 +955,9 @@ static void apply(const msg_t *m)
          * common case here. */
         apply_controls(root);
     } else if (s_alarms_topic[0] && strcmp(m->topic, s_alarms_topic) == 0) {
+        /* Retained: once per connect and on every PWA save. Written through
+         * to NVS by capstan_config_set_alarms() (skipped only when the list
+         * is byte-identical), so the panel keeps alarming with no broker. */
         apply_alarms(root);
     } else if (strcmp(m->topic, "local/mode/current") == 0) {
         /* Retained: arrives on every connect and whenever the user switches
@@ -900,6 +973,15 @@ static void apply(const msg_t *m)
         num(root, "addr", &addr);
         num(root, "inputs", &inputs);
         capstan_model_set_picket_inputs((int)addr, (uint16_t)inputs);
+    } else if (strncmp(m->topic, "local/spoor/", 12) == 0) {
+        /* Switchback digital inputs. Subscribed from the start and never
+         * handled, so every `switchback:` alarm was evaluated against a
+         * board that had apparently never spoken. Same payload as Picket,
+         * 8 bits wide. */
+        double addr = 0, inputs = 0;
+        num(root, "addr", &addr);
+        num(root, "inputs", &inputs);
+        capstan_model_set_spoor_inputs((int)addr, (uint16_t)inputs);
     }
 
     cJSON_Delete(root);
@@ -908,6 +990,11 @@ static void apply(const msg_t *m)
 void capstan_mqtt_process(void)
 {
     msg_t m;
+    /* Config first, so a burst's sensor traffic is evaluated against the
+     * alarm list and mode that arrived with it. */
+    while (s_cfg_queue && xQueueReceive(s_cfg_queue, &m, 0) == pdTRUE) {
+        apply(&m);
+    }
     while (s_queue && xQueueReceive(s_queue, &m, 0) == pdTRUE) {
         apply(&m);
     }

@@ -7,6 +7,8 @@
  */
 #pragma once
 
+#include <stddef.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -27,6 +29,18 @@ void ui_settings_factory_reset_pressed(void);
  * an armed reset cannot outlive the moment the user was looking at it.
  */
 void ui_settings_disarm_reset(void);
+
+/**
+ * The Alarm Snooze row was pressed: step to the next interval and save it.
+ *
+ * The ring is already busy moving the selection, so the row cycles through
+ * a short fixed list on each press instead of entering an edit mode.
+ * LVGL lock held.
+ */
+void ui_settings_snooze_pressed(void);
+
+/** "10 min" -- the value text for the Alarm Snooze row. */
+void ui_settings_snooze_text(char *out, size_t len);
 
 #ifdef __cplusplus
 }

@@ -344,12 +344,18 @@ The fridge above is the worked example:
 | `driving` | `low` | Voltage absent. It lost power on the road. |
 | `camping` | `none` | Neither. It is supposed to cycle. |
 
-And the same sensor can be `none` in every mode on a dial by the bed, while
-the kitchen panel handles it. That is the point of the config being per panel.
+And the kitchen panel can watch a sensor that the dial by the bed leaves off its
+list entirely. That is the point of the config being per panel.
 
 | Verdict | Meaning |
 |---|---|
 | `none` | This mode does not care. Not quite "disarmed" — the sensor is usually live in another mode. |
+
+An alarm whose verdict is `none` in **every** mode is treated as `high` in every
+mode — armed, alarming while the input is asserted — which is what arming a
+sensor means on Headwaters and Milepost. Ignoring an alarm everywhere does
+nothing useful (leave the sensor off the panel's list instead), and it is what
+the PWA used to save by default.
 | `high` | Alarm while the input is asserted. |
 | `low` | Alarm while the input is not asserted. |
 
@@ -599,6 +605,12 @@ configuration is no longer entered on the panel: it arrives on
 `local/config/panel/<hostname>/alarms` and is stored in NVS, so the alert
 overlay keeps working when the Headwaters backend is down, at the cost of
 duplicating the evaluation logic.
+
+Evaluation and the overlay live in `main/ui_alerts.c`: every UI refresh it
+tests each configured alarm against its board's input word and the current
+mode, folds in Borealis's `co_alarm` / `lpg_alarm`, and opens PageAlert on a
+rising edge. A board that has never published is not evaluated, so a `low`
+alarm does not fire at boot before the first input broadcast.
 
 A future `local/alarms/active` topic would **not** replace this. The whole
 point of the per-panel, per-mode config is that the rig has no single answer
