@@ -120,12 +120,11 @@ esp_err_t capstan_board_init(void)
              s_info.name, s_info.h_res, s_info.v_res,
              s_info.has_rgb_leds ? "yes" : "no");
 
-    /*
-     * The LED ring is not driven yet. The capability is plumbed through so
-     * screens can be written against capstan_board_info()->has_rgb_leds and
-     * degrade on boards without one; the RMT driver lands with the screens
-     * that use it.
-     */
+    /* The LED ring (board_leds.c). Not fatal: a dial whose ring fails to
+     * start is still a working dial. */
+    if (board_leds_init() != ESP_OK) {
+        ESP_LOGW(TAG, "LED ring init failed -- continuing without it");
+    }
 
     ESP_RETURN_ON_ERROR(backlight_init(), TAG, "backlight init failed");
 

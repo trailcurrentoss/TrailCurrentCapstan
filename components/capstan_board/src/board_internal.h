@@ -17,3 +17,6 @@ esp_err_t board_encoder_init(lv_indev_t **out_indev);
  * timeout is driven by real input rather than by LVGL's inactivity timer --
  * which the idle clock's own second hand would otherwise keep resetting. */
 void board_note_input(void);
+
+/* WS2812 ring; a no-op on boards without one. board_leds.c */
+esp_err_t board_leds_init(void);

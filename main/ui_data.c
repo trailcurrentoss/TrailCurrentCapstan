@@ -471,8 +471,17 @@ static void refresh_level(void)
      * well's inner edge. Read from the laid-out widgets so it is right on
      * all three panels without a per-board constant. */
     if (bubble && well) {
-        const int32_t travel = (lv_obj_get_content_width(well) -
-                                lv_obj_get_width(bubble)) / 2;
+        /* LVGL lays out a screen only when it is shown, so on a hidden page
+         * these sizes read as zero until the first refresh after it loads --
+         * which made travel negative and pinned the bubble near the centre.
+         * update_layout computes this subtree's sizes now; it writes no
+         * geometry of its own. */
+        lv_obj_update_layout(well);
+        int32_t travel = (lv_obj_get_content_width(well) -
+                          lv_obj_get_width(bubble)) / 2;
+        if (travel < 0) {
+            travel = 0;
+        }
         float dx = ss.value / LEVEL_FULL_DEG;
         float dy = -fb.value / LEVEL_FULL_DEG;     /* front = up */
         const float mag = sqrtf(dx * dx + dy * dy);
@@ -484,6 +493,21 @@ static void refresh_level(void)
                                      LV_PART_MAIN);
         lv_obj_set_style_translate_y(bubble, (int32_t)lroundf(dy * travel),
                                      LV_PART_MAIN);
+        /* Trace, at most once a second and only when something moved by a
+         * tenth of a degree: what arrived and where it put the bubble. */
+        static int64_t s_last_us;
+        static float   s_last_fb = 1e9f, s_last_ss = 1e9f;
+        const int64_t now = esp_timer_get_time();
+        if (now - s_last_us > 1000000 &&
+            (fabsf(fb.value - s_last_fb) > 0.1f ||
+             fabsf(ss.value - s_last_ss) > 0.1f)) {
+            s_last_us = now; s_last_fb = fb.value; s_last_ss = ss.value;
+            ESP_LOGI(TAG, "level: front_back=%.2f side_to_side=%.2f -> "
+                          "bubble dx=%ld dy=%ld (travel %ld px)",
+                     (double)fb.value, (double)ss.value,
+                     (long)lroundf(dx * travel), (long)lroundf(dy * travel),
+                     (long)travel);
+        }
     }
 
     /* Status word: the dominant axis, as the prototype's "Tilted right". */

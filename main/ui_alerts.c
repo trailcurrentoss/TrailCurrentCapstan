@@ -19,6 +19,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 
+#include "capstan_board.h"
 #include "capstan_config.h"
 #include "capstan_model.h"
 #include "ui_alerts.h"
@@ -308,6 +309,16 @@ void ui_alerts_tick(void)
         } else {
             snoozed |= (uint16_t)(1u << i);
         }
+    }
+
+    /* The LED ring (on the boards that have one) is solid red while ANY
+     * alarm is active -- snoozed or not. Snoozing clears the screen so the
+     * dial is usable; it does not pretend the door is shut. Off when all
+     * clear. Unchanged colours are not re-sent. */
+    if (active) {
+        capstan_board_leds_set_all(255, 0, 0);
+    } else {
+        capstan_board_leds_set_all(0, 0, 0);
     }
 
     const uint16_t attention = active & (uint16_t)~snoozed;

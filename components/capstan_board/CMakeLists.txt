@@ -6,6 +6,7 @@ idf_component_register(
         "src/board_encoder.c"
         "src/panel_jd9855.c"
         "src/capstan_touch_cal.c"
+        "src/board_leds.c"
     INCLUDE_DIRS
         "include"
     PRIV_INCLUDE_DIRS
@@ -20,6 +21,7 @@ idf_component_register(
         esp_driver_ledc
         esp_driver_pcnt
         esp_driver_i2c
+        esp_driver_rmt
         esp_timer
     PRIV_REQUIRES
         esp_psram

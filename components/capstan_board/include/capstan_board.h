@@ -117,6 +117,14 @@ void capstan_board_touch_set_enabled(bool enabled);
 bool capstan_board_touch_is_enabled(void);
 
 /**
+ * Set every LED in the ring to one colour (0-255 per channel, scaled by
+ * CONFIG_CAPSTAN_RGB_LEDS_MAX_BRIGHTNESS). A no-op on a board without a ring
+ * or with the ring disabled, so callers need not check has_rgb_leds.
+ * Repeating the current colour costs nothing -- it is not re-sent.
+ */
+void capstan_board_leds_set_all(uint8_t r, uint8_t g, uint8_t b);
+
+/**
  * RAW, uncalibrated coordinates from the most recent press, plus a
  * sequence number that increments once per PHYSICAL contact.
  *
