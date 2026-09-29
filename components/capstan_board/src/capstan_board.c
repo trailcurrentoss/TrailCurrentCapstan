@@ -146,6 +146,7 @@ esp_err_t capstan_board_init(void)
     lv_display_t *disp = NULL;
     ESP_RETURN_ON_ERROR(board_display_init(&disp), TAG, "display init failed");
 
+#if CONFIG_CAPSTAN_TOUCH_ENABLED
     lv_indev_t *touch = NULL;
     esp_err_t err = board_touch_init(disp, &touch);
     if (err != ESP_OK) {
@@ -155,6 +156,12 @@ esp_err_t capstan_board_init(void)
         ESP_LOGE(TAG, "touch init failed (%s) -- continuing with ring only",
                  esp_err_to_name(err));
     }
+#else
+    /* Not started: nothing in the UI is touchable (see
+     * CONFIG_CAPSTAN_TOUCH_ENABLED). capstan_board_touch_set_enabled() and
+     * the other touch calls already cope with a touch that never came up. */
+    ESP_LOGI(TAG, "touch disabled in config -- ring only");
+#endif
 
     lv_indev_t *enc = NULL;
     ESP_RETURN_ON_ERROR(board_encoder_init(&enc), TAG, "encoder init failed");

@@ -18,7 +18,7 @@ otherwise.
 |---|---|
 | Rotate | Move selection or adjust a value. One detent, one step. |
 | Press | Confirm / open / toggle. |
-| Long press (≥ `CONFIG_CAPSTAN_LONG_PRESS_MS`, default 700 ms) | Back. Consumed by the driver, never reaches LVGL. |
+| Long press (≥ `CONFIG_CAPSTAN_LONG_PRESS_MS`, default 700 ms) | Back, from every screen -- the only way back; there is no on-screen Back control. Consumed by the driver, never reaches LVGL. |
 | Touch | Only where the policy table allows — today, the keyboard. |
 
 Any input wakes the display from idle and resets the inactivity timer. The
@@ -189,9 +189,8 @@ visible before the user reaches it. The overshoot is still never stored. See
 
 **The tile is not touchable.** On both CrowPanels the display *is* the encoder
 button, so a tap firm enough to register would also close the ring button and
-toggle the device twice. The Back chip survives that because
-`ui_nav_press()` suppresses the ring press that follows a Back; a toggle has
-nothing to suppress it against.
+toggle the device twice. Touch is off on every screen now (there is no Back
+chip; a long press goes back), so nothing on the glass reacts to a tap.
 
 **There are no scene chips.** The previous version authored Evening, Night and
 All Off. No scenes topic exists anywhere in Headwaters, so all three were
@@ -209,14 +208,14 @@ Friendly names and icons come from the retained controls payload, per device.
 round 240 px face has no free band for one, and authoring it over the tile
 would make the canvas show the message and the carousel at once.
 
-**The dots are one per device, on an arc at 12 o'clock.** They answer two
+**The dots are one per device, on an arc at 6 o'clock.** They answer two
 questions at a glance — how many devices this dial has, and which one you are
 on — so the number shown is the device count and the lit one is the selection.
-The run grows outwards from the top and stays centred there.
+The run grows outwards from the bottom and stays centred there.
 
-**It is the menu's dot row, moved to the top**: same 44.6% radius, same 6°
-spacing, same 2.1% dot. Only the centre differs — 12 o'clock here, 6 o'clock
-there, because the Back chip owns the bottom of this screen. Thirty degrees
+**It is exactly the menu's dot row**: same 6 o'clock centre, same 44.6%
+radius, same 6° spacing, same 2.1% dot — Settings uses it too, so all three
+carousels put their dots in one place. Thirty degrees
 apart was tried first, because that is what "12, then 11 and 1, then 10 and 2"
 implies, and it was wrong: eight dots a clock hour apart read as eight separate
 marks rather than a row you can count.
@@ -228,7 +227,7 @@ shrink until they stop being countable. An arc is not bounded that way.
 The widgets cannot move to keep the run centred, so the arc is
 `2 * CAPSTAN_MAX_CONTROLS - 1` slots at **half** the visible spacing, and *n*
 devices light every other slot starting at slot `MAX - n`. An odd count sits
-one dot on 12 o'clock with the rest either side; an even count straddles it.
+one dot on 6 o'clock with the rest either side; an even count straddles it.
 One slot per device can only ever centre one of those two cases. The
 interstitial slots are authored hidden, so the canvas shows the eight-dot full
 house — a state the device really renders.
@@ -260,9 +259,8 @@ cannot move it.
 
 Inside, top to bottom: a small tracked `AIR QUALITY`, the hero numeral, its
 unit, the status word, and three sub-metrics. The column is centred as a group
-— the bands are measured rather than assumed — and it is never allowed to run
-under the Back chip, which on the 240 means it sits a fraction high rather than
-exactly centred.
+— the bands are measured rather than assumed — so it stays optically centred
+on all three panels.
 
 **The numeral's band is sized from the font, not from its point size.** The
 `rn` faces are a digits-only subset, so `lv_font_conv` recomputes their line
@@ -330,7 +328,7 @@ looks live is worse than no number.
 
 A carousel, built like the app menu: the centred item in a glowing tile with
 its neighbours either side, the name and current value beneath, one dot per
-item on the rim at 12 o'clock. The ring wraps, as on the other carousels, and
+item on the rim at 6 o'clock. The ring wraps, as on the other carousels, and
 a press acts on the centred item:
 
 | Item | Value | Press |

@@ -41,21 +41,14 @@ static const char *TAG = "nav";
  * this table says on every transition, so there is no exit path that can
  * leak the previous screen's setting.
  *
- * Most screens are now RING_AND_TOUCH, which REVERSES the original default
- * of RING_ONLY. The reason is the Back chip.
- *
- * Long-pressing the ring went back, and that was the only way out of a
- * screen. Nothing on the display says so, so in practice a user who has
- * not been told is stuck. Every screen that carries a Back chip therefore
- * needs touch live, or the chip is decoration.
- *
- * The press-vs-touch conflict the original default avoided is real and has
- * not gone away: on the CrowPanels the whole display is the encoder
- * button, so a firm press on the Back chip produces a touch click AND an
- * encoder press. What stops that acting twice is the suppression window in
- * ui_nav_press(), not the policy.
- *
- * Three screens stay RING_ONLY, each for its own reason -- see their rows.
+ * Every screen is RING_ONLY. For a while most were RING_AND_TOUCH, for
+ * the sake of an on-screen Back chip -- long-pressing the ring goes back,
+ * and nothing on the glass says so. The chip was removed as clutter once
+ * the long press was the known gesture (a "Getting Started" item under
+ * Settings will teach it). With nothing touchable left, live touch could
+ * only produce stray input: on the CrowPanels the whole display is the
+ * encoder button, so every press is also a touch. The mechanism stays for
+ * touch calibration and for any future touch target.
  * ---------------------------------------------------------------------- */
 typedef struct {
     capstan_input_mode_t input;
@@ -74,29 +67,28 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
                                       CAPSTAN_SCREEN_IDLE,     "menu" },
 
     /* The ring IS the setpoint dial. Touch would be actively harmful. */
-    [CAPSTAN_SCREEN_CLIMATE]      = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_CLIMATE]      = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "climate" },
-    [CAPSTAN_SCREEN_CLIMATE_MODE] = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_CLIMATE_MODE] = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_CLIMATE,  "climate.mode" },
 
-    /* The devices carousel. Touch is live for the Back chip only -- the
-     * tile is deliberately not touchable, because on both CrowPanels the
-     * display IS the encoder button, so a tap on it would toggle the device
-     * twice and land back where it started. See page_devices(). */
-    [CAPSTAN_SCREEN_DEVICES]      = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    /* The devices carousel. The tile is deliberately not touchable: on both
+     * CrowPanels the display IS the encoder button, so a tap on it would
+     * toggle the device twice and land back where it started. */
+    [CAPSTAN_SCREEN_DEVICES]      = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "devices" },
 
     /* Read-only status screens. Nothing to press at all. */
-    [CAPSTAN_SCREEN_ENERGY]       = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_ENERGY]       = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "energy" },
-    [CAPSTAN_SCREEN_WATER]        = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_WATER]        = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "water" },
-    [CAPSTAN_SCREEN_AIR]          = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_AIR]          = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "air" },
-    [CAPSTAN_SCREEN_LEVEL]        = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_LEVEL]        = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "level" },
 
-    [CAPSTAN_SCREEN_SETTINGS]     = { CAPSTAN_INPUT_RING_AND_TOUCH,
+    [CAPSTAN_SCREEN_SETTINGS]     = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "settings" },
 
 
@@ -183,70 +175,9 @@ static int eez_screen_id(capstan_screen_t s)
  */
 static int s_sel[CAPSTAN_SCREEN_COUNT];
 
-/*
- * A touch-driven Back also presses the ring on this hardware.
- *
- * On both CrowPanels the display IS the encoder button, so pressing the
- * Back chip hard enough to register a touch also closes the button. Left
- * alone that means "go back, then immediately open whatever was selected
- * on the screen we just left" -- which reads as the Back chip being
- * broken, and is worse than broken, because it navigates somewhere the
- * user did not ask to go.
- *
- * So a Back consumes the ring press that arrives alongside it. The window
- * is generous: the two events are one physical action and nothing
- * guarantees which order they arrive in.
- */
-#define BACK_PRESS_SUPPRESS_US 600000   /* 600 ms */
-
-static int64_t s_back_us;
-
 /* Defined below, with the selection code. */
 static void refresh_selection(capstan_screen_t s);
 static int  selectable_count(capstan_screen_t s);
-
-#if HAVE_GENERATED_UI
-/*
- * The Back chip is small -- about 38 x 26 px on the 240 -- and it is the one
- * touch target on most screens, so give it the best chance of seeing a tap:
- *
- *   - An extended hit area, a twenty-fourth of the panel on every side
- *     (10 / 15 / 20 px). Nothing else near it is touchable.
- *   - No scrolling from it. A finger that drifts a few pixels on a
- *     scrollable object becomes a scroll, and a scroll is not a click. With
- *     SCROLLABLE and the scroll-chain flags off, LVGL stops looking for
- *     something to scroll at the chip.
- *
- * Applied on each load because EEZ builds a screen on its first show.
- */
-static lv_obj_t *back_chip(capstan_screen_t s)
-{
-    switch (s) {
-    case CAPSTAN_SCREEN_CLIMATE:      return objects.climate_back;
-    case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.climate_mode_back;
-    case CAPSTAN_SCREEN_DEVICES:      return objects.devices_back;
-    case CAPSTAN_SCREEN_ENERGY:       return objects.energy_back;
-    case CAPSTAN_SCREEN_WATER:        return objects.water_back;
-    case CAPSTAN_SCREEN_AIR:          return objects.air_back;
-    case CAPSTAN_SCREEN_LEVEL:        return objects.level_back;
-    case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_back;
-    default:                          return NULL;
-    }
-}
-
-static void prepare_back_chip(capstan_screen_t s)
-{
-    lv_obj_t *chip = back_chip(s);
-    if (!chip) {
-        return;
-    }
-    lv_obj_remove_flag(chip, LV_OBJ_FLAG_SCROLLABLE |
-                             LV_OBJ_FLAG_SCROLL_CHAIN_HOR |
-                             LV_OBJ_FLAG_SCROLL_CHAIN_VER);
-    lv_obj_set_ext_click_area(
-        chip, lv_display_get_horizontal_resolution(NULL) / 24);
-}
-#endif
 
 void ui_nav_goto(capstan_screen_t screen)
 {
@@ -274,7 +205,6 @@ void ui_nav_goto(capstan_screen_t screen)
     const int id = eez_screen_id(screen);
     if (id >= 0) {
         loadScreen((enum ScreensEnum)id);
-        prepare_back_chip(screen);
     } else {
         ESP_LOGW(TAG, "screen '%s' has no generated page yet", p->name);
     }
@@ -323,9 +253,6 @@ void ui_nav_goto(capstan_screen_t screen)
 
 void ui_nav_back(void)
 {
-    /* Swallow the ring press that a touch on the Back chip also makes. */
-    s_back_us = esp_timer_get_time();
-
     /* Leaving the alert by any route acknowledges it. A long press that
      * simply closed the overlay would silence the alarm with no snooze
      * timer behind it -- until it happened to clear. */
@@ -712,12 +639,6 @@ void ui_nav_rotate(int diff)
 
 void ui_nav_press(void)
 {
-    if (s_back_us &&
-        (esp_timer_get_time() - s_back_us) < BACK_PRESS_SUPPRESS_US) {
-        ESP_LOGD(TAG, "press suppressed -- arrived with a Back touch");
-        return;
-    }
-
     switch (s_current) {
     case CAPSTAN_SCREEN_IDLE:
         ui_nav_goto(CAPSTAN_SCREEN_MENU);

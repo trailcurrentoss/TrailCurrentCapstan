@@ -7,7 +7,6 @@
 extern "C" {
 #endif
 
-extern void action_nav_back(lv_event_t * e);
 extern void action_nav_open(lv_event_t * e);
 extern void action_nav_home(lv_event_t * e);
 extern void action_climate_setpoint_up(lv_event_t * e);

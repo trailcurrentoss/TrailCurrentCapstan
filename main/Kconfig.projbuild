@@ -202,10 +202,25 @@ config CAPSTAN_RGB_LEDS_MAX_BRIGHTNESS
       fits eight of them. 40 percent is a reasonable default for an indoor
       wall panel.
 
-comment "Touch orientation"
+comment "Touch"
+
+config CAPSTAN_TOUCH_ENABLED
+    bool "Enable the touch controller"
+    default n
+    help
+      Off by default: the ring drives every screen, and nothing in the UI is
+      touchable (there is no Back chip -- a long press goes back). With this
+      off the touch controller and its I2C bus are never started, which
+      saves a few KB of RAM, a little boot time, and on the CrowPanels the
+      interrupt that woke the LVGL task on every press of the glass.
+
+      Turn it on for a screen that needs touch, and for the bring-up
+      build (no EEZ export), whose calibration and test screens are touch
+      screens.
 
 config CAPSTAN_TOUCH_MIRROR_X
     bool "Mirror touch horizontally"
+    depends on CAPSTAN_TOUCH_ENABLED
     default n
     help
       INDEPENDENT of the display mirror, and usually NOT the same value.
@@ -224,10 +239,12 @@ config CAPSTAN_TOUCH_MIRROR_X
 
 config CAPSTAN_TOUCH_MIRROR_Y
     bool "Mirror touch vertically"
+    depends on CAPSTAN_TOUCH_ENABLED
     default n
 
 config CAPSTAN_TOUCH_SWAP_XY
     bool "Swap touch X and Y axes"
+    depends on CAPSTAN_TOUCH_ENABLED
     default n
 
 comment "Input"

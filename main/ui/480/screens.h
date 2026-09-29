@@ -73,8 +73,6 @@ typedef struct _objects_t {
     lv_obj_t *climate_eta_group;
     lv_obj_t *climate_eta_icon;
     lv_obj_t *climate_eta;
-    lv_obj_t *climate_back;
-    lv_obj_t *climate_back_icon;
     lv_obj_t *cmode_title;
     lv_obj_t *cmode_list;
     lv_obj_t *cmode_item0;
@@ -89,8 +87,6 @@ typedef struct _objects_t {
     lv_obj_t *cmode_item3;
     lv_obj_t *cmode_item3_icon;
     lv_obj_t *cmode_item3_title;
-    lv_obj_t *climate_mode_back;
-    lv_obj_t *climate_mode_back_icon;
     lv_obj_t *devices_hero;
     lv_obj_t *devices_hero_icon;
     lv_obj_t *devices_prev;
@@ -114,8 +110,6 @@ typedef struct _objects_t {
     lv_obj_t *devices_dot12;
     lv_obj_t *devices_dot13;
     lv_obj_t *devices_dot14;
-    lv_obj_t *devices_back;
-    lv_obj_t *devices_back_icon;
     lv_obj_t *energy_arc;
     lv_obj_t *energy_stack;
     lv_obj_t *energy_head;
@@ -129,8 +123,6 @@ typedef struct _objects_t {
     lv_obj_t *energy_dot0;
     lv_obj_t *energy_dot1;
     lv_obj_t *energy_dot2;
-    lv_obj_t *energy_back;
-    lv_obj_t *energy_back_icon;
     lv_obj_t *water_title;
     lv_obj_t *water_fresh_value;
     lv_obj_t *water_fresh_bar;
@@ -141,8 +133,6 @@ typedef struct _objects_t {
     lv_obj_t *water_black_value;
     lv_obj_t *water_black_bar;
     lv_obj_t *water_black_label;
-    lv_obj_t *water_back;
-    lv_obj_t *water_back_icon;
     lv_obj_t *air_arc;
     lv_obj_t *air_title;
     lv_obj_t *air_value;
@@ -158,8 +148,6 @@ typedef struct _objects_t {
     lv_obj_t *air_temp_col;
     lv_obj_t *air_temp_label;
     lv_obj_t *air_temp;
-    lv_obj_t *air_back;
-    lv_obj_t *air_back_icon;
     lv_obj_t *level_title;
     lv_obj_t *level_well;
     lv_obj_t *level_cross_v;
@@ -168,8 +156,6 @@ typedef struct _objects_t {
     lv_obj_t *level_bubble;
     lv_obj_t *level_status;
     lv_obj_t *level_detail;
-    lv_obj_t *level_back;
-    lv_obj_t *level_back_icon;
     lv_obj_t *settings_title;
     lv_obj_t *settings_hero;
     lv_obj_t *settings_hero_icon;
@@ -185,8 +171,6 @@ typedef struct _objects_t {
     lv_obj_t *settings_dot3;
     lv_obj_t *settings_dot4;
     lv_obj_t *settings_dot5;
-    lv_obj_t *settings_back;
-    lv_obj_t *settings_back_icon;
     lv_obj_t *alert_bg;
     lv_obj_t *alert_icon;
     lv_obj_t *alert_title;

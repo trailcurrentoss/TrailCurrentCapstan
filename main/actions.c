@@ -49,14 +49,6 @@
  * network belongs in a task, with the action only posting to it.
  */
 
-void action_nav_back(lv_event_t *e)
-{
-    (void)e;
-    /* The Back chip on every screen. ui_nav_back() applies the policy
-     * table and swallows the ring press that a touch here also makes. */
-    ui_nav_back();
-}
-
 /* ----------------------------------------------------------------------
  * Not implemented yet.
  *

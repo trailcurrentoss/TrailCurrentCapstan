@@ -38,15 +38,14 @@ static const char *TAG = "ui.devices";
  * cannot move, because moving an authored widget from C is what makes EEZ
  * Studio's canvas disagree with the panel.
  *
- * They sit on an arc at 12 o'clock, growing outwards from there -- the menu's
- * dot row at the same radius and the same spacing, moved to the top because
- * the Back chip owns the bottom of this screen. A row across the face would be
+ * They sit on an arc at 6 o'clock, growing outwards from there -- exactly the
+ * menu's dot row: same centre, radius and spacing. A row across the face would be
  * bounded by its width and would eventually either run off the glass or shrink
  * until the dots stopped being countable; an arc is not bounded that way.
  *
  * So there are 2*MAX-1 slots at HALF the visible spacing, and a list of n
  * devices lights every OTHER slot starting at slot (MAX - n). Half-spacing
- * slots are what let an EVEN count straddle 12 o'clock and an ODD count sit
+ * slots are what let an EVEN count straddle 6 o'clock and an ODD count sit
  * one dot on it -- one slot per device can only ever centre one of the two,
  * and the other lands half a step round the arc.
  *
@@ -259,7 +258,7 @@ void ui_devices_refresh(void)
                  ui_light_icon(c.items[wrap(sel + 1, n)].icon));
     }
 
-    /* n dots on the rim, the sel-th lit, centred on 12 o'clock. */
+    /* n dots on the rim, the sel-th lit, centred on 6 o'clock. */
     draw_dots(n, sel);
 }
 

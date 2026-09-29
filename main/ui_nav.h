@@ -75,7 +75,7 @@ void ui_nav_init(void);
  */
 void ui_nav_goto(capstan_screen_t screen);
 
-/** Where a long press or the back chip goes from the current screen. */
+/** Where a long press goes from the current screen. */
 void ui_nav_back(void);
 
 /*
