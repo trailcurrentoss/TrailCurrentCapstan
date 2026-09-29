@@ -134,9 +134,6 @@ CONFIG_LV_FONT_MONTSERRAT_28=y
 CONFIG_LV_FONT_MONTSERRAT_32=y
 CONFIG_LV_FONT_MONTSERRAT_36=y
 CONFIG_LV_FONT_MONTSERRAT_48=y
-# LVGL's own tick comes from an esp_timer in esp_lvgl_port; do not also call
-# lv_tick_inc() from the application or time runs at double rate.
-CONFIG_LV_TICK_CUSTOM=y
 
 # ---------------------------------------------------------------------------
 # LVGL allocator -- route lv_malloc() to the ESP-IDF heap instead of LVGL's
