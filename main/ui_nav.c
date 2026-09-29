@@ -509,7 +509,6 @@ static lv_obj_t *list_container(capstan_screen_t s)
 #if HAVE_GENERATED_UI
     switch (s) {
     case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.cmode_list;
-    case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_list;
     default:                          return NULL;
     }
 #else
@@ -528,6 +527,9 @@ static int selectable_count(capstan_screen_t s)
     if (s == CAPSTAN_SCREEN_ENERGY) {
         /* Not a list -- the "items" are pages through one readout. */
         return ENERGY_PAGE_COUNT;
+    }
+    if (s == CAPSTAN_SCREEN_SETTINGS) {
+        return UI_SETTINGS_ITEM_COUNT;
     }
     if (s == CAPSTAN_SCREEN_DEVICES) {
         /* However many devices Headwaters gave this dial. Not a widget
@@ -569,6 +571,10 @@ static void refresh_selection(capstan_screen_t s)
 #if HAVE_GENERATED_UI
     if (s == CAPSTAN_SCREEN_MENU) {
         apply_menu_carousel();
+        return;
+    }
+    if (s == CAPSTAN_SCREEN_SETTINGS) {
+        ui_settings_refresh();
         return;
     }
     if (s == CAPSTAN_SCREEN_ENERGY) {
@@ -671,12 +677,12 @@ void ui_nav_rotate(int diff)
      *   backwards from Climate, which is the whole reason Clock is the last
      *   menu item.
      *
-     *   Both carousels wrap for the same reason, so the ring feels the same
-     *   on both. If a third screen becomes a carousel it wraps too -- the
-     *   test is whether the neighbours are on screen, not which screen it
-     *   is.
+     *   All three carousels (menu, devices, settings) wrap for the same
+     *   reason, so the ring feels the same on each. A new carousel wraps
+     *   too -- the test is whether the neighbours are on screen, not which
+     *   screen it is.
      *
-     *   A list of Wi-Fi networks or settings rows genuinely has a top and a
+     *   A list, like Climate Mode's four rows, genuinely has a top and a
      *   bottom, and wrapping one means a user who holds the ring the wrong
      *   way ends up somewhere they cannot account for. Those still clamp.
      *
@@ -685,7 +691,8 @@ void ui_nav_rotate(int diff)
      */
     int sel = s_sel[s_current] + diff;
     if (s_current == CAPSTAN_SCREEN_MENU ||
-        s_current == CAPSTAN_SCREEN_DEVICES) {
+        s_current == CAPSTAN_SCREEN_DEVICES ||
+        s_current == CAPSTAN_SCREEN_SETTINGS) {
         sel = ((sel % n) + n) % n;
     } else {
         if (sel < 0)      { sel = 0; }
@@ -693,7 +700,7 @@ void ui_nav_rotate(int diff)
     }
 
     if (sel != s_sel[s_current]) {
-        /* Moving off the Factory Reset row cancels an armed reset --
+        /* Moving off the Factory Reset item cancels an armed reset --
          * turning away from it is as clear a "no" as any. */
         if (s_current == CAPSTAN_SCREEN_SETTINGS) {
             ui_settings_disarm_reset();
@@ -745,12 +752,11 @@ void ui_nav_press(void)
         return;
 
     case CAPSTAN_SCREEN_SETTINGS:
-        /* Rows, in the order page_settings() lays them out. Factory reset
-         * is deliberately last and is NOT wired here: it is unrecoverable,
-         * so it gets a confirmation step rather than acting on the press
-         * that lands on it. */
+        /* The carousel's items (ui_settings.h). Factory reset is last and
+         * goes through its own two-press confirmation, because it is
+         * unrecoverable. */
         switch (s_sel[CAPSTAN_SCREEN_SETTINGS]) {
-        case 0:
+        case UI_SETTINGS_WIFI:
             /*
              * Wi-Fi means PHONE SETUP. There is no on-device editor
              * any more: PageWifi, PageWifiSecurity, PageMqtt and
@@ -765,19 +771,19 @@ void ui_nav_press(void)
              */
             ui_setup_enter();
             return;
-        case 1:
+        case UI_SETTINGS_MQTT:
             /* Read-only status. Broker details are set in the portal. */
-            ESP_LOGD(TAG, "MQTT row is status only -- use setup mode");
+            ESP_LOGD(TAG, "MQTT is status only -- use setup mode");
             return;
-        case 2: ui_settings_theme_pressed(); return;
-        case 3: ui_settings_snooze_pressed(); return;
-        case 4: ui_settings_timeout_pressed(); return;
-        case 5: ui_settings_factory_reset_pressed(); return;
+        case UI_SETTINGS_THEME:   ui_settings_theme_pressed();   break;
+        case UI_SETTINGS_SNOOZE:  ui_settings_snooze_pressed();  break;
+        case UI_SETTINGS_TIMEOUT: ui_settings_timeout_pressed(); break;
+        case UI_SETTINGS_RESET:   ui_settings_factory_reset_pressed(); break;
         default:
-            ESP_LOGD(TAG, "settings row %d has no action yet",
-                     s_sel[CAPSTAN_SCREEN_SETTINGS]);
             return;
         }
+        ui_settings_refresh();   /* the value line shows the change now */
+        return;
 
     case CAPSTAN_SCREEN_ALERT:
         ui_alerts_acknowledge();   /* snooze, back to the interrupted screen */

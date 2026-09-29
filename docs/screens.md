@@ -328,19 +328,26 @@ looks live is worse than no number.
 
 ## Settings
 
-Six rows, selected with the ring and acted on with a press:
+A carousel, built like the app menu: the centred item in a glowing tile with
+its neighbours either side, the name and current value beneath, one dot per
+item on the rim at 12 o'clock. The ring wraps, as on the other carousels, and
+a press acts on the centred item:
 
-| Row | Value | Press |
+| Item | Value | Press |
 |---|---|---|
-| Wi-Fi | network name or connection state | opens phone setup |
+| Wi-Fi | network name, or what is wrong | opens phone setup |
 | MQTT | Connected / Offline / Not set | nothing -- status only |
 | Theme | Light / Dark | toggles; saved to NVS, restored at boot |
 | Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
 | Clock Timeout | 15 s / 30 s / 1 / 2 / 5 min / Never | steps to the next |
-| Factory Reset | -- | first press arms, second within 5 s confirms |
+| Factory Reset | Press twice | first press arms (tile turns red), second within 5 s resets |
+
+Wi-Fi and MQTT values are green when connected and amber when not; on the
+boards with LEDs the ring shows the same, green or orange, while either is
+centred.
 
 Wi-Fi and MQTT are set up from a phone, not on the dial; the way back into
-setup is the Wi-Fi row or a factory reset.
+setup is the Wi-Fi item or a factory reset.
 
 Clock Timeout is how long an app stays up without input before the dial
 returns to the clock face. Setup and an open alarm are never timed out.

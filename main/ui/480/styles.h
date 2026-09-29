@@ -212,6 +212,26 @@ lv_style_t *get_style_energy_unit_MAIN_DEFAULT();
 void add_style_energy_unit(lv_obj_t *obj);
 void remove_style_energy_unit(lv_obj_t *obj);
 
+// Style: SettingsTile
+lv_style_t *get_style_settings_tile_MAIN_DEFAULT();
+lv_style_t *get_style_settings_tile_MAIN_CHECKED();
+void add_style_settings_tile(lv_obj_t *obj);
+void remove_style_settings_tile(lv_obj_t *obj);
+
+// Style: SettingsIcon
+lv_style_t *get_style_settings_icon_MAIN_DEFAULT();
+lv_style_t *get_style_settings_icon_MAIN_CHECKED();
+void add_style_settings_icon(lv_obj_t *obj);
+void remove_style_settings_icon(lv_obj_t *obj);
+
+// Style: SettingsValue
+lv_style_t *get_style_settings_value_MAIN_DEFAULT();
+lv_style_t *get_style_settings_value_MAIN_CHECKED();
+lv_style_t *get_style_settings_value_MAIN_PRESSED();
+lv_style_t *get_style_settings_value_MAIN_DISABLED();
+void add_style_settings_value(lv_obj_t *obj);
+void remove_style_settings_value(lv_obj_t *obj);
+
 // Style: MenuName
 lv_style_t *get_style_menu_name_MAIN_DEFAULT();
 void add_style_menu_name(lv_obj_t *obj);

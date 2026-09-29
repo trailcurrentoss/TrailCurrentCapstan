@@ -24,6 +24,7 @@
 #include "capstan_model.h"
 #include "ui_climate.h"
 #include "ui_data.h"
+#include "ui_settings.h"
 #include "ui_devices.h"
 #include "ui_alerts.h"
 #include "ui_light_icons.h"
@@ -250,6 +251,8 @@ static void apply_leds(bool alarm)
      *      green > 75 %, yellow 40-75 %, red < 40 %, brighter when fuller.
      *   3c. Otherwise, on Water: orange when fresh < 40 % or grey/black
      *      > 60 %, green when fresh > 40 % and grey/black < 50 %.
+     *   3d. Otherwise, on Settings with Wi-Fi or MQTT centred: green when
+     *      connected, orange when not.
      *   4. Otherwise dark -- including the app carousel, deliberately: a
      *      colour left over from the last app would read as live status,
      *      and a dark ring is what makes an incoming alarm's red stand out.
@@ -268,6 +271,8 @@ static void apply_leds(bool alarm)
         ui_data_energy_led(&lr, &lg, &lb);
     } else if (ui_nav_current() == CAPSTAN_SCREEN_WATER) {
         ui_data_water_led(&lr, &lg, &lb);
+    } else if (ui_nav_current() == CAPSTAN_SCREEN_SETTINGS) {
+        ui_settings_led(&lr, &lg, &lb);
     }
     capstan_board_leds_set_all(lr, lg, lb);
 }

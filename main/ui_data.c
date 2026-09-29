@@ -753,50 +753,9 @@ static void refresh_level(void)
  */
 static void refresh_settings(void)
 {
-    const char *wifi;
-    switch (capstan_wifi_state()) {
-    case CAPSTAN_WIFI_CONNECTED: {
-        capstan_wifi_cfg_t c;
-        capstan_config_get_wifi(&c);
-        wifi = c.ssid[0] ? c.ssid : "Connected";
-        break;
-    }
-    case CAPSTAN_WIFI_CONNECTING: wifi = "Connecting..."; break;
-    case CAPSTAN_WIFI_SCANNING:   wifi = "Scanning...";   break;
-    case CAPSTAN_WIFI_FAILED:
-        /* The reason, not just "failed": a wrong passphrase and an AP
-         * that is switched off need different things from the user, and
-         * the retry backoff means this state persists long enough to
-         * read. */
-        wifi = capstan_wifi_last_error();
-        break;
-    default: {
-        capstan_wifi_cfg_t c;
-        capstan_config_get_wifi(&c);
-        wifi = c.configured ? "Offline" : "Not set";
-        break;
-    }
-    }
-    set_text(objects.settings_item0_value, wifi);
-
-    const char *mq;
-    if (capstan_mqtt_is_connected()) {
-        mq = "Connected";
-    } else {
-        capstan_mqtt_cfg_t m;
-        capstan_config_get_mqtt(&m);
-        mq = m.configured ? "Offline" : "Not set";
-    }
-    set_text(objects.settings_item1_value, mq);
-
-    char snooze[16];
-    ui_settings_snooze_text(snooze, sizeof(snooze));
-    set_text(objects.settings_item2_value, ui_settings_theme_text());
-    set_text(objects.settings_item3_value, snooze);
-
-    char timeout[16];
-    ui_settings_timeout_text(timeout, sizeof(timeout));
-    set_text(objects.settings_item4_value, timeout);
+    /* Wi-Fi and MQTT status change without input; the carousel is
+     * change-only, so repainting it on every refresh costs nothing. */
+    ui_settings_refresh();
 }
 
 void ui_data_refresh(void)

@@ -7,7 +7,9 @@
  */
 #pragma once
 
+#include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -64,6 +66,33 @@ void ui_settings_apply_theme(void);
 
 /** "Light" or "Dark" -- the value text for the Theme row. */
 const char *ui_settings_theme_text(void);
+
+/* The carousel's items, in ring order -- SETTINGS_ITEMS in
+ * GUI/tmp/screens_layout.py. ui_nav_press() switches on these. */
+enum {
+    UI_SETTINGS_WIFI = 0,
+    UI_SETTINGS_MQTT,
+    UI_SETTINGS_THEME,
+    UI_SETTINGS_SNOOZE,
+    UI_SETTINGS_TIMEOUT,
+    UI_SETTINGS_RESET,
+    UI_SETTINGS_ITEM_COUNT
+};
+
+/**
+ * Paint the carousel for the current selection: the three glyphs, the name,
+ * the value (coloured by state: green connected, amber not, red for an
+ * armed reset) and the dots. Cheap and change-only; called on every
+ * selection change and on the data refresh. LVGL lock held.
+ */
+void ui_settings_refresh(void);
+
+/**
+ * The LED ring colour Settings wants: on Wi-Fi or MQTT, green when
+ * connected and orange when not. False (ring dark) on the other items.
+ * Consulted by ui_alerts.c, where an alarm's red takes priority.
+ */
+bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b);
 
 #ifdef __cplusplus
 }

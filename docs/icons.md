@@ -81,21 +81,26 @@ have no named sibling widget to inherit a meaning from.
 | Idle clock, alarm snooze | `clock` | `U+F017` |
 | Alarm (default icon) | `bell` | `U+F0F3` |
 
-## No Capstan additions
+## Capstan's one addition: `server`
 
-The set is exactly Milepost's. An earlier draft of this file added four
-codepoints — `arrow-up`, `delete-left`, `eye-slash`, `server` — on the
-assumption that the siblings had no on-screen keyboard or MQTT settings
-screen. **That assumption was wrong.** Fireside has `PageMqttSetup` with
-host, username and password fields; both have Wi-Fi password entry.
+| Concept | Glyph | Codepoint |
+|---|---|---|
+| Settings: MQTT | `server` | `U+F233` |
 
-Checking how they actually solve it showed why none of the four is needed:
+The set is otherwise exactly Milepost's. `server` was added deliberately for
+the Settings carousel, where every item is an icon in the centre tile and
+MQTT needs one of its own; the closest glyph already in the set was the
+lightning bolt, which reads as Energy. The siblings' MQTT screen carries no
+icon at all, so there was nothing to match.
 
-| Need | How the siblings do it |
-|---|---|
-| Shift, backspace | `LVGLKeyboardWidget` — LVGL's built-in keyboard, which draws its own symbols from LVGL's symbol font, not FontAwesome |
-| Hide/show password | a text button labelled **"Show"** (`wifi_pw_show_btn_lbl`), not an eye-slash icon |
-| MQTT broker | `PageMqttSetup` carries **no icon at all** — text labels and text buttons throughout |
+The other Settings items reuse the shared set: `wifi` (U+F1EB), `moon`
+(U+F186) for Theme, `bell` (U+F0F3) for Alarm Snooze, `clock` (U+F017) for
+Clock Timeout and `triangle-exclamation` (U+F071) for Factory Reset.
+
+An earlier draft of this file added four codepoints -- `arrow-up`,
+`delete-left`, `eye-slash`, `server` -- for an on-screen keyboard and an MQTT
+editor. The siblings solve those without icons (LVGL's own keyboard symbols,
+a text "Show" button), and those screens are gone, so none of that stands.
 
 Before adding a codepoint, look at how the siblings solve the same problem.
 Often the answer is that they do not use an icon.

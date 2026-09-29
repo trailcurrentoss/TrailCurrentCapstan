@@ -1,6 +1,6 @@
 /*
- * Settings screen behaviour: the alarm snooze interval, and factory reset
- * with the confirmation in front of it.
+ * The settings carousel: what each item shows, what a press on it does, and
+ * the LED colour it wants. Factory reset keeps its confirmation step.
  */
 
 #include <stdbool.h>
@@ -13,6 +13,8 @@
 #include "freertos/task.h"
 
 #include "capstan_config.h"
+#include "capstan_mqtt.h"
+#include "capstan_wifi.h"
 #include "ui_nav.h"
 #include "ui_settings.h"
 
@@ -49,9 +51,14 @@ static const char *TAG = "ui.settings";
 
 static int64_t s_armed_us;
 
-static void set_row_label(const char *text)
+/* What the Factory Reset item says once a reset has been confirmed
+ * ("Resetting...", "Reset failed"); NULL for the usual armed/idle text. */
+static const char *s_reset_note;
+
+static void set_reset_note(const char *text)
 {
-    ui_lv_set_text(objects.settings_item5_title, text);
+    s_reset_note = text;
+    ui_settings_refresh();
 }
 
 static bool armed(void)
@@ -62,9 +69,9 @@ static bool armed(void)
 
 void ui_settings_disarm_reset(void)
 {
-    if (s_armed_us) {
+    if (s_armed_us || s_reset_note) {
         s_armed_us = 0;
-        set_row_label("Factory Reset");
+        set_reset_note(NULL);
     }
 }
 
@@ -72,19 +79,19 @@ void ui_settings_factory_reset_pressed(void)
 {
     if (!armed()) {
         s_armed_us = esp_timer_get_time();
-        set_row_label("Confirm Reset?");
+        set_reset_note(NULL);   /* repaint as armed */
         ESP_LOGW(TAG, "factory reset armed -- press again to confirm");
         return;
     }
 
     s_armed_us = 0;
     ESP_LOGW(TAG, "factory reset confirmed -- erasing settings");
-    set_row_label("Resetting...");
+    set_reset_note("Resetting...");
 
     const esp_err_t err = capstan_config_factory_reset();
     if (err != ESP_OK) {
         ESP_LOGE(TAG, "factory reset failed: %s", esp_err_to_name(err));
-        set_row_label("Reset failed");
+        set_reset_note("Reset failed");
         return;
     }
 
@@ -260,8 +267,174 @@ const char *ui_settings_theme_text(void)
     return d.dark_theme ? "Dark" : "Light";
 }
 
+/* ----------------------------------------------------------------------
+ * The carousel
+ * ---------------------------------------------------------------------- */
+
+/* Glyphs from the full `fa` face (not ui_icons.h, which is for the menu's
+ * reduced `fh` subset). Server is Capstan's one addition to the house set. */
+#define G_WIFI    "\xEF\x87\xAB"   /* 0xF1EB wifi                 */
+#define G_SERVER  "\xEF\x88\xB3"   /* 0xF233 server               */
+#define G_THEME   "\xEF\x86\x86"   /* 0xF186 moon                 */
+#define G_BELL    "\xEF\x83\xB3"   /* 0xF0F3 bell                 */
+#define G_CLOCK   "\xEF\x80\x97"   /* 0xF017 clock                */
+#define G_ALERT   "\xEF\x81\xB1"   /* 0xF071 triangle-exclamation */
+
+/* SETTINGS_ITEMS in GUI/tmp/screens_layout.py, index for index; the press
+ * switch in ui_nav_press() acts on the same indices. */
+static const struct {
+    const char *icon;
+    const char *title;
+} s_items[UI_SETTINGS_ITEM_COUNT] = {
+    { G_WIFI,   "Wi-Fi"         },
+    { G_SERVER, "MQTT"          },
+    { G_THEME,  "Theme"         },
+    { G_BELL,   "Alarm Snooze"  },
+    { G_CLOCK,  "Clock Timeout" },
+    { G_ALERT,  "Factory Reset" },
+};
+
+/* Value colours, as SettingsValue states. */
+#define ST_OK     LV_STATE_CHECKED    /* connected: green   */
+#define ST_WARN   LV_STATE_PRESSED    /* not connected: amber */
+#define ST_DANGER LV_STATE_DISABLED   /* reset armed: red   */
+#define ST_MASK   (ST_OK | ST_WARN | ST_DANGER)
+
+static int wrap(int i)
+{
+    const int n = UI_SETTINGS_ITEM_COUNT;
+    return ((i % n) + n) % n;
+}
+
+/* Wi-Fi's value: the network name when connected, otherwise what is wrong.
+ * The failure reason, not just "failed": a wrong passphrase and an AP that
+ * is switched off need different things from the user, and the retry
+ * backoff means the state lasts long enough to read. */
+static const char *wifi_value(bool *ok)
+{
+    /* The SSID is returned, so it cannot live in `c` on this stack frame --
+     * that pointer dangled and the value line showed garbage. */
+    static char s_ssid[sizeof(((capstan_wifi_cfg_t *)0)->ssid)];
+    capstan_wifi_cfg_t c;
+    capstan_config_get_wifi(&c);
+    *ok = false;
+    switch (capstan_wifi_state()) {
+    case CAPSTAN_WIFI_CONNECTED:
+        *ok = true;
+        if (!c.ssid[0]) {
+            return "Connected";
+        }
+        snprintf(s_ssid, sizeof(s_ssid), "%s", c.ssid);
+        return s_ssid;
+    case CAPSTAN_WIFI_CONNECTING: return "Connecting...";
+    case CAPSTAN_WIFI_SCANNING:   return "Scanning...";
+    case CAPSTAN_WIFI_FAILED:     return capstan_wifi_last_error();
+    default:                      return c.configured ? "Offline" : "Not set";
+    }
+}
+
+static const char *mqtt_value(bool *ok)
+{
+    *ok = capstan_mqtt_is_connected();
+    if (*ok) {
+        return "Connected";
+    }
+    capstan_mqtt_cfg_t m;
+    capstan_config_get_mqtt(&m);
+    return m.configured ? "Offline" : "Not set";
+}
+
+void ui_settings_refresh(void)
+{
+    const int sel = wrap(ui_nav_selection_of(CAPSTAN_SCREEN_SETTINGS));
+
+    ui_lv_set_text(objects.settings_hero_icon, s_items[sel].icon);
+    ui_lv_set_text(objects.settings_prev_icon, s_items[wrap(sel - 1)].icon);
+    ui_lv_set_text(objects.settings_next_icon, s_items[wrap(sel + 1)].icon);
+    ui_lv_set_text(objects.settings_name, s_items[sel].title);
+
+    char buf[24];
+    const char *value = "";
+    lv_state_t st = 0;
+    bool danger = false;
+    bool ok;
+    switch (sel) {
+    case UI_SETTINGS_WIFI:
+        value = wifi_value(&ok);
+        st = ok ? ST_OK : ST_WARN;
+        break;
+    case UI_SETTINGS_MQTT:
+        value = mqtt_value(&ok);
+        st = ok ? ST_OK : ST_WARN;
+        break;
+    case UI_SETTINGS_THEME:
+        value = ui_settings_theme_text();
+        break;
+    case UI_SETTINGS_SNOOZE:
+        ui_settings_snooze_text(buf, sizeof(buf));
+        value = buf;
+        break;
+    case UI_SETTINGS_TIMEOUT:
+        ui_settings_timeout_text(buf, sizeof(buf));
+        value = buf;
+        break;
+    case UI_SETTINGS_RESET:
+        if (s_reset_note) {
+            value = s_reset_note;
+            st = ST_DANGER;
+            danger = true;
+        } else if (armed()) {
+            value = "Press again to reset";
+            st = ST_DANGER;
+            danger = true;
+        } else {
+            value = "Press twice";
+        }
+        break;
+    default:
+        break;
+    }
+    ui_lv_set_text(objects.settings_value, value);
+    ui_lv_set_state_in(objects.settings_value, ST_MASK, st);
+    ui_lv_set_state_in(objects.settings_hero, LV_STATE_CHECKED,
+                       danger ? LV_STATE_CHECKED : 0);
+    ui_lv_set_state_in(objects.settings_hero_icon, LV_STATE_CHECKED,
+                       danger ? LV_STATE_CHECKED : 0);
+
+    lv_obj_t *const dots[UI_SETTINGS_ITEM_COUNT] = {
+        objects.settings_dot0, objects.settings_dot1, objects.settings_dot2,
+        objects.settings_dot3, objects.settings_dot4, objects.settings_dot5,
+    };
+    for (int i = 0; i < UI_SETTINGS_ITEM_COUNT; i++) {
+        ui_lv_set_state_in(dots[i], LV_STATE_CHECKED,
+                           i == sel ? LV_STATE_CHECKED : 0);
+    }
+}
+
+bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    bool ok;
+    switch (wrap(ui_nav_selection_of(CAPSTAN_SCREEN_SETTINGS))) {
+    case UI_SETTINGS_WIFI: (void)wifi_value(&ok); break;
+    case UI_SETTINGS_MQTT: (void)mqtt_value(&ok); break;
+    default:               return false;
+    }
+    if (ok) {
+        *r = 82;  *g = 164; *b = 65;   /* AccentPrimary #52a441, brand green */
+    } else {
+        *r = 255; *g = 96;  *b = 0;    /* the Climate screen's orange */
+    }
+    return true;
+}
+
 #else
 
+void ui_settings_refresh(void) { }
+bool ui_settings_led(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    (void)r; (void)g; (void)b;
+    return false;
+}
 void ui_settings_theme_pressed(void) { }
 void ui_settings_timeout_pressed(void) { }
 void ui_settings_timeout_text(char *out, size_t len) { if (len) out[0] = '\0'; }
