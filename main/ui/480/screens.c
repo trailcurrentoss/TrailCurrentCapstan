@@ -1343,7 +1343,7 @@ void create_screen_page_air() {
             // air_title
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.air_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(25), LV_PCT(24));
+            lv_obj_set_pos(obj, LV_PCT(25), LV_PCT(23));
             lv_obj_set_size(obj, LV_PCT(50), LV_PCT(4));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_eyebrow(obj);
@@ -1354,7 +1354,7 @@ void create_screen_page_air() {
             // air_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.air_value = obj;
-            lv_obj_set_pos(obj, LV_PCT(15), LV_PCT(30));
+            lv_obj_set_pos(obj, LV_PCT(15), LV_PCT(29));
             lv_obj_set_size(obj, LV_PCT(70), LV_PCT(19));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
             add_style_label_hero_xl(obj);
@@ -1365,7 +1365,7 @@ void create_screen_page_air() {
             // air_unit
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.air_unit = obj;
-            lv_obj_set_pos(obj, LV_PCT(40), LV_PCT(53));
+            lv_obj_set_pos(obj, LV_PCT(40), LV_PCT(52));
             lv_obj_set_size(obj, LV_PCT(20), LV_PCT(4));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_muted(obj);
@@ -1376,8 +1376,8 @@ void create_screen_page_air() {
             // air_status
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.air_status = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(58));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
+            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(57));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(6));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_status(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1388,7 +1388,7 @@ void create_screen_page_air() {
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.air_metrics = obj;
             lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(68));
-            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(8));
+            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(9));
             add_style_plain(obj);
             {
                 lv_obj_t *parent_obj = obj;
@@ -1406,7 +1406,7 @@ void create_screen_page_air() {
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_voc_label = obj;
                             lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(46));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(41));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_muted(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1416,8 +1416,8 @@ void create_screen_page_air() {
                             // air_voc
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_voc = obj;
-                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(46));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(54));
+                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(41));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(59));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_metric(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1439,7 +1439,7 @@ void create_screen_page_air() {
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_humidity_label = obj;
                             lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(46));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(41));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_muted(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1449,8 +1449,8 @@ void create_screen_page_air() {
                             // air_humidity
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_humidity = obj;
-                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(46));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(54));
+                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(41));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(59));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_metric(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1472,7 +1472,7 @@ void create_screen_page_air() {
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_temp_label = obj;
                             lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(0));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(46));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(41));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_muted(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1482,8 +1482,8 @@ void create_screen_page_air() {
                             // air_temp
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.air_temp = obj;
-                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(46));
-                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(54));
+                            lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(41));
+                            lv_obj_set_size(obj, LV_PCT(100), LV_PCT(59));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_metric(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1602,7 +1602,7 @@ void create_screen_page_level() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.level_status = obj;
             lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(71));
-            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(5));
+            lv_obj_set_size(obj, LV_PCT(64), LV_PCT(6));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_status(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1612,7 +1612,7 @@ void create_screen_page_level() {
             // level_detail
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.level_detail = obj;
-            lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(77));
+            lv_obj_set_pos(obj, LV_PCT(18), LV_PCT(78));
             lv_obj_set_size(obj, LV_PCT(64), LV_PCT(4));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_body(obj);
@@ -2042,7 +2042,6 @@ ext_font_desc_t fonts[] = {
     { "rn120", &ui_font_rn120 },
     { "rm34", &ui_font_rm34 },
     { "rm26", &ui_font_rm26 },
-    { "rm20", &ui_font_rm20 },
     { "rr30", &ui_font_rr30 },
     { "rr24", &ui_font_rr24 },
     { "rr20", &ui_font_rr20 },
@@ -2052,7 +2051,6 @@ ext_font_desc_t fonts[] = {
     { "fa36", &ui_font_fa36 },
     { "fa24", &ui_font_fa24 },
     { "fa18", &ui_font_fa18 },
-    { "fa14", &ui_font_fa14 },
     { "fh68", &ui_font_fh68 },
     { "fh44", &ui_font_fh44 },
 #if LV_FONT_MONTSERRAT_8

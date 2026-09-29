@@ -17,7 +17,6 @@
 #include "ui_climate.h"
 #include "ui_devices.h"
 #include "ui_settings.h"
-#include "ui_setup.h"
 
 /* From main/CMakeLists.txt -- see the note there and in main.c. Never
  * __has_include: it cannot notice an export that appears later. */
@@ -757,23 +756,16 @@ void ui_nav_press(void)
          * unrecoverable. */
         switch (s_sel[CAPSTAN_SCREEN_SETTINGS]) {
         case UI_SETTINGS_WIFI:
-            /*
-             * Wi-Fi means PHONE SETUP. There is no on-device editor
-             * any more: PageWifi, PageWifiSecurity, PageMqtt and
-             * PageKeyboard are gone, along with the modules that drove
-             * them. Entering a WPA2 passphrase by rotating a ring was
-             * built, tried on the bench, and does not work on a panel
-             * this size.
-             *
-             * Raising the portal from here is a convenience. The
-             * documented route is a factory reset, which is what an
-             * unprovisioned device does by itself at boot.
-             */
-            ui_setup_enter();
-            return;
         case UI_SETTINGS_MQTT:
-            /* Read-only status. Broker details are set in the portal. */
-            ESP_LOGD(TAG, "MQTT is status only -- use setup mode");
+            /*
+             * Status only. Both are set through the phone portal, and the
+             * way into it is a factory reset -- what an unprovisioned
+             * device does by itself at boot. The Wi-Fi item used to raise
+             * the portal directly, but the Setup screen has no way back
+             * (by design: on a new device there is nowhere to go back to),
+             * so an accidental press with Clock Timeout at Never left the
+             * dial stranded until it was power-cycled.
+             */
             return;
         case UI_SETTINGS_THEME:   ui_settings_theme_pressed();   break;
         case UI_SETTINGS_SNOOZE:  ui_settings_snooze_pressed();  break;

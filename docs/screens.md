@@ -335,7 +335,7 @@ a press acts on the centred item:
 
 | Item | Value | Press |
 |---|---|---|
-| Wi-Fi | network name, or what is wrong | opens phone setup |
+| Wi-Fi | network name, or what is wrong | nothing -- status only |
 | MQTT | Connected / Offline / Not set | nothing -- status only |
 | Theme | Light / Dark | toggles; saved to NVS, restored at boot |
 | Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
@@ -347,7 +347,7 @@ boards with LEDs the ring shows the same, green or orange, while either is
 centred.
 
 Wi-Fi and MQTT are set up from a phone, not on the dial; the way back into
-setup is the Wi-Fi item or a factory reset.
+setup is a factory reset.
 
 Clock Timeout is how long an app stays up without input before the dial
 returns to the clock face. Setup and an open alarm are never timed out.

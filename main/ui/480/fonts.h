@@ -12,7 +12,6 @@ extern const lv_font_t ui_font_rn150;
 extern const lv_font_t ui_font_rn120;
 extern const lv_font_t ui_font_rm34;
 extern const lv_font_t ui_font_rm26;
-extern const lv_font_t ui_font_rm20;
 extern const lv_font_t ui_font_rr30;
 extern const lv_font_t ui_font_rr24;
 extern const lv_font_t ui_font_rr20;
@@ -22,7 +21,6 @@ extern const lv_font_t ui_font_fa56;
 extern const lv_font_t ui_font_fa36;
 extern const lv_font_t ui_font_fa24;
 extern const lv_font_t ui_font_fa18;
-extern const lv_font_t ui_font_fa14;
 extern const lv_font_t ui_font_fh68;
 extern const lv_font_t ui_font_fh44;
 

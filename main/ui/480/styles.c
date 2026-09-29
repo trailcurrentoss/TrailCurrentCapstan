@@ -3011,7 +3011,7 @@ void remove_style_label_hero_xl(lv_obj_t *obj) {
 
 void init_style_label_metric_MAIN_DEFAULT(lv_style_t *style) {
     lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][6]));
-    lv_style_set_text_font(style, &ui_font_rr16);
+    lv_style_set_text_font(style, &ui_font_rr20);
 };
 
 lv_style_t *get_style_label_metric_MAIN_DEFAULT() {
@@ -3040,7 +3040,7 @@ void remove_style_label_metric(lv_obj_t *obj) {
 
 void init_style_label_status_MAIN_DEFAULT(lv_style_t *style) {
     lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][28]));
-    lv_style_set_text_font(style, &ui_font_rm20);
+    lv_style_set_text_font(style, &ui_font_rr24);
 };
 
 lv_style_t *get_style_label_status_MAIN_DEFAULT() {
@@ -3055,7 +3055,7 @@ lv_style_t *get_style_label_status_MAIN_DEFAULT() {
 
 void init_style_label_status_MAIN_CHECKED(lv_style_t *style) {
     lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][29]));
-    lv_style_set_text_font(style, &ui_font_rm20);
+    lv_style_set_text_font(style, &ui_font_rr24);
 };
 
 lv_style_t *get_style_label_status_MAIN_CHECKED() {
@@ -3070,7 +3070,7 @@ lv_style_t *get_style_label_status_MAIN_CHECKED() {
 
 void init_style_label_status_MAIN_DISABLED(lv_style_t *style) {
     lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][31]));
-    lv_style_set_text_font(style, &ui_font_rm20);
+    lv_style_set_text_font(style, &ui_font_rr24);
 };
 
 lv_style_t *get_style_label_status_MAIN_DISABLED() {
@@ -3085,7 +3085,7 @@ lv_style_t *get_style_label_status_MAIN_DISABLED() {
 
 void init_style_label_status_MAIN_PRESSED(lv_style_t *style) {
     lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][8]));
-    lv_style_set_text_font(style, &ui_font_rm20);
+    lv_style_set_text_font(style, &ui_font_rr24);
 };
 
 lv_style_t *get_style_label_status_MAIN_PRESSED() {

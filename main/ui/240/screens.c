@@ -2042,7 +2042,6 @@ ext_font_desc_t fonts[] = {
     { "rn60", &ui_font_rn60 },
     { "rm17", &ui_font_rm17 },
     { "rm15", &ui_font_rm15 },
-    { "rm13", &ui_font_rm13 },
     { "rr15", &ui_font_rr15 },
     { "rr13", &ui_font_rr13 },
     { "rr11", &ui_font_rr11 },
