@@ -1831,7 +1831,7 @@ void create_screen_page_settings() {
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_icon_sm(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
+                            lv_label_set_text_static(obj, "");
                         }
                         {
                             // settings_item3_title
@@ -1875,12 +1875,56 @@ void create_screen_page_settings() {
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_icon_sm(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "");
+                            lv_label_set_text_static(obj, "");
                         }
                         {
                             // settings_item4_title
                             lv_obj_t *obj = lv_label_create(parent_obj);
                             objects.settings_item4_title = obj;
+                            lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
+                            lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+                            add_style_label_body(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_LEFT, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text(obj, "Clock Timeout");
+                        }
+                        {
+                            // settings_item4_value
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item4_value = obj;
+                            lv_obj_set_pos(obj, LV_PCT(66), LV_PCT(24));
+                            lv_obj_set_size(obj, LV_PCT(32), LV_PCT(52));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
+                            add_style_label_muted(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_RIGHT, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text(obj, "--");
+                        }
+                    }
+                }
+                {
+                    // settings_item5
+                    lv_obj_t *obj = lv_obj_create(parent_obj);
+                    objects.settings_item5 = obj;
+                    lv_obj_set_pos(obj, LV_PCT(0), LV_PCT(167));
+                    lv_obj_set_size(obj, LV_PCT(100), LV_PCT(31));
+                    add_style_card(obj);
+                    {
+                        lv_obj_t *parent_obj = obj;
+                        {
+                            // settings_item5_icon
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item5_icon = obj;
+                            lv_obj_set_pos(obj, LV_PCT(3), LV_PCT(26));
+                            lv_obj_set_size(obj, LV_PCT(18), LV_PCT(48));
+                            lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
+                            add_style_label_icon_sm(obj);
+                            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
+                            lv_label_set_text_static(obj, "");
+                        }
+                        {
+                            // settings_item5_title
+                            lv_obj_t *obj = lv_label_create(parent_obj);
+                            objects.settings_item5_title = obj;
                             lv_obj_set_pos(obj, LV_PCT(24), LV_PCT(24));
                             lv_obj_set_size(obj, LV_PCT(42), LV_PCT(52));
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);

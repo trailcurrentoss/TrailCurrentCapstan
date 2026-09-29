@@ -771,7 +771,8 @@ void ui_nav_press(void)
             return;
         case 2: ui_settings_theme_pressed(); return;
         case 3: ui_settings_snooze_pressed(); return;
-        case 4: ui_settings_factory_reset_pressed(); return;
+        case 4: ui_settings_timeout_pressed(); return;
+        case 5: ui_settings_factory_reset_pressed(); return;
         default:
             ESP_LOGD(TAG, "settings row %d has no action yet",
                      s_sel[CAPSTAN_SCREEN_SETTINGS]);

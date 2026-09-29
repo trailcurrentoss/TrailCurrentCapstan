@@ -8065,7 +8065,7 @@
                       "groupIndex": 0,
                       "children": [],
                       "identifier": "settings_item3_icon",
-                      "text": "\uf017",
+                      "text": "\uf0f3",
                       "textType": "literal",
                       "longMode": "CLIP",
                       "recolor": false
@@ -8263,7 +8263,7 @@
                       "groupIndex": 0,
                       "children": [],
                       "identifier": "settings_item4_icon",
-                      "text": "\uf071",
+                      "text": "\uf017",
                       "textType": "literal",
                       "longMode": "CLIP",
                       "recolor": false
@@ -8315,13 +8315,211 @@
                       "groupIndex": 0,
                       "children": [],
                       "identifier": "settings_item4_title",
-                      "text": "Factory Reset",
+                      "text": "Clock Timeout",
+                      "textType": "literal",
+                      "longMode": "DOT",
+                      "recolor": false
+                    },
+                    {
+                      "objID": "444a8d25-0d91-ddf5-d36b-464e60d8bbb7",
+                      "type": "LVGLLabelWidget",
+                      "left": 66,
+                      "top": 24,
+                      "width": 32,
+                      "height": 52,
+                      "leftUnit": "%",
+                      "topUnit": "%",
+                      "widthUnit": "%",
+                      "heightUnit": "%",
+                      "customInputs": [],
+                      "customOutputs": [],
+                      "style": {
+                        "objID": "c67b98fa-0bb5-bd27-c543-19b98875bd29",
+                        "useStyle": "default",
+                        "conditionalStyles": [],
+                        "childStyles": []
+                      },
+                      "timeline": [],
+                      "eventHandlers": [],
+                      "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                      "hiddenFlagType": "literal",
+                      "clickableFlagType": "literal",
+                      "checkedStateType": "literal",
+                      "disabledStateType": "literal",
+                      "states": "",
+                      "clickableFlag": false,
+                      "scrollSnapX": "",
+                      "scrollSnapY": "",
+                      "useStyle": "LabelMuted",
+                      "localStyles": {
+                        "objID": "53a691e1-329d-a5d9-9b42-dba8cfb34dab",
+                        "definition": {
+                          "MAIN": {
+                            "DEFAULT": {
+                              "text_align": "RIGHT"
+                            }
+                          }
+                        }
+                      },
+                      "flagScrollDirection": "",
+                      "flagScrollbarMode": "",
+                      "group": "",
+                      "groupIndex": 0,
+                      "children": [],
+                      "identifier": "settings_item4_value",
+                      "text": "--",
                       "textType": "literal",
                       "longMode": "DOT",
                       "recolor": false
                     }
                   ],
                   "identifier": "settings_item4"
+                },
+                {
+                  "objID": "2f7958d8-b122-ece9-b6cb-73fb0a58a45d",
+                  "type": "LVGLPanelWidget",
+                  "left": 0,
+                  "top": 166.667,
+                  "width": 100,
+                  "height": 31.333,
+                  "leftUnit": "%",
+                  "topUnit": "%",
+                  "widthUnit": "%",
+                  "heightUnit": "%",
+                  "customInputs": [],
+                  "customOutputs": [],
+                  "style": {
+                    "objID": "21ad189c-808f-3b9a-2e13-c1c74b5077c1",
+                    "useStyle": "default",
+                    "conditionalStyles": [],
+                    "childStyles": []
+                  },
+                  "timeline": [],
+                  "eventHandlers": [],
+                  "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                  "hiddenFlagType": "literal",
+                  "clickableFlagType": "literal",
+                  "checkedStateType": "literal",
+                  "disabledStateType": "literal",
+                  "states": "",
+                  "clickableFlag": true,
+                  "scrollSnapX": "",
+                  "scrollSnapY": "",
+                  "useStyle": "Card",
+                  "localStyles": {
+                    "objID": "053dbdbd-cb54-f94f-d75d-07feafadc68a"
+                  },
+                  "flagScrollDirection": "",
+                  "flagScrollbarMode": "",
+                  "group": "",
+                  "groupIndex": 0,
+                  "children": [
+                    {
+                      "objID": "4257a1ea-2c98-1f9f-9bad-8498b1ab93eb",
+                      "type": "LVGLLabelWidget",
+                      "left": 3,
+                      "top": 26,
+                      "width": 18,
+                      "height": 48,
+                      "leftUnit": "%",
+                      "topUnit": "%",
+                      "widthUnit": "%",
+                      "heightUnit": "%",
+                      "customInputs": [],
+                      "customOutputs": [],
+                      "style": {
+                        "objID": "8c40429e-e910-2594-e73d-bffd6e8f0f1b",
+                        "useStyle": "default",
+                        "conditionalStyles": [],
+                        "childStyles": []
+                      },
+                      "timeline": [],
+                      "eventHandlers": [],
+                      "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                      "hiddenFlagType": "literal",
+                      "clickableFlagType": "literal",
+                      "checkedStateType": "literal",
+                      "disabledStateType": "literal",
+                      "states": "",
+                      "clickableFlag": false,
+                      "scrollSnapX": "",
+                      "scrollSnapY": "",
+                      "useStyle": "LabelIconSm",
+                      "localStyles": {
+                        "objID": "2eea013d-59e7-5e98-36be-0dda67e2d11f",
+                        "definition": {
+                          "MAIN": {
+                            "DEFAULT": {
+                              "text_align": "CENTER"
+                            }
+                          }
+                        }
+                      },
+                      "flagScrollDirection": "",
+                      "flagScrollbarMode": "",
+                      "group": "",
+                      "groupIndex": 0,
+                      "children": [],
+                      "identifier": "settings_item5_icon",
+                      "text": "\uf071",
+                      "textType": "literal",
+                      "longMode": "CLIP",
+                      "recolor": false
+                    },
+                    {
+                      "objID": "fc0227e2-347b-7e79-db8e-40bea0d3f536",
+                      "type": "LVGLLabelWidget",
+                      "left": 24.0,
+                      "top": 24,
+                      "width": 42.0,
+                      "height": 52,
+                      "leftUnit": "%",
+                      "topUnit": "%",
+                      "widthUnit": "%",
+                      "heightUnit": "%",
+                      "customInputs": [],
+                      "customOutputs": [],
+                      "style": {
+                        "objID": "2c27f35f-8f2e-8469-50ac-44afb27b7c30",
+                        "useStyle": "default",
+                        "conditionalStyles": [],
+                        "childStyles": []
+                      },
+                      "timeline": [],
+                      "eventHandlers": [],
+                      "widgetFlags": "CLICK_FOCUSABLE|GESTURE_BUBBLE|PRESS_LOCK|SCROLLABLE|SCROLL_CHAIN_HOR|SCROLL_CHAIN_VER|SCROLL_ELASTIC|SCROLL_MOMENTUM|SCROLL_WITH_ARROW|SNAPPABLE",
+                      "hiddenFlagType": "literal",
+                      "clickableFlagType": "literal",
+                      "checkedStateType": "literal",
+                      "disabledStateType": "literal",
+                      "states": "",
+                      "clickableFlag": false,
+                      "scrollSnapX": "",
+                      "scrollSnapY": "",
+                      "useStyle": "LabelBody",
+                      "localStyles": {
+                        "objID": "0b178734-eaf2-d420-e568-a9d43111e078",
+                        "definition": {
+                          "MAIN": {
+                            "DEFAULT": {
+                              "text_align": "LEFT"
+                            }
+                          }
+                        }
+                      },
+                      "flagScrollDirection": "",
+                      "flagScrollbarMode": "",
+                      "group": "",
+                      "groupIndex": 0,
+                      "children": [],
+                      "identifier": "settings_item5_title",
+                      "text": "Factory Reset",
+                      "textType": "literal",
+                      "longMode": "DOT",
+                      "recolor": false
+                    }
+                  ],
+                  "identifier": "settings_item5"
                 }
               ],
               "identifier": "settings_list"

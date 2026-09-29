@@ -191,6 +191,10 @@ typedef struct _objects_t {
     lv_obj_t *settings_item4;
     lv_obj_t *settings_item4_icon;
     lv_obj_t *settings_item4_title;
+    lv_obj_t *settings_item4_value;
+    lv_obj_t *settings_item5;
+    lv_obj_t *settings_item5_icon;
+    lv_obj_t *settings_item5_title;
     lv_obj_t *settings_back;
     lv_obj_t *settings_back_icon;
     lv_obj_t *alert_bg;

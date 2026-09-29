@@ -51,7 +51,7 @@ static int64_t s_armed_us;
 
 static void set_row_label(const char *text)
 {
-    ui_lv_set_text(objects.settings_item4_title, text);
+    ui_lv_set_text(objects.settings_item5_title, text);
 }
 
 static bool armed(void)
@@ -153,6 +153,66 @@ void ui_settings_snooze_pressed(void)
 }
 
 /*
+ * Clock timeout: how long an app stays up without input before the idle
+ * timer in ui_nav.c returns to the clock. 0 is "Never" -- that timer already
+ * treats 0 as disabled -- and it sits last so the cycle passes through every
+ * real value first.
+ */
+static const uint16_t TIMEOUT_STEPS_S[] = { 15, 30, 60, 120, 300, 0 };
+#define TIMEOUT_STEP_COUNT (sizeof(TIMEOUT_STEPS_S) / sizeof(*TIMEOUT_STEPS_S))
+
+void ui_settings_timeout_text(char *out, size_t len)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    const unsigned s = d.idle_timeout_s;
+    if (s == 0) {
+        snprintf(out, len, "Never");
+    } else if (s < 60) {
+        snprintf(out, len, "%u s", s);
+    } else if (s % 60 == 0) {
+        snprintf(out, len, "%u min", s / 60);
+    } else {
+        snprintf(out, len, "%um %us", s / 60, s % 60);
+    }
+}
+
+void ui_settings_timeout_pressed(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+
+    /* The step after the current one, wrapping. A value not on the list
+     * (another Kconfig default) steps to the first real value above it. */
+    size_t next = 0;
+    bool found = false;
+    for (size_t i = 0; i < TIMEOUT_STEP_COUNT; i++) {
+        if (TIMEOUT_STEPS_S[i] == d.idle_timeout_s) {
+            next = (i + 1) % TIMEOUT_STEP_COUNT;
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        for (size_t i = 0; i < TIMEOUT_STEP_COUNT; i++) {
+            if (TIMEOUT_STEPS_S[i] > d.idle_timeout_s) {
+                next = i;
+                break;
+            }
+        }
+    }
+    d.idle_timeout_s = TIMEOUT_STEPS_S[next];
+
+    const esp_err_t err = capstan_config_set_display(&d);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "timeout save failed: %s", esp_err_to_name(err));
+        return;
+    }
+    ESP_LOGI(TAG, "clock timeout -> %u s (0 = never)",
+             (unsigned)d.idle_timeout_s);
+}
+
+/*
  * Theme. EEZ's change_color_theme() rewrites the shared styles' colours
  * from the palette's light or dark column; every colour on every screen is
  * a palette token, so that is the whole theme. LVGL's default theme, which
@@ -203,6 +263,8 @@ const char *ui_settings_theme_text(void)
 #else
 
 void ui_settings_theme_pressed(void) { }
+void ui_settings_timeout_pressed(void) { }
+void ui_settings_timeout_text(char *out, size_t len) { if (len) out[0] = '\0'; }
 void ui_settings_apply_theme(void) { }
 const char *ui_settings_theme_text(void) { return ""; }
 void ui_settings_factory_reset_pressed(void) { }

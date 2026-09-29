@@ -43,6 +43,17 @@ void ui_settings_snooze_pressed(void);
 void ui_settings_snooze_text(char *out, size_t len);
 
 /**
+ * The Clock Timeout row was pressed: step how long an app stays up without
+ * input before returning to the clock (15 s .. 5 min, then Never) and save
+ * it. The idle timer reads the saved value, so it applies at once.
+ * LVGL lock held.
+ */
+void ui_settings_timeout_pressed(void);
+
+/** "30 s", "2 min", "Never" -- the value text for the Clock Timeout row. */
+void ui_settings_timeout_text(char *out, size_t len);
+
+/**
  * Theme row: a press flips light <-> dark, saves it, and repaints every
  * screen. LVGL lock held.
  */

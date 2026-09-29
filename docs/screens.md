@@ -328,29 +328,28 @@ looks live is worse than no number.
 
 ## Settings
 
-Two rows: Wi-Fi and MQTT Server, each showing current status.
+Six rows, selected with the ring and acted on with a press:
 
-### Wi-Fi
+| Row | Value | Press |
+|---|---|---|
+| Wi-Fi | network name or connection state | opens phone setup |
+| MQTT | Connected / Offline / Not set | nothing -- status only |
+| Theme | Light / Dark | toggles; saved to NVS, restored at boot |
+| Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
+| Clock Timeout | 15 s / 30 s / 1 / 2 / 5 min / Never | steps to the next |
+| Factory Reset | -- | first press arms, second within 5 s confirms |
 
-1. Scan (`esp_wifi_scan_get_ap_records`), list SSIDs with signal strength.
-2. Select a network.
-3. **Choose the security type explicitly** — the prototype infers it from the
-   scan record; Capstan asks, so a hidden or mis-reported network can still
-   be joined.
-4. Enter the passphrase on the keyboard.
-5. Connect, showing progress and a clear failure reason.
+Wi-Fi and MQTT are set up from a phone, not on the dial; the way back into
+setup is the Wi-Fi row or a factory reset.
 
-### MQTT
-
-Host/IP, port, username, password, and Save. Port defaults to **8883** — the
-Headwaters broker is TLS-only and has no plaintext listener, contrary to the
-prototype's `1883` default. Passwords are masked, with a reveal toggle.
+Clock Timeout is how long an app stays up without input before the dial
+returns to the clock face. Setup and an open alarm are never timed out.
 
 ### Credentials and reset
 
-Everything is stored in NVS. Settings carries a **factory reset** that clears
-the NVS namespace and reboots, with a confirmation step — it is not
-recoverable and it drops the device off the network.
+Everything is stored in NVS. Factory reset clears the NVS namespace and
+reboots -- it is not recoverable and it drops the device off the network,
+which is why it is last and needs a second press.
 
 ## Keyboard — the only touch screen
 
