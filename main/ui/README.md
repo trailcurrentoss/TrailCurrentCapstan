@@ -19,15 +19,12 @@ in menuconfig.
 this tree stays disposable. If hand-written code lived here, deleting the
 folder would delete real source.
 
-**Consequence worth knowing:** EEZ Studio's Docker *full simulator* copies
-only the export folder into its container and compiles whatever it finds
-there, so it can only build a project whose hand-written C also lives in the
-export folder. Keeping this tree purely generated means the full simulator is
-not available for Capstan. EEZ Studio's ordinary canvas and its Run preview
-both still work, and they are what validates layout anyway.
-
-That is a deliberate trade: a disposable, regenerable export tree is worth
-more on a three-variant project than a simulator would be.
+**The one exception, and it is not hand-written:** `sim/` inside each
+variant is staged by `tools/sim_stage.sh` for EEZ Studio's Docker full
+simulator, which compiles only this folder. It is gitignored, rebuilt from
+`sim/` and `main/` on every run, and never compiled into firmware
+(`main/CMakeLists.txt` globs only the generated file names). Deleting it is
+always safe. See [docs/simulator.md](../../docs/simulator.md).
 
 ## Workflow
 

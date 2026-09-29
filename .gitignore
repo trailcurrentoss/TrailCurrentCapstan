@@ -18,6 +18,9 @@ build/
 build_*/
 build.*/
 
+# build-all.sh output -- release binaries collected from each build.<board>/
+release/
+
 # Generated configuration (keep sdkconfig.defaults* and boards/*.defaults tracked)
 sdkconfig
 sdkconfig.old
@@ -28,6 +31,10 @@ sdkconfig.matouch21
 # ESP-IDF dependency manager
 dependencies.lock
 managed_components/
+
+# Simulator staging -- rebuilt from sim/ and main/ by tools/sim_stage.sh.
+# See docs/simulator.md.
+main/ui/*/sim/
 
 # EEZ Studio backups + tmp/ working state
 GUI/**/*.eez-project.bak*

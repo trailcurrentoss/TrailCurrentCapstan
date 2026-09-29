@@ -69,13 +69,13 @@ Nothing hand-written lives there. `actions.c` and `vars.c` are in `main/`
 precisely so that stays true — if hand-written code lived in the export
 folder, deleting it would delete real source.
 
-**One consequence worth stating:** EEZ Studio's Docker *full simulator*
-copies only the export folder into its container and compiles what it finds
-there, so it can only build a project whose hand-written C also lives in the
-export folder. Keeping this tree purely generated means the full simulator is
-not available for Capstan. EEZ Studio's canvas and its Run preview both still
-work, and they are what validates layout anyway. On a three-variant project,
-a disposable export tree is worth more than the simulator.
+**The full simulator.** EEZ Studio's Docker *full simulator* copies only the
+export folder into its container and compiles what it finds there. Rather
+than move hand-written C into this tree, `tools/sim_stage.sh` copies the real
+UI code plus the simulator's stand-ins for ESP-IDF (`sim/`) into a gitignored
+`main/ui/<res>/sim/` before you press Build. The tree stays disposable — the
+staged folder is rebuilt from scratch every run — and the firmware never
+compiles it. See [simulator.md](simulator.md).
 
 ## The workflow
 
@@ -291,3 +291,4 @@ with `esp_lvgl_port`.
   every screen must obey
 - [screens.md](screens.md) — what each screen does
 - [icons.md](icons.md) — the icon font and its codepoints
+- [simulator.md](simulator.md) — running the real UI code against a simulated rig

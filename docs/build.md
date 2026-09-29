@@ -72,6 +72,34 @@ colour element order, mirroring, encoder counts — lives in the Kconfig
 defaults keyed off the board symbol, so there is one place to look and one
 place to correct.
 
+### Building every board at once (release binaries)
+
+`build-all.sh` runs the recipe above for each board and collects two images
+per board in `release/` (gitignored):
+
+| File | Use |
+|------|-----|
+| `capstan_<board>.bin` | App-only image — OTA via Headwaters |
+| `capstan_<board>_merged.bin` | Full image flashable at `0x0` — web flasher |
+
+```sh
+./build-all.sh                   # all three boards
+./build-all.sh crowpanel128      # just one
+./build-all.sh --clean           # regenerate sdkconfig.<board> first
+```
+
+Use `--clean` for anything that goes on a GitHub release. Without it an
+existing `sdkconfig.<board>` is reused, and changes to the tracked defaults
+never reach it. The merged image takes its offsets from the build's
+`flash_args`, because this partition table puts the app at `0x20000`, not
+at `0x10000` like other modules.
+
+The build directories are left in place, so `tools/flash.sh <board>`
+flashes the same build over USB afterwards.
+
+There is no board-less `capstan.bin`. Every image is tied to one panel, and
+the wrong one boots to a blank screen instead of failing.
+
 **Do a full clean when switching.** The pin map is resolved at compile time
 through headers that CMake does not track as dependencies, so an incremental
 build after a board change can link stale objects:
