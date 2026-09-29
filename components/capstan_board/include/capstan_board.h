@@ -125,6 +125,15 @@ bool capstan_board_touch_is_enabled(void);
 void capstan_board_leds_set_all(uint8_t r, uint8_t g, uint8_t b);
 
 /**
+ * The left half of the ring one colour and the right half another, as seen
+ * from the front; an LED on the vertical centre line stays dark. Which LED
+ * is where is the board's business (BOARD_WS2812_SIDE in board_pins.h).
+ * Same scaling, no-op and no-resend rules as capstan_board_leds_set_all().
+ */
+void capstan_board_leds_set_sides(uint8_t lr, uint8_t lg, uint8_t lb,
+                                  uint8_t rr, uint8_t rg, uint8_t rb);
+
+/**
  * RAW, uncalibrated coordinates from the most recent press, plus a
  * sequence number that increments once per PHYSICAL contact.
  *

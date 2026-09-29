@@ -24,7 +24,8 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_ALERT = 11,
     SCREEN_ID_PAGE_SETUP = 12,
     SCREEN_ID_PAGE_LOCALE = 13,
-    _SCREEN_ID_LAST = 13
+    SCREEN_ID_PAGE_GUIDE = 14,
+    _SCREEN_ID_LAST = 14
 };
 
 typedef struct _objects_t {
@@ -41,6 +42,7 @@ typedef struct _objects_t {
     lv_obj_t *page_alert;
     lv_obj_t *page_setup;
     lv_obj_t *page_locale;
+    lv_obj_t *page_guide;
     lv_obj_t *idle_ring;
     lv_obj_t *idle_date;
     lv_obj_t *idle_hand_hour;
@@ -63,6 +65,15 @@ typedef struct _objects_t {
     lv_obj_t *menu_dot5;
     lv_obj_t *menu_dot6;
     lv_obj_t *menu_dot7;
+    lv_obj_t *menu_dot8;
+    lv_obj_t *menu_dot9;
+    lv_obj_t *menu_dot10;
+    lv_obj_t *menu_dot11;
+    lv_obj_t *menu_dot12;
+    lv_obj_t *menu_dot13;
+    lv_obj_t *menu_dot14;
+    lv_obj_t *menu_dot15;
+    lv_obj_t *menu_dot16;
     lv_obj_t *climate_ticks;
     lv_obj_t *climate_needle_inside;
     lv_obj_t *climate_needle_target;
@@ -174,6 +185,7 @@ typedef struct _objects_t {
     lv_obj_t *settings_dot4;
     lv_obj_t *settings_dot5;
     lv_obj_t *settings_dot6;
+    lv_obj_t *settings_dot7;
     lv_obj_t *alert_bg;
     lv_obj_t *alert_icon;
     lv_obj_t *alert_title;
@@ -196,6 +208,21 @@ typedef struct _objects_t {
     lv_obj_t *locale_item1_icon;
     lv_obj_t *locale_item1_title;
     lv_obj_t *locale_item1_value;
+    lv_obj_t *guide_step;
+    lv_obj_t *guide_stack;
+    lv_obj_t *guide_tile;
+    lv_obj_t *guide_icon;
+    lv_obj_t *guide_title;
+    lv_obj_t *guide_body;
+    lv_obj_t *guide_hint_row;
+    lv_obj_t *guide_hint_icon;
+    lv_obj_t *guide_hint;
+    lv_obj_t *guide_dot0;
+    lv_obj_t *guide_dot1;
+    lv_obj_t *guide_dot2;
+    lv_obj_t *guide_dot3;
+    lv_obj_t *guide_dot4;
+    lv_obj_t *guide_dot5;
 } objects_t;
 
 extern objects_t objects;
@@ -246,6 +273,9 @@ void tick_screen_page_setup();
 
 void create_screen_page_locale();
 void tick_screen_page_locale();
+
+void create_screen_page_guide();
+void tick_screen_page_guide();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

@@ -103,16 +103,6 @@ void ui_climate_section(ui_climate_section_t sec, int32_t *min, int32_t *max)
     *max = s_sec_max[sec];
 }
 
-bool ui_climate_led(uint8_t *r, uint8_t *g, uint8_t *b)
-{
-    const capstan_value_t in = capstan_model_temp_f();
-    switch (activity(in.valid, in.value)) {
-    case ACT_HEAT: *r = 255; *g = 96;  *b = 0;   return true;   /* orange */
-    case ACT_COOL: *r = 0;   *g = 64;  *b = 255; return true;   /* blue   */
-    default:       return false;
-    }
-}
-
 void ui_climate_summary(char *out, size_t len)
 {
     if (s_mode == UI_CLIMATE_OFF) {

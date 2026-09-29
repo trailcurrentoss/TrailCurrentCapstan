@@ -45,6 +45,8 @@ Every screen is ring-only. "Back" is where a long press goes.
 | Levelling | Menu | `local/level/*` |
 | Settings | Menu | NVS, Wi-Fi and MQTT state |
 | Setup | Settings | phone portal (first boot and after a factory reset) |
+| Locale | Settings | NVS |
+| Getting Started | Menu (after stepping back to step 1) | — |
 | Alert overlay | previous screen | derived on-device from Picket / Spoor inputs |
 
 ---
@@ -80,8 +82,8 @@ which the second hand's own redraws would otherwise keep resetting forever.
 
 ## Menu
 
-Seven faces plus Clock: Climate, Devices, Energy, Water Tanks, Air Quality,
-Levelling, Settings. (The prototype also has Diesel Heater and Doors faces.
+Eight faces plus Clock: Climate, Devices, Energy, Water Tanks, Air Quality,
+Levelling, Getting Started, Settings. (The prototype also has Diesel Heater and Doors faces.
 Capstan has one thermostat control -- how heating and cooling are carried out
 is handled outside it -- and Doors is removed for now: nothing feeds it, and
 open inputs already raise the full-screen alert.) Each shows a one-line
@@ -103,7 +105,7 @@ its two neighbours flank it as muted glyphs, and a row of dots across the
 bottom shows position in the list. Rotating the ring moves the items through
 the three fixed slots; the slots themselves never move.
 
-Ten items: the nine apps, then **Clock**, which returns to the idle face.
+Nine items: the eight apps, then **Clock**, which returns to the idle face.
 Clock is last so that one detent backwards from Climate reaches it.
 
 Nothing about this layout scales with the panel, which is the point — it shows
@@ -113,8 +115,8 @@ all.
 
 **Getting back to the clock** has three routes, in order of how likely a user
 is to find them: the Clock item in the carousel, the Clock Timeout (Settings),
-and a long press on the ring. Nothing on the display mentions the long press;
-a "Getting Started" item under Settings that teaches it is on the backlog.
+and a long press on the ring. The long press is taught by
+[Getting Started](#getting-started).
 
 ## Climate — GUI only, backend stubbed
 
@@ -365,6 +367,7 @@ a press acts on the centred item:
 | MQTT | Connected / Offline / Not set | nothing -- status only |
 | Theme | Light / Dark | toggles; saved to NVS, restored at boot |
 | Locale | e.g. `°F · in` | opens the Locale screen |
+| Getting Started | Shown / Hidden | toggles whether it appears in the app menu; saved to NVS, so a factory reset shows it again |
 | Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
 | Clock Timeout | 15 s / 30 s / 1 / 2 / 5 min / Never | steps to the next |
 | Factory Reset | Press twice | first press arms (tile turns red), second within 5 s resets |
@@ -399,6 +402,35 @@ More units (distance, 12/24 h) belong here as further rows.
 Everything is stored in NVS. Factory reset clears the NVS namespace and
 reboots -- it is not recoverable and it drops the device off the network,
 which is why it is last and needs a second press.
+
+## Getting Started
+
+Six steps that teach the ring, now that nothing on the glass is touchable:
+what controls the dial, turn, press, hold to go back, the idle clock, and
+Ready. From the newer prototype (`DOCS/GettingStarted/`) — the only thing
+taken from that download. "STEP n OF 6" at the top; an accent circle with the
+step's icon, the title, the body and a green hint in a centred column; six
+progress dots at 6 o'clock, completed steps green.
+
+Turn or press to step forward (turn also goes back); a hold steps back one,
+and on the first step or Ready leaves to the menu. It always opens at step 1.
+Once someone has been through it, Settings > Getting Started can hide it from
+the menu; the carousel then skips it and its dot, and the remaining dots stay
+centred (the menu uses the devices carousel's half-pitch dot slots).
+
+The column is centred between the STEP heading and the dots, and the 1.28"
+draws the step's circle at 48 px rather than a scaled 56, so the longest step
+fits without reaching the heading.
+
+Adapted from the design: the copy names what is actually pressed — **the
+screen** on the Elecrow CrowPanels (1.28", 1.46"), where the display is the
+button, and **the ring** on the MaTouch 2.1" — rather than "the ring or
+screen", which also shortens it; the hold step does not mention an edge
+filling green (there is no hold-progress feedback); the idle step reads the Clock Timeout
+setting, including Never; the icons are the nearest in the house set (the
+design's hand, circle-dot, undo arrow and check-circle are not in it); the
+dots are at the bottom like every carousel here. The menu summary "Rotate,
+press, hold" is Capstan's own — the design gives none.
 
 ## Setup
 
@@ -435,7 +467,7 @@ order, so features cannot fight over it:
 | Condition | Colour |
 |---|---|
 | any alarm active (snoozed or not) | red |
-| Climate: heating / cooling | orange / blue (off while holding) |
+| Climate | left half blue, right half red, always — which way to turn for cooler or warmer; the bottom LED(s) dark |
 | Devices: the centred device is on | brand green |
 | Energy, Battery page | green > 75 %, yellow 40–75 %, red < 40 %, dimmer toward the bottom of each band |
 | Water | orange if fresh < 40 % or grey/black > 60 %; green if fresh > 40 % and grey/black < 50 %; in between, unchanged |
@@ -484,7 +516,7 @@ match the design.
 | Settings list with rows | Settings **carousel**, wraps like the menu | consistency with the other carousels |
 | tilt in degrees on Leveling ("Side 1.2° · Front 0.4°") | height differences in in / mm | what a person actually does is raise a side by a height |
 | hand-built keyboard, on-device Wi-Fi / MQTT editors | phone setup portal | ring text entry does not work on these panels |
-| back affordances on screen | none; **long press** goes back everywhere | clutter; a Getting Started item will teach it (backlog) |
+| back affordances on screen | none; **long press** goes back everywhere | clutter; [Getting Started](#getting-started) teaches it |
 | touch | off, controller not started | nothing needs it; the whole glass is the ring's button |
 | `wakeScreen` (wake to Climate) | always wakes to the menu | not implemented |
 | Alert on the clock face | always full-screen overlay | preferred full-screen |

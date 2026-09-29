@@ -244,7 +244,8 @@ static void apply_leds(bool alarm)
      *   1. Any alarm active -- snoozed or not -- solid red. Snoozing clears
      *      the screen so the dial is usable; it does not pretend the door
      *      is shut.
-     *   2. Otherwise, on the Climate screen: orange heating, blue cooling.
+     *   2. Otherwise, on the Climate screen: blue on the left half, red on
+     *      the right -- which way to turn for cooler or warmer.
      *   3. Otherwise, on the Devices screen: green while the selected
      *      device is REPORTED on; dark again the moment it reports off.
      *   3b. Otherwise, on Energy's Battery page: the state of charge --
@@ -263,7 +264,11 @@ static void apply_leds(bool alarm)
     if (alarm) {
         lr = 255;
     } else if (ui_nav_current() == CAPSTAN_SCREEN_CLIMATE) {
-        ui_climate_led(&lr, &lg, &lb);
+        /* A fixed map of the ring, not a status: turning right (clockwise)
+         * warms, left cools, so the right half is red and the left blue. */
+        capstan_board_leds_set_sides(0, 64, 255,    /* left: blue */
+                                     255, 0, 0);    /* right: red */
+        return;
     } else if (ui_nav_current() == CAPSTAN_SCREEN_DEVICES &&
                ui_devices_selected_on()) {
         lr = 82; lg = 164; lb = 65;     /* AccentPrimary #52a441, brand green */

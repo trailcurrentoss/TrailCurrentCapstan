@@ -238,6 +238,43 @@ lv_style_t *get_style_list_row_MAIN_CHECKED();
 void add_style_list_row(lv_obj_t *obj);
 void remove_style_list_row(lv_obj_t *obj);
 
+// Style: GuideTile
+lv_style_t *get_style_guide_tile_MAIN_DEFAULT();
+void add_style_guide_tile(lv_obj_t *obj);
+void remove_style_guide_tile(lv_obj_t *obj);
+
+// Style: GuideIcon
+lv_style_t *get_style_guide_icon_MAIN_DEFAULT();
+void add_style_guide_icon(lv_obj_t *obj);
+void remove_style_guide_icon(lv_obj_t *obj);
+
+// Style: GuideTitle
+lv_style_t *get_style_guide_title_MAIN_DEFAULT();
+void add_style_guide_title(lv_obj_t *obj);
+void remove_style_guide_title(lv_obj_t *obj);
+
+// Style: GuideBody
+lv_style_t *get_style_guide_body_MAIN_DEFAULT();
+void add_style_guide_body(lv_obj_t *obj);
+void remove_style_guide_body(lv_obj_t *obj);
+
+// Style: GuideHint
+lv_style_t *get_style_guide_hint_MAIN_DEFAULT();
+void add_style_guide_hint(lv_obj_t *obj);
+void remove_style_guide_hint(lv_obj_t *obj);
+
+// Style: GuideHintIcon
+lv_style_t *get_style_guide_hint_icon_MAIN_DEFAULT();
+void add_style_guide_hint_icon(lv_obj_t *obj);
+void remove_style_guide_hint_icon(lv_obj_t *obj);
+
+// Style: GuideDot
+lv_style_t *get_style_guide_dot_MAIN_DEFAULT();
+lv_style_t *get_style_guide_dot_MAIN_DISABLED();
+lv_style_t *get_style_guide_dot_MAIN_CHECKED();
+void add_style_guide_dot(lv_obj_t *obj);
+void remove_style_guide_dot(lv_obj_t *obj);
+
 // Style: MenuName
 lv_style_t *get_style_menu_name_MAIN_DEFAULT();
 void add_style_menu_name(lv_obj_t *obj);

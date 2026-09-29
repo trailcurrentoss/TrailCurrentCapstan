@@ -438,7 +438,7 @@ static void refresh_menu(void)
         return;
     }
 
-    const int sel = ui_nav_selection_of(CAPSTAN_SCREEN_MENU);
+    const int sel = ui_nav_menu_item();
     char buf[32] = "";
 
     switch (sel) {
@@ -514,12 +514,16 @@ static void refresh_menu(void)
         break;
     }
 
-    case 6:     /* Settings */
+    case 6:     /* Getting Started: what it teaches. */
+        snprintf(buf, sizeof(buf), "Rotate, press, hold");
+        break;
+
+    case 7:     /* Settings */
         snprintf(buf, sizeof(buf), "%s",
                  capstan_mqtt_is_connected() ? "Connected" : "Offline");
         break;
 
-    case 7:     /* Clock. Says what pressing does, because nothing else does. */
+    case 8:     /* Clock. Says what pressing does, because nothing else does. */
         snprintf(buf, sizeof(buf), "Back to the clock");
         break;
 

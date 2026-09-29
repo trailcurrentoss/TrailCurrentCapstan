@@ -127,6 +127,7 @@
 #define BOARD_HAS_WS2812        0
 #define BOARD_WS2812_GPIO       -1
 #define BOARD_WS2812_COUNT      0
+#define BOARD_WS2812_SIDE       { 0 }
 #define BOARD_WS2812_EN         -1
 #define BOARD_LCD_RAIL_A        -1
 #define BOARD_LCD_RAIL_B        -1
@@ -201,6 +202,11 @@
 #define BOARD_HAS_WS2812        1
 #define BOARD_WS2812_GPIO       48
 #define BOARD_WS2812_COUNT      5
+/* Which half of the ring each LED is on, seen from the front, in chain
+ * order: -1 left, +1 right, 0 left dark in a two-sided pattern (at or near
+ * the bottom centre). Mapped on hardware 2026-09-29 by lighting each index
+ * its own colour: 0 at 4 o'clock, 1 at 1, 2 at 11, 3 just shy of 9, 4 at 6. */
+#define BOARD_WS2812_SIDE       { +1, +1, -1, -1, 0 }
 #define BOARD_WS2812_EN         -1   /* No enable rail on this board. */
 #define BOARD_PWR_LED           40   /* Active low. */
 
@@ -262,6 +268,10 @@
 #define BOARD_HAS_WS2812        1
 #define BOARD_WS2812_GPIO       48
 #define BOARD_WS2812_COUNT      8
+/* See the 1.28" entry. Mapped on hardware 2026-09-29: 0 at 2 o'clock,
+ * 1 at 4, 2 at 5, 3 at 7, 4 at 8, 5 at 10, 6 at 11, 7 at 1. The two at 5
+ * and 7 are the bottom pair, dark in a two-sided pattern. */
+#define BOARD_WS2812_SIDE       { +1, +1, 0, 0, -1, -1, -1, +1 }
 #define BOARD_WS2812_EN         17   /* Ring stays dark without this high.
                                         Not present on the 1.28". */
 #define BOARD_PWR_LED           40   /* Active low. */

@@ -46,6 +46,7 @@ typedef enum {
     CAPSTAN_SCREEN_ALERT,      /* full-screen overlay */
     CAPSTAN_SCREEN_SETUP,      /* soft-AP provisioning instructions */
     CAPSTAN_SCREEN_LOCALE,     /* units, opened from Settings */
+    CAPSTAN_SCREEN_GUIDE,      /* Getting Started */
     CAPSTAN_SCREEN_COUNT
 } capstan_screen_t;
 
@@ -75,6 +76,14 @@ void ui_nav_init(void);
  * already holds it).
  */
 void ui_nav_goto(capstan_screen_t screen);
+
+/**
+ * The app carousel's selected item as an index into its full item table
+ * (MENU_ITEMS in screens_layout.py), whatever is hidden: 0 Climate ...
+ * 6 Getting Started, 7 Settings, 8 Clock. The ring's own selection counts
+ * only the visible items; this is what ui_data.c switches on.
+ */
+int ui_nav_menu_item(void);
 
 /** Where a long press goes from the current screen. */
 void ui_nav_back(void);

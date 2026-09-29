@@ -74,6 +74,7 @@ enum {
     UI_SETTINGS_MQTT,
     UI_SETTINGS_THEME,
     UI_SETTINGS_LOCALE,
+    UI_SETTINGS_GUIDE,
     UI_SETTINGS_SNOOZE,
     UI_SETTINGS_TIMEOUT,
     UI_SETTINGS_RESET,
@@ -101,6 +102,9 @@ enum {
  * so the change shows everywhere on the next refresh. LVGL lock held.
  */
 void ui_settings_locale_pressed(int row);
+
+/** Show or hide Getting Started in the app menu; saved to NVS. */
+void ui_settings_guide_pressed(void);
 
 /** "°F · in" -- the Locale item's value in the Settings carousel. */
 void ui_settings_locale_text(char *out, size_t len);

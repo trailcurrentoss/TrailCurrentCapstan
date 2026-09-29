@@ -38,14 +38,6 @@ ui_climate_mode_t ui_climate_mode(void);
 /** Paint the Climate screen. LVGL lock held. Cheap; called per refresh. */
 void ui_climate_refresh(void);
 
-/**
- * The LED ring colour this screen wants: orange while heating, blue while
- * cooling. Returns false (ring dark) when holding, off, or with no inside
- * temperature. Only consulted while Climate is on screen; an active alarm's
- * red takes priority (see ui_alerts.c).
- */
-bool ui_climate_led(uint8_t *r, uint8_t *g, uint8_t *b);
-
 /** The menu carousel's summary line, e.g. "Heating · 72°" or "Off". */
 void ui_climate_summary(char *out, size_t len);
 

@@ -396,11 +396,25 @@ A `_Static_assert` in `capstan_board.c` checks the Kconfig values against
 `BOARD_HAS_WS2812` / `BOARD_WS2812_COUNT` in `board_pins.h`, so the two
 declarations cannot drift apart.
 
-**Not driven yet.** The capability is plumbed through so screens can be
-written against it; the RMT driver lands with the screens that use it. The
-intent is state readable across a room without looking at the display — the
-climate call colour while heating or cooling, an alert pulse, a confirmation
-flash.
+**Driven** by the RMT peripheral (`board_leds.c`), GRB on the wire, every
+write scaled by the brightness ceiling. What each screen shows is in
+[screens.md](screens.md#led-ring).
+
+**Positions**, mapped on hardware by lighting each chain index its own
+colour. Clock positions seen from the front; the side column is
+`BOARD_WS2812_SIDE` in `board_pins.h`, which `capstan_board_leds_set_sides()`
+uses to paint the left and right halves (0 = left dark, at the bottom):
+
+| Index | 1.28" | side | 1.46" | side |
+|---|---|---|---|---|
+| 0 | 4 o'clock | right | 2 o'clock | right |
+| 1 | 1 o'clock | right | 4 o'clock | right |
+| 2 | 11 o'clock | left | 5 o'clock | 0 |
+| 3 | just shy of 9 | left | 7 o'clock | 0 |
+| 4 | 6 o'clock | 0 | 8 o'clock | left |
+| 5 | — | | 10 o'clock | left |
+| 6 | — | | 11 o'clock | left |
+| 7 | — | | 1 o'clock | right |
 
 ## What is verified on hardware
 

@@ -33,6 +33,7 @@
 #define UI_ICON_WATER     "\xEF\x81\x83"   /* 0xF043 droplet          */
 #define UI_ICON_AIR       "\xEF\x83\x82"   /* 0xF0C2 cloud            */
 #define UI_ICON_LEVEL     "\xEF\x8F\xBD"   /* 0xF3FD gauge            */
+#define UI_ICON_GUIDE     "\xEF\x81\x9A"   /* 0xF05A circle-info      */
 #define UI_ICON_SETTINGS  "\xEF\x80\x93"   /* 0xF013 gear             */
 #define UI_ICON_CLOCK     "\xEF\x80\x97"   /* 0xF017 clock            */
 /* clang-format on */

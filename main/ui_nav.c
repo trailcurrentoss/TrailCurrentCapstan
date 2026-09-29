@@ -15,6 +15,7 @@
 #include "ui_icons.h"
 #include "ui_alerts.h"
 #include "ui_climate.h"
+#include "ui_guide.h"
 #include "ui_devices.h"
 #include "ui_settings.h"
 
@@ -29,6 +30,7 @@
 #if HAVE_GENERATED_UI
 #  include "screens.h"
 #  include "ui.h"
+#  include "ui_lv.h"
 #endif
 
 static const char *TAG = "nav";
@@ -111,6 +113,11 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
     /* Units, a short list opened from Settings > Locale. */
     [CAPSTAN_SCREEN_LOCALE]       = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_SETTINGS, "locale" },
+
+    /* Getting Started. Its long press steps back first (ui_guide_back()),
+     * and only leaves from the first step or Ready. */
+    [CAPSTAN_SCREEN_GUIDE]        = { CAPSTAN_INPUT_RING_ONLY,
+                                      CAPSTAN_SCREEN_MENU,     "guide" },
 };
 
 static capstan_screen_t s_current = CAPSTAN_SCREEN_IDLE;
@@ -160,6 +167,7 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_ALERT]        = SCREEN_ID_PAGE_ALERT,
     [CAPSTAN_SCREEN_SETUP]        = SCREEN_ID_PAGE_SETUP,
     [CAPSTAN_SCREEN_LOCALE]       = SCREEN_ID_PAGE_LOCALE,
+    [CAPSTAN_SCREEN_GUIDE]        = SCREEN_ID_PAGE_GUIDE,
 };
 
 _Static_assert((int)CAPSTAN_SCREEN_COUNT == (int)_SCREEN_ID_LAST,
@@ -250,6 +258,9 @@ void ui_nav_goto(capstan_screen_t screen)
          * old hands until the next second boundary. */
         ui_clock_refresh();
     }
+    if (screen == CAPSTAN_SCREEN_GUIDE) {
+        ui_guide_enter();   /* always from step 1 */
+    }
 #endif
 
     ESP_LOGD(TAG, "-> %s (%s)", p->name,
@@ -263,6 +274,11 @@ void ui_nav_back(void)
      * timer behind it -- until it happened to clear. */
     if (s_current == CAPSTAN_SCREEN_ALERT) {
         ui_alerts_acknowledge();
+        return;
+    }
+
+    /* Getting Started uses a hold to step back, until its first page. */
+    if (s_current == CAPSTAN_SCREEN_GUIDE && ui_guide_back()) {
         return;
     }
 
@@ -280,7 +296,7 @@ void ui_nav_back(void)
  * MENU_ITEMS in GUI/tmp/screens_layout.py, which is what the tiles, the
  * labels and the page dots are all authored from.
  */
-#define MENU_ITEM_COUNT 8
+#define MENU_ITEM_COUNT 9
 
 /* Energy shows one reading at a time. Must match ENERGY_PAGES in
  * GUI/tmp/screens_layout.py -- the dots are authored from that list. */
@@ -350,47 +366,71 @@ static const struct {
     { UI_ICON_WATER,    "Water Tanks", CAPSTAN_SCREEN_WATER },
     { UI_ICON_AIR,      "Air Quality", CAPSTAN_SCREEN_AIR   },
     { UI_ICON_LEVEL,    "Leveling",    CAPSTAN_SCREEN_LEVEL },
+    { UI_ICON_GUIDE,    "Getting Started", CAPSTAN_SCREEN_GUIDE },
     { UI_ICON_SETTINGS, "Settings", CAPSTAN_SCREEN_SETTINGS },
     { UI_ICON_CLOCK,    "Clock",    CAPSTAN_SCREEN_IDLE     },
 };
 
-static lv_obj_t *menu_dot(int i)
+#define MENU_DOT_SLOTS (2 * MENU_ITEM_COUNT - 1)
+#define MENU_ITEM_GUIDE 6          /* s_menu[] index of Getting Started */
+
+static lv_obj_t *menu_dot(int slot)
 {
-    switch (i) {
-    case 0: return objects.menu_dot0;
-    case 1: return objects.menu_dot1;
-    case 2: return objects.menu_dot2;
-    case 3: return objects.menu_dot3;
-    case 4: return objects.menu_dot4;
-    case 5: return objects.menu_dot5;
-    case 6: return objects.menu_dot6;
-    case 7: return objects.menu_dot7;
-    default: return NULL;
-    }
+    lv_obj_t *const dots[MENU_DOT_SLOTS] = {
+        objects.menu_dot0,  objects.menu_dot1,  objects.menu_dot2,
+        objects.menu_dot3,  objects.menu_dot4,  objects.menu_dot5,
+        objects.menu_dot6,  objects.menu_dot7,  objects.menu_dot8,
+        objects.menu_dot9,  objects.menu_dot10, objects.menu_dot11,
+        objects.menu_dot12, objects.menu_dot13, objects.menu_dot14,
+        objects.menu_dot15, objects.menu_dot16,
+    };
+    return (slot >= 0 && slot < MENU_DOT_SLOTS) ? dots[slot] : NULL;
 }
 
-/* Index `n` places from `i`, wrapping. See ui_nav_rotate() for why the
- * carousel wraps where every other screen clamps. */
-static int menu_wrap(int i)
+/*
+ * The items the carousel shows, as s_menu[] indices. Getting Started drops
+ * out when Settings hides it; everything else is always there. The ring's
+ * selection (s_sel[MENU]) indexes THIS list, so rotating simply never lands
+ * on a hidden item.
+ */
+static int menu_visible(int map[MENU_ITEM_COUNT])
 {
-    const int n = MENU_ITEM_COUNT;
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    int n = 0;
+    for (int i = 0; i < MENU_ITEM_COUNT; i++) {
+        if (i == MENU_ITEM_GUIDE && d.hide_guide) {
+            continue;
+        }
+        map[n++] = i;
+    }
+    return n;
+}
+
+/* Position `i` in the visible list, wrapping. See ui_nav_rotate() for why
+ * the carousel wraps where every other screen clamps. */
+static int menu_wrap(int i, int n)
+{
     return ((i % n) + n) % n;
 }
 
 static void apply_menu_carousel(void)
 {
-    const int sel = menu_wrap(s_sel[CAPSTAN_SCREEN_MENU]);
+    int map[MENU_ITEM_COUNT];
+    const int n = menu_visible(map);
+    const int pos = menu_wrap(s_sel[CAPSTAN_SCREEN_MENU], n);
+    const int sel = map[pos];
 
     if (objects.menu_hero_icon) {
         lv_label_set_text(objects.menu_hero_icon, s_menu[sel].icon);
     }
     if (objects.menu_prev_icon) {
         lv_label_set_text(objects.menu_prev_icon,
-                          s_menu[menu_wrap(sel - 1)].icon);
+                          s_menu[map[menu_wrap(pos - 1, n)]].icon);
     }
     if (objects.menu_next_icon) {
         lv_label_set_text(objects.menu_next_icon,
-                          s_menu[menu_wrap(sel + 1)].icon);
+                          s_menu[map[menu_wrap(pos + 1, n)]].icon);
     }
     if (objects.menu_title) {
         lv_label_set_text(objects.menu_title, s_menu[sel].title);
@@ -406,17 +446,25 @@ static void apply_menu_carousel(void)
      * one with no data behind it.
      */
 
-    for (int i = 0; i < MENU_ITEM_COUNT; i++) {
-        lv_obj_t *d = menu_dot(i);
-        if (!d) {
-            continue;
-        }
-        if (i == sel) {
-            lv_obj_add_state(d, LV_STATE_CHECKED);
-        } else {
-            lv_obj_remove_state(d, LV_STATE_CHECKED);
-        }
+    /* n dots centred on 6 o'clock: every other slot from (max - n), the
+     * pos-th lit -- the devices carousel's scheme (page_menu()). */
+    const int first = MENU_ITEM_COUNT - n;
+    for (int slot = 0; slot < MENU_DOT_SLOTS; slot++) {
+        lv_obj_t *d = menu_dot(slot);
+        const bool on_rail = ((slot - first) % 2 == 0);
+        const int  item    = (slot - first) / 2;
+        const bool used    = on_rail && item >= 0 && item < n;
+        ui_lv_set_hidden(d, !used);
+        ui_lv_set_state_in(d, LV_STATE_CHECKED,
+                           (used && item == pos) ? LV_STATE_CHECKED : 0);
     }
+}
+
+int ui_nav_menu_item(void)
+{
+    int map[MENU_ITEM_COUNT];
+    const int n = menu_visible(map);
+    return map[menu_wrap(s_sel[CAPSTAN_SCREEN_MENU], n)];
 }
 #endif /* HAVE_GENERATED_UI */
 
@@ -454,7 +502,8 @@ static int selectable_count(capstan_screen_t s)
 {
 #if HAVE_GENERATED_UI
     if (s == CAPSTAN_SCREEN_MENU) {
-        return MENU_ITEM_COUNT;
+        int map[MENU_ITEM_COUNT];
+        return menu_visible(map);
     }
     if (s == CAPSTAN_SCREEN_ENERGY) {
         /* Not a list -- the "items" are pages through one readout. */
@@ -583,6 +632,12 @@ void ui_nav_rotate(int diff)
         return;
     }
 
+    /* Getting Started steps through its own pages (ui_guide.c). */
+    if (s_current == CAPSTAN_SCREEN_GUIDE) {
+        ui_guide_rotate(diff);
+        return;
+    }
+
     const int n = selectable_count(s_current);
     if (n <= 0) {
         return;     /* nothing to move; the ring is simply inert here */
@@ -652,7 +707,7 @@ void ui_nav_press(void)
 
 #if HAVE_GENERATED_UI
     case CAPSTAN_SCREEN_MENU: {
-        const int sel = s_sel[CAPSTAN_SCREEN_MENU];
+        const int sel = ui_nav_menu_item();
         if (sel >= 0 && sel < MENU_ITEM_COUNT) {
             ui_nav_goto(s_menu[sel].dest);
         }
@@ -695,6 +750,7 @@ void ui_nav_press(void)
              */
             return;
         case UI_SETTINGS_THEME:   ui_settings_theme_pressed();   break;
+        case UI_SETTINGS_GUIDE:   ui_settings_guide_pressed();   break;
         case UI_SETTINGS_LOCALE:
             s_sel[CAPSTAN_SCREEN_LOCALE] = 0;
             ui_nav_goto(CAPSTAN_SCREEN_LOCALE);
@@ -710,6 +766,10 @@ void ui_nav_press(void)
 
     case CAPSTAN_SCREEN_ALERT:
         ui_alerts_acknowledge();   /* snooze, back to the interrupted screen */
+        return;
+
+    case CAPSTAN_SCREEN_GUIDE:
+        ui_guide_press();
         return;
 
     case CAPSTAN_SCREEN_LOCALE:
