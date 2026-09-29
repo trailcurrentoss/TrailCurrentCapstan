@@ -75,7 +75,10 @@ built again and drawn through `transform_scale`, the design's own note), its
 name, "Current face" or "Press to set", and four dots. Turn to preview (it
 wraps), press to set, hold to leave.
 
-Departures from that design: no openings count on Classic (Doors is removed);
+Departures from that design: the tick rings and minute arcs sit 12 / 11 / 5
+px from the glass on the 2.1" / 1.46" / 1.28" (2.5 / 3 / 2 %) rather than
+the design's 18 px, which read as an odd margin on the hardware; no openings
+count on Classic (Doors is removed);
 the TrailCurrent face's time uses the 120 px numeral face rather than a new
 112 px one; weights other than the design's medium are the nearest existing
 regular sizes.

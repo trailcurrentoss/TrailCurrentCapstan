@@ -49,8 +49,8 @@ void create_screen_page_idle() {
                     // idle_cl_ticks
                     lv_obj_t *obj = lv_scale_create(parent_obj);
                     objects.idle_cl_ticks = obj;
-                    lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                    lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                    lv_obj_set_pos(obj, 12, 12);
+                    lv_obj_set_size(obj, 456, 456);
                     lv_scale_set_mode(obj, LV_SCALE_MODE_ROUND_INNER);
                     lv_scale_set_range(obj, 0, 59);
                     lv_scale_set_angle_range(obj, 354);
@@ -309,8 +309,8 @@ void create_screen_page_idle() {
                     // idle_dg_ticks
                     lv_obj_t *obj = lv_scale_create(parent_obj);
                     objects.idle_dg_ticks = obj;
-                    lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                    lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                    lv_obj_set_pos(obj, 12, 12);
+                    lv_obj_set_size(obj, 456, 456);
                     lv_scale_set_mode(obj, LV_SCALE_MODE_ROUND_INNER);
                     lv_scale_set_range(obj, 0, 59);
                     lv_scale_set_angle_range(obj, 354);
@@ -455,8 +455,8 @@ void create_screen_page_idle() {
                     // idle_br_arc
                     lv_obj_t *obj = lv_arc_create(parent_obj);
                     objects.idle_br_arc = obj;
-                    lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                    lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                    lv_obj_set_pos(obj, 12, 12);
+                    lv_obj_set_size(obj, 456, 456);
                     lv_arc_set_range(obj, 0, 3600);
                     lv_arc_set_value(obj, 2520);
                     lv_arc_set_bg_start_angle(obj, 0);
@@ -613,8 +613,8 @@ void create_screen_page_idle() {
                     // idle_rg_arc
                     lv_obj_t *obj = lv_arc_create(parent_obj);
                     objects.idle_rg_arc = obj;
-                    lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                    lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                    lv_obj_set_pos(obj, 12, 12);
+                    lv_obj_set_size(obj, 456, 456);
                     lv_arc_set_range(obj, 0, 3600);
                     lv_arc_set_value(obj, 2520);
                     lv_arc_set_bg_start_angle(obj, 0);
@@ -1136,8 +1136,8 @@ void create_screen_page_climate() {
             // climate_ticks
             lv_obj_t *obj = lv_scale_create(parent_obj);
             objects.climate_ticks = obj;
-            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-            lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+            lv_obj_set_pos(obj, 18, 18);
+            lv_obj_set_size(obj, 444, 444);
             lv_scale_set_mode(obj, LV_SCALE_MODE_ROUND_INNER);
             lv_scale_set_range(obj, 0, 80);
             lv_scale_set_angle_range(obj, 270);
@@ -2998,8 +2998,8 @@ void create_screen_page_clock_face() {
             // cfp_window
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.cfp_window = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(8));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(60));
+            lv_obj_set_pos(obj, 96, 36);
+            lv_obj_set_size(obj, 288, 288);
             lv_obj_remove_flag(obj, LV_OBJ_FLAG_SCROLLABLE|LV_OBJ_FLAG_SCROLL_CHAIN_HOR|LV_OBJ_FLAG_SCROLL_CHAIN_VER|LV_OBJ_FLAG_SCROLL_ELASTIC|LV_OBJ_FLAG_SCROLL_MOMENTUM|LV_OBJ_FLAG_SCROLL_WITH_ARROW);
             lv_obj_set_scrollbar_mode(obj, LV_SCROLLBAR_MODE_OFF);
             add_style_face_preview(obj);
@@ -3018,8 +3018,8 @@ void create_screen_page_clock_face() {
                             // cfp_cl_ticks
                             lv_obj_t *obj = lv_scale_create(parent_obj);
                             objects.cfp_cl_ticks = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                            lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                            lv_obj_set_pos(obj, 12, 12);
+                            lv_obj_set_size(obj, 456, 456);
                             lv_scale_set_mode(obj, LV_SCALE_MODE_ROUND_INNER);
                             lv_scale_set_range(obj, 0, 59);
                             lv_scale_set_angle_range(obj, 354);
@@ -3278,8 +3278,8 @@ void create_screen_page_clock_face() {
                             // cfp_dg_ticks
                             lv_obj_t *obj = lv_scale_create(parent_obj);
                             objects.cfp_dg_ticks = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                            lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                            lv_obj_set_pos(obj, 12, 12);
+                            lv_obj_set_size(obj, 456, 456);
                             lv_scale_set_mode(obj, LV_SCALE_MODE_ROUND_INNER);
                             lv_scale_set_range(obj, 0, 59);
                             lv_scale_set_angle_range(obj, 354);
@@ -3424,8 +3424,8 @@ void create_screen_page_clock_face() {
                             // cfp_br_arc
                             lv_obj_t *obj = lv_arc_create(parent_obj);
                             objects.cfp_br_arc = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                            lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                            lv_obj_set_pos(obj, 12, 12);
+                            lv_obj_set_size(obj, 456, 456);
                             lv_arc_set_range(obj, 0, 3600);
                             lv_arc_set_value(obj, 2520);
                             lv_arc_set_bg_start_angle(obj, 0);
@@ -3582,8 +3582,8 @@ void create_screen_page_clock_face() {
                             // cfp_rg_arc
                             lv_obj_t *obj = lv_arc_create(parent_obj);
                             objects.cfp_rg_arc = obj;
-                            lv_obj_set_pos(obj, LV_PCT(4), LV_PCT(4));
-                            lv_obj_set_size(obj, LV_PCT(93), LV_PCT(93));
+                            lv_obj_set_pos(obj, 12, 12);
+                            lv_obj_set_size(obj, 456, 456);
                             lv_arc_set_range(obj, 0, 3600);
                             lv_arc_set_value(obj, 2520);
                             lv_arc_set_bg_start_angle(obj, 0);

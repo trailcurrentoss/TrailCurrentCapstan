@@ -3234,8 +3234,8 @@ void init_style_face_scaled_MAIN_DEFAULT(lv_style_t *style) {
     lv_style_set_pad_bottom(style, 0);
     lv_style_set_pad_left(style, 0);
     lv_style_set_pad_right(style, 0);
-    lv_style_set_transform_scale_x(style, 154);
-    lv_style_set_transform_scale_y(style, 154);
+    lv_style_set_transform_scale_x(style, 151);
+    lv_style_set_transform_scale_y(style, 151);
     lv_style_set_transform_pivot_x(style, 0);
     lv_style_set_transform_pivot_y(style, 0);
 };
