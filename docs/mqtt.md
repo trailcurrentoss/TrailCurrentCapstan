@@ -252,6 +252,19 @@ the PWA's unified view (`SWITCHBACK_ID_BASE = 100`).
 { "state": 1 }
 ```
 
+**Rate.** Headwaters broadcasts current state continuously, by design, so a
+change made on Milepost or Overlook reaches every panel: every relay is
+republished on every Switchback status frame, about 25 times a second — some
+200 messages a second for 8 relays, nearly all unchanged. Capstan drops an
+exact repeat of the last payload on the same `local/lights/*` or
+`local/relays/*` topic in the MQTT event handler, before it is queued
+(`is_repeat()` in `capstan_mqtt.c`). A different state always passes, at
+once; the comparison is byte for byte, and the table is cleared on every
+connect. Measured on the 1.28": ~204 of ~335 messages a second skipped, and
+queue overflows fell from about 200 a minute to none — the overflow could
+discard the one change a user was waiting for. Other topics are untouched:
+their repeats are what keep a reading from going stale.
+
 **`local/picket/<0..7>/inputs`** — reed switches. A set bit means open/active.
 
 ```json

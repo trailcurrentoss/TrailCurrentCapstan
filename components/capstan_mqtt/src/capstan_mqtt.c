@@ -113,6 +113,72 @@ static char                     s_alarms_topic[64];
 static int64_t                  s_started_us;
 static uint32_t                 s_superseded;
 
+/*
+ * REPEATED STATES ARE DROPPED BEFORE THEY ARE QUEUED.
+ *
+ * Headwaters republishes every Switchback relay's state on every CAN status
+ * frame whether or not it changed -- 8 relays, about 25 times a second, some
+ * 200 messages a second of {"state":0}. Measured on the bench (2026-09-29)
+ * that overran the 24-deep queue a few hundred times a minute, and the
+ * message dropped could be the one change the user was waiting for, so a
+ * device took seconds to show it had switched.
+ *
+ * So for the light and relay status topics only, a message whose payload
+ * is identical to the last one seen on the same topic is discarded here, in
+ * the event handler, before it costs a queue slot or a JSON parse. A change
+ * always gets through at once. Those states never expire on this dial (see
+ * the lights timeout in capstan_model.c), so skipping repeats loses nothing;
+ * every other topic still relies on repeats to stay fresh and is untouched.
+ *
+ * INCOMING ALWAYS WINS: the comparison is exact -- the stored topic and
+ * payload, byte for byte -- so only a message identical to the last one on
+ * its topic is ever skipped. Anything longer than a slot holds is never
+ * filtered. A direct-mapped table keyed by a hash of the topic; a slot
+ * collision just evicts, and the evicted topic's next message then passes,
+ * which is always safe. In PSRAM: it is touched only from the MQTT task.
+ */
+#define REPEAT_SLOTS     64
+#define REPEAT_TOPIC_MAX 32
+#define REPEAT_DATA_MAX  48
+typedef struct {
+    uint8_t tlen, dlen;              /* 0 tlen: empty */
+    char    topic[REPEAT_TOPIC_MAX];
+    char    data[REPEAT_DATA_MAX];
+} repeat_slot_t;
+static repeat_slot_t *s_last_seen;   /* REPEAT_SLOTS, allocated in init */
+
+static uint32_t fnv1a(const char *p, int n)
+{
+    uint32_t h = 2166136261u;
+    for (int i = 0; i < n; i++) {
+        h = (h ^ (uint8_t)p[i]) * 16777619u;
+    }
+    return h;
+}
+
+static bool is_repeat(const char *topic, int tlen, const char *data, int dlen)
+{
+    if (!s_last_seen || tlen <= 13 ||
+        (strncmp(topic, "local/lights/", 13) != 0 &&
+         strncmp(topic, "local/relays/", 13) != 0)) {
+        return false;
+    }
+    if (tlen > REPEAT_TOPIC_MAX || dlen > REPEAT_DATA_MAX) {
+        return false;                    /* too long to hold -- never skip */
+    }
+    repeat_slot_t *e = &s_last_seen[fnv1a(topic, tlen) % REPEAT_SLOTS];
+    if (e->tlen == tlen && e->dlen == dlen &&
+        memcmp(e->topic, topic, tlen) == 0 &&
+        memcmp(e->data, data, dlen) == 0) {
+        return true;
+    }
+    e->tlen = (uint8_t)tlen;
+    e->dlen = (uint8_t)dlen;
+    memcpy(e->topic, topic, tlen);
+    memcpy(e->data, data, dlen);
+    return false;
+}
+
 const char *capstan_mqtt_state_name(capstan_mqtt_state_t s)
 {
     switch (s) {
@@ -208,6 +274,11 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
 
     switch ((esp_mqtt_event_id_t)event_id) {
     case MQTT_EVENT_CONNECTED:
+        /* Start the repeat filter afresh: after a reconnect the first
+         * state of every light and relay is processed, whatever it was. */
+        if (s_last_seen) {
+            memset(s_last_seen, 0, REPEAT_SLOTS * sizeof(*s_last_seen));
+        }
         s_last_error[0] = '\0';
         for (size_t i = 0; i < sizeof(SUBSCRIPTIONS) / sizeof(*SUBSCRIPTIONS); i++) {
             esp_mqtt_client_subscribe(s_client, SUBSCRIPTIONS[i], 0);
@@ -284,6 +355,9 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
                      e->data_len,  MSG_DATA_MAX - 1);
             break;
         }
+        if (is_repeat(e->topic, e->topic_len, e->data, e->data_len)) {
+            break;          /* same state as last time -- see s_last_seen */
+        }
         msg_t m;
         memcpy(m.topic, e->topic, e->topic_len);
         m.topic[e->topic_len] = '\0';
@@ -334,6 +408,12 @@ static void mqtt_event(void *handler_args, esp_event_base_t base,
 
 esp_err_t capstan_mqtt_init(void)
 {
+    if (!s_last_seen) {
+        s_last_seen = heap_caps_calloc(REPEAT_SLOTS, sizeof(*s_last_seen),
+                                       MALLOC_CAP_SPIRAM);
+        /* Without it the filter is simply off -- every message is queued,
+         * as before. */
+    }
     if (!s_queue) {
         /* PSRAM, not internal RAM. The two queues are ~31 KB, and internal
          * RAM is what TLS needs a ~16 KB contiguous block of to connect: on
