@@ -29,6 +29,7 @@
     "ui_font_rr20.c",
     "ui_font_rr24.c",
     "ui_font_rr30.c",
+    "ui_image_tc_logo.c",
     "vars.h"
   ]
 }

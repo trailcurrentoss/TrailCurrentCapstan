@@ -275,6 +275,159 @@ lv_style_t *get_style_guide_dot_MAIN_CHECKED();
 void add_style_guide_dot(lv_obj_t *obj);
 void remove_style_guide_dot(lv_obj_t *obj);
 
+// Style: FaceTicks
+lv_style_t *get_style_face_ticks_MAIN_DEFAULT();
+lv_style_t *get_style_face_ticks_ITEMS_DEFAULT();
+lv_style_t *get_style_face_ticks_INDICATOR_DEFAULT();
+void add_style_face_ticks(lv_obj_t *obj);
+void remove_style_face_ticks(lv_obj_t *obj);
+
+// Style: FaceSecTicks
+lv_style_t *get_style_face_sec_ticks_MAIN_DEFAULT();
+lv_style_t *get_style_face_sec_ticks_ITEMS_DEFAULT();
+lv_style_t *get_style_face_sec_ticks_INDICATOR_DEFAULT();
+void add_style_face_sec_ticks(lv_obj_t *obj);
+void remove_style_face_sec_ticks(lv_obj_t *obj);
+
+// Style: FaceSecOn
+lv_style_t *get_style_face_sec_on_MAIN_DEFAULT();
+lv_style_t *get_style_face_sec_on_ITEMS_DEFAULT();
+lv_style_t *get_style_face_sec_on_INDICATOR_DEFAULT();
+void add_style_face_sec_on(lv_obj_t *obj);
+void remove_style_face_sec_on(lv_obj_t *obj);
+
+// Style: FaceHandH
+lv_style_t *get_style_face_hand_h_MAIN_DEFAULT();
+void add_style_face_hand_h(lv_obj_t *obj);
+void remove_style_face_hand_h(lv_obj_t *obj);
+
+// Style: FaceHandM
+lv_style_t *get_style_face_hand_m_MAIN_DEFAULT();
+void add_style_face_hand_m(lv_obj_t *obj);
+void remove_style_face_hand_m(lv_obj_t *obj);
+
+// Style: FaceHandS
+lv_style_t *get_style_face_hand_s_MAIN_DEFAULT();
+void add_style_face_hand_s(lv_obj_t *obj);
+void remove_style_face_hand_s(lv_obj_t *obj);
+
+// Style: FaceCap
+lv_style_t *get_style_face_cap_MAIN_DEFAULT();
+void add_style_face_cap(lv_obj_t *obj);
+void remove_style_face_cap(lv_obj_t *obj);
+
+// Style: FaceCapIn
+lv_style_t *get_style_face_cap_in_MAIN_DEFAULT();
+void add_style_face_cap_in(lv_obj_t *obj);
+void remove_style_face_cap_in(lv_obj_t *obj);
+
+// Style: FaceMinArc
+lv_style_t *get_style_face_min_arc_MAIN_DEFAULT();
+lv_style_t *get_style_face_min_arc_INDICATOR_DEFAULT();
+lv_style_t *get_style_face_min_arc_KNOB_DEFAULT();
+void add_style_face_min_arc(lv_obj_t *obj);
+void remove_style_face_min_arc(lv_obj_t *obj);
+
+// Style: FaceRingArc
+lv_style_t *get_style_face_ring_arc_MAIN_DEFAULT();
+lv_style_t *get_style_face_ring_arc_INDICATOR_DEFAULT();
+lv_style_t *get_style_face_ring_arc_KNOB_DEFAULT();
+void add_style_face_ring_arc(lv_obj_t *obj);
+void remove_style_face_ring_arc(lv_obj_t *obj);
+
+// Style: FaceTextLg
+lv_style_t *get_style_face_text_lg_MAIN_DEFAULT();
+void add_style_face_text_lg(lv_obj_t *obj);
+void remove_style_face_text_lg(lv_obj_t *obj);
+
+// Style: FaceTextMd
+lv_style_t *get_style_face_text_md_MAIN_DEFAULT();
+void add_style_face_text_md(lv_obj_t *obj);
+void remove_style_face_text_md(lv_obj_t *obj);
+
+// Style: FaceTextMuted
+lv_style_t *get_style_face_text_muted_MAIN_DEFAULT();
+void add_style_face_text_muted(lv_obj_t *obj);
+void remove_style_face_text_muted(lv_obj_t *obj);
+
+// Style: FaceStat
+lv_style_t *get_style_face_stat_MAIN_DEFAULT();
+void add_style_face_stat(lv_obj_t *obj);
+void remove_style_face_stat(lv_obj_t *obj);
+
+// Style: FaceStatIcon
+lv_style_t *get_style_face_stat_icon_MAIN_DEFAULT();
+void add_style_face_stat_icon(lv_obj_t *obj);
+void remove_style_face_stat_icon(lv_obj_t *obj);
+
+// Style: FaceBrandName
+lv_style_t *get_style_face_brand_name_MAIN_DEFAULT();
+void add_style_face_brand_name(lv_obj_t *obj);
+void remove_style_face_brand_name(lv_obj_t *obj);
+
+// Style: FaceTime
+lv_style_t *get_style_face_time_MAIN_DEFAULT();
+void add_style_face_time(lv_obj_t *obj);
+void remove_style_face_time(lv_obj_t *obj);
+
+// Style: FaceTimeSm
+lv_style_t *get_style_face_time_sm_MAIN_DEFAULT();
+void add_style_face_time_sm(lv_obj_t *obj);
+void remove_style_face_time_sm(lv_obj_t *obj);
+
+// Style: FaceAmPm
+lv_style_t *get_style_face_am_pm_MAIN_DEFAULT();
+void add_style_face_am_pm(lv_obj_t *obj);
+void remove_style_face_am_pm(lv_obj_t *obj);
+
+// Style: FaceAmPmSm
+lv_style_t *get_style_face_am_pm_sm_MAIN_DEFAULT();
+void add_style_face_am_pm_sm(lv_obj_t *obj);
+void remove_style_face_am_pm_sm(lv_obj_t *obj);
+
+// Style: FaceRingTime
+lv_style_t *get_style_face_ring_time_MAIN_DEFAULT();
+void add_style_face_ring_time(lv_obj_t *obj);
+void remove_style_face_ring_time(lv_obj_t *obj);
+
+// Style: FaceMode
+lv_style_t *get_style_face_mode_MAIN_DEFAULT();
+lv_style_t *get_style_face_mode_MAIN_CHECKED();
+lv_style_t *get_style_face_mode_MAIN_PRESSED();
+lv_style_t *get_style_face_mode_MAIN_DISABLED();
+void add_style_face_mode(lv_obj_t *obj);
+void remove_style_face_mode(lv_obj_t *obj);
+
+// Style: FaceModeIcon
+lv_style_t *get_style_face_mode_icon_MAIN_DEFAULT();
+lv_style_t *get_style_face_mode_icon_MAIN_CHECKED();
+lv_style_t *get_style_face_mode_icon_MAIN_PRESSED();
+lv_style_t *get_style_face_mode_icon_MAIN_DISABLED();
+void add_style_face_mode_icon(lv_obj_t *obj);
+void remove_style_face_mode_icon(lv_obj_t *obj);
+
+// Style: FaceHourNum
+lv_style_t *get_style_face_hour_num_MAIN_DEFAULT();
+lv_style_t *get_style_face_hour_num_MAIN_CHECKED();
+void add_style_face_hour_num(lv_obj_t *obj);
+void remove_style_face_hour_num(lv_obj_t *obj);
+
+// Style: FacePreview
+lv_style_t *get_style_face_preview_MAIN_DEFAULT();
+void add_style_face_preview(lv_obj_t *obj);
+void remove_style_face_preview(lv_obj_t *obj);
+
+// Style: FaceScaled
+lv_style_t *get_style_face_scaled_MAIN_DEFAULT();
+void add_style_face_scaled(lv_obj_t *obj);
+void remove_style_face_scaled(lv_obj_t *obj);
+
+// Style: FacePickSub
+lv_style_t *get_style_face_pick_sub_MAIN_DEFAULT();
+lv_style_t *get_style_face_pick_sub_MAIN_CHECKED();
+void add_style_face_pick_sub(lv_obj_t *obj);
+void remove_style_face_pick_sub(lv_obj_t *obj);
+
 // Style: MenuName
 lv_style_t *get_style_menu_name_MAIN_DEFAULT();
 void add_style_menu_name(lv_obj_t *obj);

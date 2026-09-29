@@ -329,31 +329,29 @@ void capstan_model_set_gps_time(int year, int month, int day,
         return;
     }
 
-    struct tm t = {
-        .tm_year = year - 1900, .tm_mon = month - 1, .tm_mday = day,
-        .tm_hour = hour, .tm_min = minute, .tm_sec = second,
-        .tm_isdst = 0,
-    };
-
     /*
-     * The fix is UTC, but mktime() reads its argument as LOCAL time under
-     * whatever TZ is currently installed. Calling it directly would fold
-     * the local offset into the epoch -- the clock would be wrong by the
-     * offset, and localtime_r() would then render UTC hours no matter
-     * which zone the user is in, which looks exactly like "the timezone
-     * setting does nothing". Pin TZ to UTC across the conversion only.
+     * UTC fields to an epoch by arithmetic, NOT mktime().
+     *
+     * mktime() reads its argument as local time under the installed TZ, so
+     * this used to pin TZ to "UTC0" around the call and put it back. That
+     * ran on the service task about once a second, while the LVGL task
+     * formats the clock with localtime_r() -- which reads the same TZ. A
+     * redraw inside that window rendered UTC, so the hands jumped by the
+     * zone offset and came back a second later (seen on the 1.28",
+     * 2026-09-29). This touches no global state at all.
+     *
+     * Howard Hinnant's days_from_civil: days since 1970-01-01 for a
+     * proleptic Gregorian date.
      */
-    const char *saved = getenv("TZ");
-    char saved_buf[48] = { 0 };
-    if (saved) {
-        strncpy(saved_buf, saved, sizeof(saved_buf) - 1);
-    }
-    setenv("TZ", "UTC0", 1);
-    tzset();
-    const time_t epoch = mktime(&t);
-    if (saved_buf[0]) setenv("TZ", saved_buf, 1);
-    else              unsetenv("TZ");
-    tzset();
+    const int y  = year - (month <= 2);
+    const int era = (y >= 0 ? y : y - 399) / 400;
+    const unsigned yoe = (unsigned)(y - era * 400);
+    const unsigned doy = (unsigned)((153 * (month + (month > 2 ? -3 : 9)) + 2) / 5
+                                    + day - 1);
+    const unsigned doe = yoe * 365 + yoe / 4 - yoe / 100 + doy;
+    const long long days = (long long)era * 146097 + (long long)doe - 719468;
+    const time_t epoch = (time_t)(days * 86400LL + hour * 3600LL +
+                                  minute * 60LL + second);
 
     if (epoch <= 0) {
         return;

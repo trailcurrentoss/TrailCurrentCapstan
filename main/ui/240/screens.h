@@ -25,7 +25,8 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_SETUP = 12,
     SCREEN_ID_PAGE_LOCALE = 13,
     SCREEN_ID_PAGE_GUIDE = 14,
-    _SCREEN_ID_LAST = 14
+    SCREEN_ID_PAGE_CLOCK_FACE = 15,
+    _SCREEN_ID_LAST = 15
 };
 
 typedef struct _objects_t {
@@ -43,12 +44,73 @@ typedef struct _objects_t {
     lv_obj_t *page_setup;
     lv_obj_t *page_locale;
     lv_obj_t *page_guide;
-    lv_obj_t *idle_ring;
-    lv_obj_t *idle_date;
-    lv_obj_t *idle_hand_hour;
-    lv_obj_t *idle_hand_minute;
-    lv_obj_t *idle_hand_second;
-    lv_obj_t *idle_cap;
+    lv_obj_t *page_clock_face;
+    lv_obj_t *idle_cl;
+    lv_obj_t *idle_cl_ticks;
+    lv_obj_t *idle_cl_day;
+    lv_obj_t *idle_cl_date;
+    lv_obj_t *idle_cl_inside;
+    lv_obj_t *idle_cl_moderow;
+    lv_obj_t *idle_cl_mode;
+    lv_obj_t *idle_cl_mode_icon;
+    lv_obj_t *idle_cl_mode_text;
+    lv_obj_t *idle_cl_stats;
+    lv_obj_t *idle_cl_batt;
+    lv_obj_t *idle_cl_batt_icon;
+    lv_obj_t *idle_cl_batt_value;
+    lv_obj_t *idle_cl_water;
+    lv_obj_t *idle_cl_water_icon;
+    lv_obj_t *idle_cl_water_value;
+    lv_obj_t *idle_cl_hand_h;
+    lv_obj_t *idle_cl_hand_m;
+    lv_obj_t *idle_cl_hand_s;
+    lv_obj_t *idle_cl_cap;
+    lv_obj_t *idle_cl_cap_in;
+    lv_obj_t *idle_dg;
+    lv_obj_t *idle_dg_ticks;
+    lv_obj_t *idle_dg_date;
+    lv_obj_t *idle_dg_timerow;
+    lv_obj_t *idle_dg_time;
+    lv_obj_t *idle_dg_ampm;
+    lv_obj_t *idle_dg_inside;
+    lv_obj_t *idle_dg_moderow;
+    lv_obj_t *idle_dg_mode;
+    lv_obj_t *idle_dg_mode_icon;
+    lv_obj_t *idle_dg_mode_text;
+    lv_obj_t *idle_br;
+    lv_obj_t *idle_br_arc;
+    lv_obj_t *idle_br_logo;
+    lv_obj_t *idle_br_name;
+    lv_obj_t *idle_br_timerow;
+    lv_obj_t *idle_br_time;
+    lv_obj_t *idle_br_ampm;
+    lv_obj_t *idle_br_date;
+    lv_obj_t *idle_br_bottom;
+    lv_obj_t *idle_br_inside;
+    lv_obj_t *idle_br_mode;
+    lv_obj_t *idle_br_mode_icon;
+    lv_obj_t *idle_br_mode_text;
+    lv_obj_t *idle_rg;
+    lv_obj_t *idle_rg_arc;
+    lv_obj_t *idle_rg_h1;
+    lv_obj_t *idle_rg_h2;
+    lv_obj_t *idle_rg_h3;
+    lv_obj_t *idle_rg_h4;
+    lv_obj_t *idle_rg_h5;
+    lv_obj_t *idle_rg_h6;
+    lv_obj_t *idle_rg_h7;
+    lv_obj_t *idle_rg_h8;
+    lv_obj_t *idle_rg_h9;
+    lv_obj_t *idle_rg_h10;
+    lv_obj_t *idle_rg_h11;
+    lv_obj_t *idle_rg_h12;
+    lv_obj_t *idle_rg_col;
+    lv_obj_t *idle_rg_eyebrow;
+    lv_obj_t *idle_rg_temp;
+    lv_obj_t *idle_rg_time;
+    lv_obj_t *idle_rg_mode;
+    lv_obj_t *idle_rg_mode_icon;
+    lv_obj_t *idle_rg_mode_text;
     lv_obj_t *menu_hero;
     lv_obj_t *menu_hero_icon;
     lv_obj_t *menu_prev;
@@ -186,6 +248,7 @@ typedef struct _objects_t {
     lv_obj_t *settings_dot5;
     lv_obj_t *settings_dot6;
     lv_obj_t *settings_dot7;
+    lv_obj_t *settings_dot8;
     lv_obj_t *alert_bg;
     lv_obj_t *alert_icon;
     lv_obj_t *alert_title;
@@ -223,9 +286,87 @@ typedef struct _objects_t {
     lv_obj_t *guide_dot3;
     lv_obj_t *guide_dot4;
     lv_obj_t *guide_dot5;
+    lv_obj_t *cfp_window;
+    lv_obj_t *cfp_cl;
+    lv_obj_t *cfp_cl_ticks;
+    lv_obj_t *cfp_cl_day;
+    lv_obj_t *cfp_cl_date;
+    lv_obj_t *cfp_cl_inside;
+    lv_obj_t *cfp_cl_moderow;
+    lv_obj_t *cfp_cl_mode;
+    lv_obj_t *cfp_cl_mode_icon;
+    lv_obj_t *cfp_cl_mode_text;
+    lv_obj_t *cfp_cl_stats;
+    lv_obj_t *cfp_cl_batt;
+    lv_obj_t *cfp_cl_batt_icon;
+    lv_obj_t *cfp_cl_batt_value;
+    lv_obj_t *cfp_cl_water;
+    lv_obj_t *cfp_cl_water_icon;
+    lv_obj_t *cfp_cl_water_value;
+    lv_obj_t *cfp_cl_hand_h;
+    lv_obj_t *cfp_cl_hand_m;
+    lv_obj_t *cfp_cl_hand_s;
+    lv_obj_t *cfp_cl_cap;
+    lv_obj_t *cfp_cl_cap_in;
+    lv_obj_t *cfp_dg;
+    lv_obj_t *cfp_dg_ticks;
+    lv_obj_t *cfp_dg_date;
+    lv_obj_t *cfp_dg_timerow;
+    lv_obj_t *cfp_dg_time;
+    lv_obj_t *cfp_dg_ampm;
+    lv_obj_t *cfp_dg_inside;
+    lv_obj_t *cfp_dg_moderow;
+    lv_obj_t *cfp_dg_mode;
+    lv_obj_t *cfp_dg_mode_icon;
+    lv_obj_t *cfp_dg_mode_text;
+    lv_obj_t *cfp_br;
+    lv_obj_t *cfp_br_arc;
+    lv_obj_t *cfp_br_logo;
+    lv_obj_t *cfp_br_name;
+    lv_obj_t *cfp_br_timerow;
+    lv_obj_t *cfp_br_time;
+    lv_obj_t *cfp_br_ampm;
+    lv_obj_t *cfp_br_date;
+    lv_obj_t *cfp_br_bottom;
+    lv_obj_t *cfp_br_inside;
+    lv_obj_t *cfp_br_mode;
+    lv_obj_t *cfp_br_mode_icon;
+    lv_obj_t *cfp_br_mode_text;
+    lv_obj_t *cfp_rg;
+    lv_obj_t *cfp_rg_arc;
+    lv_obj_t *cfp_rg_h1;
+    lv_obj_t *cfp_rg_h2;
+    lv_obj_t *cfp_rg_h3;
+    lv_obj_t *cfp_rg_h4;
+    lv_obj_t *cfp_rg_h5;
+    lv_obj_t *cfp_rg_h6;
+    lv_obj_t *cfp_rg_h7;
+    lv_obj_t *cfp_rg_h8;
+    lv_obj_t *cfp_rg_h9;
+    lv_obj_t *cfp_rg_h10;
+    lv_obj_t *cfp_rg_h11;
+    lv_obj_t *cfp_rg_h12;
+    lv_obj_t *cfp_rg_col;
+    lv_obj_t *cfp_rg_eyebrow;
+    lv_obj_t *cfp_rg_temp;
+    lv_obj_t *cfp_rg_time;
+    lv_obj_t *cfp_rg_mode;
+    lv_obj_t *cfp_rg_mode_icon;
+    lv_obj_t *cfp_rg_mode_text;
+    lv_obj_t *cfp_name;
+    lv_obj_t *cfp_sub;
+    lv_obj_t *cfp_dots;
+    lv_obj_t *cfp_dot0;
+    lv_obj_t *cfp_dot1;
+    lv_obj_t *cfp_dot2;
+    lv_obj_t *cfp_dot3;
 } objects_t;
 
 extern objects_t objects;
+
+typedef struct {
+    lv_scale_section_t *scale_section;
+} screen_page_idle_state_t;
 
 typedef struct {
     lv_scale_section_t *scale_section;
@@ -233,7 +374,13 @@ typedef struct {
     lv_scale_section_t *scale_section2;
 } screen_page_climate_state_t;
 
+typedef struct {
+    lv_scale_section_t *scale_section;
+} screen_page_clock_face_state_t;
+
+extern screen_page_idle_state_t screen_page_idle_state;
 extern screen_page_climate_state_t screen_page_climate_state;
+extern screen_page_clock_face_state_t screen_page_clock_face_state;
 
 void create_screen_page_idle();
 void tick_screen_page_idle();
@@ -276,6 +423,9 @@ void tick_screen_page_locale();
 
 void create_screen_page_guide();
 void tick_screen_page_guide();
+
+void create_screen_page_clock_face();
+void tick_screen_page_clock_face();
 
 void tick_screen_by_id(enum ScreensEnum screenId);
 void tick_screen(int screen_index);

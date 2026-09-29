@@ -416,6 +416,68 @@ uses to paint the left and right halves (0 = left dark, at the bottom):
 | 6 | — | | 11 o'clock | left |
 | 7 | — | | 1 o'clock | right |
 
+## Memory
+
+All three boards have the same memory: **16 MB flash**, **8 MB octal PSRAM**,
+and the ESP32-S3's own **~512 KB internal SRAM**. Flash is not the constraint;
+internal RAM is. Measured 2026-09-29, firmware with the four clock faces,
+Getting Started, Locale and the Settings carousel (15 screens).
+
+### Flash
+
+`partitions.csv` gives each of two OTA slots 4 MB.
+
+| Board | App image | Slot free |
+|---|---|---|
+| MaTouch 2.1" (480) | 1.94 MB | 53% |
+| CrowPanel 1.46" (360) | 1.70 MB | 58% |
+| CrowPanel 1.28" (240) | 1.54 MB | 62% |
+
+The difference is fonts: each panel carries its own sizes, and the 480's are
+the largest. A new font size costs roughly 10–50 KB on one board.
+
+### Internal RAM
+
+The `capstan: service alive` log line (every ~11 s) reports internal RAM
+free and its largest free block. Free RAM falls for the first minute or
+two after boot -- Wi-Fi, MQTT subscriptions and their retained messages,
+the first frames of each screen -- then holds within a few hundred bytes.
+Six minutes on each board:
+
+| Board | 12 s after boot | Settled (~100 s on) | Largest free block |
+|---|---|---|---|
+| MaTouch 2.1" | 108.7 KB | ~36.3 KB | 31.7 KB |
+| CrowPanel 1.46" | 41.3 KB | ~20.2 KB | 18 KB |
+| CrowPanel 1.28" | 40.9 KB | ~19.7 KB | 18 KB |
+
+Not a leak: flat from ~100 s to 6 min on all three. The CrowPanels have less
+because their SPI panels draw through two 16 KB DMA buffers that must be in
+internal RAM (see the note in `board_display.c`); the MaTouch's RGB
+framebuffers live in PSRAM. `CONFIG_SPIRAM_MALLOC_RESERVE_INTERNAL` (32 KB)
+is held back separately for DMA and internal-only allocations and is not in
+these figures.
+
+**Why the UI costs internal RAM.** LVGL allocates through the normal heap
+(`CONFIG_LV_USE_CLIB_MALLOC`), and `CONFIG_SPIRAM_MALLOC_ALWAYSINTERNAL=16384`
+sends every allocation under 16 KB to internal RAM first, spilling to PSRAM
+only when internal RAM is short. Every widget is far below 16 KB, so screens
+land in internal RAM: EEZ builds all of them at boot (`generated UI
+initialised -- 77 KB heap used`), and the ~200 widgets of the clock faces
+and their preview took the CrowPanels' settled figure from ~34 KB to ~20 KB.
+
+**What to watch.** The largest free block, not the total. mbedTLS
+(`CONFIG_MBEDTLS_EXTERNAL_MEM_ALLOC`) and Wi-Fi / lwIP buffers
+(`CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP`) already use PSRAM, so an MQTT
+reconnect does not need a large internal block; task stacks and DMA do. If
+a CrowPanel starts failing to create tasks or dropping its connection
+after more screens are added, this is the first place to look.
+
+**If it gets tight:** route LVGL's allocations to PSRAM explicitly (a custom
+LVGL allocator over `heap_caps_malloc(..., MALLOC_CAP_SPIRAM)`), leaving
+internal RAM to Wi-Fi, DMA and stacks. That is a build-config change -- each
+board's `sdkconfig` would have to be regenerated -- so it is not made until
+it is needed.
+
 ## What is verified on hardware
 
 All three boards are validated: display, colour, orientation, touch,

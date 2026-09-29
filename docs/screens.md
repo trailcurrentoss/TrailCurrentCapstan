@@ -53,24 +53,32 @@ Every screen is ring-only. "Back" is where a long press goes.
 
 ## Idle
 
-Analog clock. `lv_scale` in `ROUND_INNER` mode, 60 ticks with 12 major, plus
-hour, minute and second needles drawn as lines. The second hand steps once
-per second on a 1 s `lv_timer`.
+Four clock faces from the newer prototype (`DOCS/GettingStarted/`), one
+showing — **Settings > Clock Face** picks it, saved to NVS:
 
-The date sits **high on the face** so the hands do not cover it.
+| Face | What it shows |
+|---|---|
+| Classic | 60 ticks, hour / minute / second hands (the second hand and cap in brand green), day and date, "Inside 67°", the climate line, battery and fresh-water % |
+| Digital | a 60-tick seconds ring whose elapsed ticks are a green Scale **section**, the date, a 150 px time with AM/PM, inside temperature and the climate line |
+| TrailCurrent | the TrailCurrent logo (Marketing's `trailcurrent-icon.svg`, embedded as a bitmap), a minute arc from 12 o'clock with a dot at its end (the arc's knob), the time, date, inside temperature and the climate line |
+| Climate Ring | the twelve hour numerals (the current one larger), a minute arc, and the inside temperature large in the middle with the time and the climate line |
 
-The EEZ Studio export draws the needles as fixed two-point `lv_line`s and the
-date as literal text — a static export cannot move a needle — so the face is
-driven from `main/ui_clock.c`, which rewrites all three point arrays and the
-date label once a second while the idle screen is showing, and once more on
-entry so returning to it never shows a stale position.
+The climate line is the Climate screen's state — "Heating to 72°",
+"Cooling to 72°", "Holding 72°", "Climate off" — in its readable colour. All
+four faces are authored on the Idle page (Classic visible) and `main/ui_clock.c`
+shows the chosen one and repaints it once a second. Time is 12-hour with
+AM/PM, as designed; a 12/24 h row can join Locale later. Without a time fix
+every field reads `--`.
 
-There is no RTC and no SNTP client. The clock is set from `local/gps/time`
-(UTC calendar fields from Milepost's fix) and rendered in the zone from the
-retained `os/timezone/current`; both are parsed in `capstan_mqtt` and applied
-in `capstan_model`, which owns the system clock and the IANA → POSIX `TZ`
-translation. Until a fix arrives the hands park at 12:00 and the date reads
-`--`, for the same reason every other unknown reading does.
+The picker is its own screen: a 60 % live preview of the face (the same face
+built again and drawn through `transform_scale`, the design's own note), its
+name, "Current face" or "Press to set", and four dots. Turn to preview (it
+wraps), press to set, hold to leave.
+
+Departures from that design: no openings count on Classic (Doors is removed);
+the TrailCurrent face's time uses the 120 px numeral face rather than a new
+112 px one; weights other than the design's medium are the nearest existing
+regular sizes.
 
 Shown after the Clock Timeout set in Settings (`CONFIG_CAPSTAN_IDLE_TIMEOUT_S`,
 30 s, is the default; "Never" turns it off). Any input wakes it to the menu.
@@ -367,6 +375,7 @@ a press acts on the centred item:
 | MQTT | Connected / Offline / Not set | nothing -- status only |
 | Theme | Light / Dark | toggles; saved to NVS, restored at boot |
 | Locale | e.g. `°F · in` | opens the Locale screen |
+| Clock Face | Classic / Digital / TrailCurrent / Climate Ring | opens the face picker |
 | Getting Started | Shown / Hidden | toggles whether it appears in the app menu; saved to NVS, so a factory reset shows it again |
 | Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
 | Clock Timeout | 15 s / 30 s / 1 / 2 / 5 min / Never | steps to the next |
@@ -506,7 +515,7 @@ match the design.
 |---|---|---|
 | Diesel Heater face, heating/cooling faces | one **Climate** screen | Capstan is one climate control; how heat or cooling is produced is handled outside it |
 | Doors face | removed for now | nothing feeds it; open inputs already raise the alert overlay |
-| Clock face | not yet matched | an updated multi-face clock design exists and will replace it |
+| one analog clock face | four faces, chosen in Settings | the newer prototype's clock faces (see [Idle](#idle)) |
 | Air Quality Index, 0–300 | eCO2 in ppm, 400–2000, status from Borealis's flags | no AQI exists on the bus; see [Air quality](#air-quality) |
 | PM2.5 column | VOC | no particulate sensor |
 | per-device loads on Energy | total load (solar − battery) | nothing measures per-device loads |

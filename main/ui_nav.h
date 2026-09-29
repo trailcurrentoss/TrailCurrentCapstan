@@ -47,6 +47,7 @@ typedef enum {
     CAPSTAN_SCREEN_SETUP,      /* soft-AP provisioning instructions */
     CAPSTAN_SCREEN_LOCALE,     /* units, opened from Settings */
     CAPSTAN_SCREEN_GUIDE,      /* Getting Started */
+    CAPSTAN_SCREEN_CLOCKFACE,  /* Settings > Clock Face picker */
     CAPSTAN_SCREEN_COUNT
 } capstan_screen_t;
 

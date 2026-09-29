@@ -118,6 +118,10 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
      * and only leaves from the first step or Ready. */
     [CAPSTAN_SCREEN_GUIDE]        = { CAPSTAN_INPUT_RING_ONLY,
                                       CAPSTAN_SCREEN_MENU,     "guide" },
+
+    /* Clock face picker: rotate previews, press sets, hold leaves. */
+    [CAPSTAN_SCREEN_CLOCKFACE]    = { CAPSTAN_INPUT_RING_ONLY,
+                                      CAPSTAN_SCREEN_SETTINGS, "clockface" },
 };
 
 static capstan_screen_t s_current = CAPSTAN_SCREEN_IDLE;
@@ -168,6 +172,7 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_SETUP]        = SCREEN_ID_PAGE_SETUP,
     [CAPSTAN_SCREEN_LOCALE]       = SCREEN_ID_PAGE_LOCALE,
     [CAPSTAN_SCREEN_GUIDE]        = SCREEN_ID_PAGE_GUIDE,
+    [CAPSTAN_SCREEN_CLOCKFACE]    = SCREEN_ID_PAGE_CLOCK_FACE,
 };
 
 _Static_assert((int)CAPSTAN_SCREEN_COUNT == (int)_SCREEN_ID_LAST,
@@ -260,6 +265,9 @@ void ui_nav_goto(capstan_screen_t screen)
     }
     if (screen == CAPSTAN_SCREEN_GUIDE) {
         ui_guide_enter();   /* always from step 1 */
+    }
+    if (screen == CAPSTAN_SCREEN_CLOCKFACE) {
+        ui_clock_pick_enter();   /* opens on the current face */
     }
 #endif
 
@@ -638,6 +646,12 @@ void ui_nav_rotate(int diff)
         return;
     }
 
+    /* The clock face picker previews faces (ui_clock.c). */
+    if (s_current == CAPSTAN_SCREEN_CLOCKFACE) {
+        ui_clock_pick_rotate(diff);
+        return;
+    }
+
     const int n = selectable_count(s_current);
     if (n <= 0) {
         return;     /* nothing to move; the ring is simply inert here */
@@ -751,6 +765,9 @@ void ui_nav_press(void)
             return;
         case UI_SETTINGS_THEME:   ui_settings_theme_pressed();   break;
         case UI_SETTINGS_GUIDE:   ui_settings_guide_pressed();   break;
+        case UI_SETTINGS_FACE:
+            ui_nav_goto(CAPSTAN_SCREEN_CLOCKFACE);
+            return;
         case UI_SETTINGS_LOCALE:
             s_sel[CAPSTAN_SCREEN_LOCALE] = 0;
             ui_nav_goto(CAPSTAN_SCREEN_LOCALE);
@@ -770,6 +787,11 @@ void ui_nav_press(void)
 
     case CAPSTAN_SCREEN_GUIDE:
         ui_guide_press();
+        return;
+
+    case CAPSTAN_SCREEN_CLOCKFACE:
+        ui_clock_pick_press();          /* saves the face */
+        ui_nav_goto(CAPSTAN_SCREEN_SETTINGS);
         return;
 
     case CAPSTAN_SCREEN_LOCALE:

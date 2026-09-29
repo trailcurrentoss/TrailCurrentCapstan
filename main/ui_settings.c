@@ -15,6 +15,7 @@
 #include "capstan_config.h"
 #include "capstan_mqtt.h"
 #include "capstan_wifi.h"
+#include "ui_clock.h"
 #include "ui_nav.h"
 #include "ui_settings.h"
 
@@ -280,6 +281,7 @@ const char *ui_settings_theme_text(void)
 #define G_GUIDE   "\xEF\x81\x9A"   /* 0xF05A circle-info          */
 #define G_BELL    "\xEF\x83\xB3"   /* 0xF0F3 bell                 */
 #define G_CLOCK   "\xEF\x80\x97"   /* 0xF017 clock                */
+#define G_BED     "\xEF\x88\xB6"   /* 0xF236 bed (idle)           */
 #define G_ALERT   "\xEF\x81\xB1"   /* 0xF071 triangle-exclamation */
 
 /* SETTINGS_ITEMS in GUI/tmp/screens_layout.py, index for index; the press
@@ -292,9 +294,10 @@ static const struct {
     { G_SERVER, "MQTT"          },
     { G_THEME,  "Theme"         },
     { G_LOCALE, "Locale"        },
+    { G_CLOCK,  "Clock Face"    },
     { G_GUIDE,  "Getting Started" },
     { G_BELL,   "Alarm Snooze"  },
-    { G_CLOCK,  "Clock Timeout" },
+    { G_BED,    "Clock Timeout" },
     { G_ALERT,  "Factory Reset" },
 };
 
@@ -382,6 +385,9 @@ void ui_settings_refresh(void)
         ui_settings_locale_text(buf, sizeof(buf));
         value = buf;
         break;
+    case UI_SETTINGS_FACE:
+        value = ui_clock_face_name(ui_clock_face());
+        break;
     case UI_SETTINGS_GUIDE: {
         capstan_display_cfg_t d;
         capstan_config_get_display(&d);
@@ -423,6 +429,7 @@ void ui_settings_refresh(void)
         objects.settings_dot0, objects.settings_dot1, objects.settings_dot2,
         objects.settings_dot3, objects.settings_dot4, objects.settings_dot5,
         objects.settings_dot6, objects.settings_dot7,
+        objects.settings_dot8,
     };
     for (int i = 0; i < UI_SETTINGS_ITEM_COUNT; i++) {
         ui_lv_set_state_in(dots[i], LV_STATE_CHECKED,

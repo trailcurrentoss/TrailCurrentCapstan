@@ -111,6 +111,9 @@ typedef struct {
     /** Getting Started taken out of the app menu (Settings > Getting
      *  Started). Off by default, so a factory reset brings it back. */
     bool hide_guide;
+    /** Idle clock face (Settings > Clock Face): 0 Classic, 1 Digital,
+     *  2 TrailCurrent, 3 Climate Ring. */
+    uint8_t clock_face;
     bool dark_theme;
     uint8_t backlight_percent;
     uint16_t idle_timeout_s;

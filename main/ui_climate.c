@@ -103,6 +103,33 @@ void ui_climate_section(ui_climate_section_t sec, int32_t *min, int32_t *max)
     *max = s_sec_max[sec];
 }
 
+void ui_climate_format_temp(char *out, size_t len, float f)
+{
+    fmt_temp(out, len, f);
+}
+
+ui_climate_line_t ui_climate_idle_line(char *out, size_t len)
+{
+    if (s_mode == UI_CLIMATE_OFF) {
+        snprintf(out, len, "Climate off");
+        return UI_CLIMATE_LINE_OFF;
+    }
+    const capstan_value_t in = capstan_model_temp_f();
+    const act_t act = activity(in.valid, in.value);
+    char t[8];
+    fmt_temp(t, sizeof(t), s_target_f);
+    if (act == ACT_HEAT) {
+        snprintf(out, len, "Heating to %s\xC2\xB0", t);
+        return UI_CLIMATE_LINE_HEAT;
+    }
+    if (act == ACT_COOL) {
+        snprintf(out, len, "Cooling to %s\xC2\xB0", t);
+        return UI_CLIMATE_LINE_COOL;
+    }
+    snprintf(out, len, "Holding %s\xC2\xB0", t);
+    return UI_CLIMATE_LINE_HOLD;
+}
+
 void ui_climate_summary(char *out, size_t len)
 {
     if (s_mode == UI_CLIMATE_OFF) {

@@ -21,6 +21,7 @@
 
 #include "vars.h"
 #include "ui_climate.h"
+#include "ui_clock.h"
 
 /*
  * Climate: the three active-range sections' bounds (see GLOBAL_VARIABLES in
@@ -43,6 +44,12 @@ CLIMATE_SECTION_VAR(climate_cool_min, UI_CLIMATE_SEC_COOL, lo)
 CLIMATE_SECTION_VAR(climate_cool_max, UI_CLIMATE_SEC_COOL, hi)
 CLIMATE_SECTION_VAR(climate_hold_min, UI_CLIMATE_SEC_HOLD, lo)
 CLIMATE_SECTION_VAR(climate_hold_max, UI_CLIMATE_SEC_HOLD, hi)
+
+/* The Digital clock face's elapsed-seconds section: 0..now (ui_clock.c). */
+int32_t get_var_clock_sec_min(void) { return 0; }
+void set_var_clock_sec_min(int32_t value) { (void)value; }
+int32_t get_var_clock_sec_max(void) { return ui_clock_second(); }
+void set_var_clock_sec_max(int32_t value) { (void)value; }
 
 #else
 typedef int capstan_vars_placeholder;

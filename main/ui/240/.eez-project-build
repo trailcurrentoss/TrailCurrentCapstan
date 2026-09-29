@@ -25,6 +25,7 @@
     "ui_font_rr11.c",
     "ui_font_rr13.c",
     "ui_font_rr15.c",
+    "ui_image_tc_logo.c",
     "vars.h"
   ]
 }

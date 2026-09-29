@@ -38,6 +38,22 @@ ui_climate_mode_t ui_climate_mode(void);
 /** Paint the Climate screen. LVGL lock held. Cheap; called per refresh. */
 void ui_climate_refresh(void);
 
+/* What the climate is doing, for the clock faces' mode line. */
+typedef enum {
+    UI_CLIMATE_LINE_HOLD = 0,   /* "Holding 72°"    -- green   */
+    UI_CLIMATE_LINE_HEAT,       /* "Heating to 72°" -- danger  */
+    UI_CLIMATE_LINE_COOL,       /* "Cooling to 72°" -- info    */
+    UI_CLIMATE_LINE_OFF,        /* "Climate off"    -- muted   */
+} ui_climate_line_t;
+
+/** The clock faces' climate line (the prototype's idleLine), and which of
+ *  the four it is, for its colour and icon. */
+ui_climate_line_t ui_climate_idle_line(char *out, size_t len);
+
+/** A temperature held in Fahrenheit, in the Locale's unit, digits only:
+ *  "72" or "22.5". */
+void ui_climate_format_temp(char *out, size_t len, float f);
+
 /** The menu carousel's summary line, e.g. "Heating · 72°" or "Off". */
 void ui_climate_summary(char *out, size_t len);
 
