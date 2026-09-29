@@ -14,6 +14,7 @@ extern const lv_font_t ui_font_rm26;
 extern const lv_font_t ui_font_rm20;
 extern const lv_font_t ui_font_rm15;
 extern const lv_font_t ui_font_rr22;
+extern const lv_font_t ui_font_rr18;
 extern const lv_font_t ui_font_rr15;
 extern const lv_font_t ui_font_rr14;
 extern const lv_font_t ui_font_rr13;

@@ -78,12 +78,16 @@ typedef struct _objects_t {
     lv_obj_t *cmode_title;
     lv_obj_t *cmode_list;
     lv_obj_t *cmode_item0;
+    lv_obj_t *cmode_item0_icon;
     lv_obj_t *cmode_item0_title;
     lv_obj_t *cmode_item1;
+    lv_obj_t *cmode_item1_icon;
     lv_obj_t *cmode_item1_title;
     lv_obj_t *cmode_item2;
+    lv_obj_t *cmode_item2_icon;
     lv_obj_t *cmode_item2_title;
     lv_obj_t *cmode_item3;
+    lv_obj_t *cmode_item3_icon;
     lv_obj_t *cmode_item3_title;
     lv_obj_t *climate_mode_back;
     lv_obj_t *climate_mode_back_icon;

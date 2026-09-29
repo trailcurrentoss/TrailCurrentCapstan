@@ -67,15 +67,16 @@ have no named sibling widget to inherit a meaning from.
 
 | Concept | Glyph | Codepoint |
 |---|---|---|
-| Heating call, heater | `fire` | `U+F06D` |
-| Cooling call | `snowflake` | `U+F2DC` |
+| Heating call, heater; Mode: Heat | `fire` | `U+F06D` |
+| Cooling call; Mode: Cool | `snowflake` | `U+F2DC` |
+| Mode: Auto | `arrows-rotate` | `U+F021` |
 | Levelling | `gauge-high` | `U+F3FD` |
 | Doors | `lock` | `U+F023` |
 | Alert | `triangle-exclamation` | `U+F071` |
 | Confirm / OK | `check` | `U+F00C` |
 | Cancel | `xmark` | `U+F00D` |
 | Back | `chevron-left` | `U+F053` |
-| Scene: all off | `power-off` | `U+F011` |
+| Scene: all off; Mode: Off | `power-off` | `U+F011` |
 | Password reveal | `eye` | `U+F06E` |
 | Idle clock, alarm snooze | `clock` | `U+F017` |
 | Alarm (default icon) | `bell` | `U+F0F3` |

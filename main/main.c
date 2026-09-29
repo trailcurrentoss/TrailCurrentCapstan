@@ -32,6 +32,7 @@
 #include "ui_nav.h"
 #include "ui_clock.h"
 #include "ui_data.h"
+#include "ui_settings.h"
 #include "ui_setup.h"
 
 /*
@@ -703,6 +704,7 @@ void app_main(void)
         const size_t heap_before = esp_get_free_heap_size();
 
         ui_init();
+        ui_settings_apply_theme();   /* the saved light/dark choice */
         lv_timer_create(ui_tick_timer_cb, 20, NULL);
         ui_nav_init();          /* owns screen transitions AND touch policy */
         ui_data_init();         /* model -> widgets, and mqtt connect-on-IP */

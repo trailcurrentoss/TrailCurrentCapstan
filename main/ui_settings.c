@@ -152,8 +152,59 @@ void ui_settings_snooze_pressed(void)
     ESP_LOGI(TAG, "alarm snooze -> %u min", (unsigned)next);
 }
 
+/*
+ * Theme. EEZ's change_color_theme() rewrites the shared styles' colours
+ * from the palette's light or dark column; every colour on every screen is
+ * a palette token, so that is the whole theme. LVGL's default theme, which
+ * EEZ initialises dark whatever the palette says, is switched with it: it
+ * still colours the few parts no Capstan style overrides, and a dark
+ * scrollbar or focus ring left on a light screen would be a contrast bug of
+ * our own making. report_style_change() then makes every object re-read
+ * its styles.
+ */
+void ui_settings_apply_theme(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+
+    change_color_theme(d.dark_theme ? THEME_ID_DARK : THEME_ID_DEFAULT);
+
+    lv_display_t *disp = lv_display_get_default();
+    lv_theme_t *th = lv_theme_default_init(disp,
+                                           lv_palette_main(LV_PALETTE_BLUE),
+                                           lv_palette_main(LV_PALETTE_RED),
+                                           d.dark_theme, LV_FONT_DEFAULT);
+    lv_display_set_theme(disp, th);
+    lv_obj_report_style_change(NULL);
+    ESP_LOGI(TAG, "theme -> %s", d.dark_theme ? "dark" : "light");
+}
+
+void ui_settings_theme_pressed(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    d.dark_theme = !d.dark_theme;
+
+    const esp_err_t err = capstan_config_set_display(&d);
+    if (err != ESP_OK) {
+        ESP_LOGE(TAG, "theme save failed: %s", esp_err_to_name(err));
+        return;
+    }
+    ui_settings_apply_theme();
+}
+
+const char *ui_settings_theme_text(void)
+{
+    capstan_display_cfg_t d;
+    capstan_config_get_display(&d);
+    return d.dark_theme ? "Dark" : "Light";
+}
+
 #else
 
+void ui_settings_theme_pressed(void) { }
+void ui_settings_apply_theme(void) { }
+const char *ui_settings_theme_text(void) { return ""; }
 void ui_settings_factory_reset_pressed(void) { }
 void ui_settings_disarm_reset(void) { }
 void ui_settings_snooze_pressed(void) { }

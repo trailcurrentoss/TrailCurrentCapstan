@@ -791,6 +791,7 @@ static void refresh_settings(void)
 
     char snooze[16];
     ui_settings_snooze_text(snooze, sizeof(snooze));
+    set_text(objects.settings_item2_value, ui_settings_theme_text());
     set_text(objects.settings_item3_value, snooze);
 }
 

@@ -222,6 +222,40 @@ lv_style_t *get_style_menu_summary_MAIN_DEFAULT();
 void add_style_menu_summary(lv_obj_t *obj);
 void remove_style_menu_summary(lv_obj_t *obj);
 
+// Style: ModeRowHeat
+lv_style_t *get_style_mode_row_heat_MAIN_DEFAULT();
+lv_style_t *get_style_mode_row_heat_MAIN_CHECKED();
+void add_style_mode_row_heat(lv_obj_t *obj);
+void remove_style_mode_row_heat(lv_obj_t *obj);
+
+// Style: ModeRowCool
+lv_style_t *get_style_mode_row_cool_MAIN_DEFAULT();
+lv_style_t *get_style_mode_row_cool_MAIN_CHECKED();
+void add_style_mode_row_cool(lv_obj_t *obj);
+void remove_style_mode_row_cool(lv_obj_t *obj);
+
+// Style: ModeRowAuto
+lv_style_t *get_style_mode_row_auto_MAIN_DEFAULT();
+lv_style_t *get_style_mode_row_auto_MAIN_CHECKED();
+void add_style_mode_row_auto(lv_obj_t *obj);
+void remove_style_mode_row_auto(lv_obj_t *obj);
+
+// Style: ModeRowOff
+lv_style_t *get_style_mode_row_off_MAIN_DEFAULT();
+lv_style_t *get_style_mode_row_off_MAIN_CHECKED();
+void add_style_mode_row_off(lv_obj_t *obj);
+void remove_style_mode_row_off(lv_obj_t *obj);
+
+// Style: ModeRowIcon
+lv_style_t *get_style_mode_row_icon_MAIN_DEFAULT();
+void add_style_mode_row_icon(lv_obj_t *obj);
+void remove_style_mode_row_icon(lv_obj_t *obj);
+
+// Style: ModeRowText
+lv_style_t *get_style_mode_row_text_MAIN_DEFAULT();
+void add_style_mode_row_text(lv_obj_t *obj);
+void remove_style_mode_row_text(lv_obj_t *obj);
+
 // Style: LabelBodyMuted
 lv_style_t *get_style_label_body_muted_MAIN_DEFAULT();
 void add_style_label_body_muted(lv_obj_t *obj);

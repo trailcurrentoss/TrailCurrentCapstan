@@ -42,6 +42,18 @@ void ui_settings_snooze_pressed(void);
 /** "10 min" -- the value text for the Alarm Snooze row. */
 void ui_settings_snooze_text(char *out, size_t len);
 
+/**
+ * Theme row: a press flips light <-> dark, saves it, and repaints every
+ * screen. LVGL lock held.
+ */
+void ui_settings_theme_pressed(void);
+
+/** Apply the saved theme. Called once after ui_init(); LVGL lock held. */
+void ui_settings_apply_theme(void);
+
+/** "Light" or "Dark" -- the value text for the Theme row. */
+const char *ui_settings_theme_text(void);
+
 #ifdef __cplusplus
 }
 #endif

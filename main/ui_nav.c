@@ -769,6 +769,7 @@ void ui_nav_press(void)
             /* Read-only status. Broker details are set in the portal. */
             ESP_LOGD(TAG, "MQTT row is status only -- use setup mode");
             return;
+        case 2: ui_settings_theme_pressed(); return;
         case 3: ui_settings_snooze_pressed(); return;
         case 4: ui_settings_factory_reset_pressed(); return;
         default:
