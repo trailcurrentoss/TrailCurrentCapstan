@@ -39,6 +39,8 @@ main/ui/*/sim/
 # EEZ Studio backups + tmp/ working state
 GUI/**/*.eez-project.bak*
 GUI/**/*.eez-project-ui-state
+# EEZ Studio Docker simulator build output -- regenerated on every sim run.
+GUI/.docker-build-output/
 tmp/
 GUI/tmp/
 **/tmp/
