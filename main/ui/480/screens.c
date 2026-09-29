@@ -148,7 +148,7 @@ void create_screen_page_menu() {
             // menu_prev
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.menu_prev = obj;
-            lv_obj_set_pos(obj, LV_PCT(7), LV_PCT(33));
+            lv_obj_set_pos(obj, LV_PCT(5), LV_PCT(42));
             lv_obj_set_size(obj, LV_PCT(14), LV_PCT(14));
             add_style_plain(obj);
             {
@@ -170,7 +170,7 @@ void create_screen_page_menu() {
             // menu_next
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.menu_next = obj;
-            lv_obj_set_pos(obj, LV_PCT(80), LV_PCT(33));
+            lv_obj_set_pos(obj, LV_PCT(81), LV_PCT(42));
             lv_obj_set_size(obj, LV_PCT(14), LV_PCT(14));
             add_style_plain(obj);
             {
@@ -192,7 +192,7 @@ void create_screen_page_menu() {
             // menu_title
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.menu_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(57));
+            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(59));
             lv_obj_set_size(obj, LV_PCT(56), LV_SIZE_CONTENT);
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_title(obj);
@@ -203,7 +203,7 @@ void create_screen_page_menu() {
             // menu_summary
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.menu_summary = obj;
-            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(68));
+            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(69));
             lv_obj_set_size(obj, LV_PCT(56), LV_SIZE_CONTENT);
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_body(obj);
@@ -686,22 +686,11 @@ void create_screen_page_devices() {
     {
         lv_obj_t *parent_obj = obj;
         {
-            // devices_title
-            lv_obj_t *obj = lv_label_create(parent_obj);
-            objects.devices_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
-            lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
-            lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Devices");
-        }
-        {
             // devices_hero
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.devices_hero = obj;
-            lv_obj_set_pos(obj, LV_PCT(37), LV_PCT(23));
-            lv_obj_set_size(obj, LV_PCT(26), LV_PCT(26));
+            lv_obj_set_pos(obj, LV_PCT(34), LV_PCT(25));
+            lv_obj_set_size(obj, LV_PCT(31), LV_PCT(31));
             add_style_device_tile(obj);
             lv_obj_set_style_radius(obj, 1000, LV_PART_MAIN | LV_STATE_DEFAULT);
             {
@@ -723,7 +712,7 @@ void create_screen_page_devices() {
             // devices_prev
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.devices_prev = obj;
-            lv_obj_set_pos(obj, LV_PCT(7), LV_PCT(29));
+            lv_obj_set_pos(obj, LV_PCT(5), LV_PCT(42));
             lv_obj_set_size(obj, LV_PCT(14), LV_PCT(14));
             add_style_plain(obj);
             {
@@ -745,7 +734,7 @@ void create_screen_page_devices() {
             // devices_next
             lv_obj_t *obj = lv_obj_create(parent_obj);
             objects.devices_next = obj;
-            lv_obj_set_pos(obj, LV_PCT(80), LV_PCT(29));
+            lv_obj_set_pos(obj, LV_PCT(81), LV_PCT(42));
             lv_obj_set_size(obj, LV_PCT(14), LV_PCT(14));
             add_style_plain(obj);
             {
@@ -767,7 +756,7 @@ void create_screen_page_devices() {
             // devices_name
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.devices_name = obj;
-            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(54));
+            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(60));
             lv_obj_set_size(obj, LV_PCT(56), LV_SIZE_CONTENT);
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_title(obj);
@@ -778,7 +767,7 @@ void create_screen_page_devices() {
             // devices_value
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.devices_value = obj;
-            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(65));
+            lv_obj_set_pos(obj, LV_PCT(22), LV_PCT(70));
             lv_obj_set_size(obj, LV_PCT(56), LV_SIZE_CONTENT);
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_body(obj);
@@ -2529,14 +2518,16 @@ void change_color_theme(uint32_t theme_index) {
     lv_style_set_text_color(get_style_scale_ring_INDICATOR_DEFAULT(), lv_color_hex(theme_colors[theme_index][16]));
     lv_style_set_text_color(get_style_label_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][6]));
     lv_style_set_text_color(get_style_label_icon_sm_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][7]));
-    lv_style_set_bg_color(get_style_hero_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][10]));
+    lv_style_set_bg_color(get_style_hero_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][2]));
     lv_style_set_border_color(get_style_hero_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][9]));
+    lv_style_set_shadow_color(get_style_hero_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_text_color(get_style_hero_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_text_color(get_style_neighbour_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));
     lv_style_set_bg_color(get_style_device_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][2]));
     lv_style_set_border_color(get_style_device_tile_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][5]));
     lv_style_set_bg_color(get_style_device_tile_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][10]));
     lv_style_set_border_color(get_style_device_tile_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][9]));
+    lv_style_set_shadow_color(get_style_device_tile_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_text_color(get_style_device_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));
     lv_style_set_text_color(get_style_device_icon_MAIN_CHECKED(), lv_color_hex(theme_colors[theme_index][9]));
     lv_style_set_text_color(get_style_device_neighbour_icon_MAIN_DEFAULT(), lv_color_hex(theme_colors[theme_index][8]));

@@ -464,11 +464,15 @@ void remove_style_label_icon_sm(lv_obj_t *obj) {
 //
 
 void init_style_hero_tile_MAIN_DEFAULT(lv_style_t *style) {
-    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][10]));
+    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][2]));
     lv_style_set_bg_opa(style, 255);
     lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][9]));
-    lv_style_set_border_width(style, 3);
+    lv_style_set_border_width(style, 2);
     lv_style_set_border_opa(style, 255);
+    lv_style_set_shadow_color(style, lv_color_hex(theme_colors[active_theme_index][9]));
+    lv_style_set_shadow_opa(style, 128);
+    lv_style_set_shadow_width(style, 15);
+    lv_style_set_shadow_spread(style, 0);
     lv_style_set_radius(style, 1000);
     lv_style_set_pad_top(style, 0);
     lv_style_set_pad_bottom(style, 0);
@@ -564,8 +568,9 @@ void init_style_device_tile_MAIN_DEFAULT(lv_style_t *style) {
     lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][2]));
     lv_style_set_bg_opa(style, 255);
     lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][5]));
-    lv_style_set_border_width(style, 3);
+    lv_style_set_border_width(style, 2);
     lv_style_set_border_opa(style, 255);
+    lv_style_set_shadow_opa(style, 0);
     lv_style_set_radius(style, 1000);
     lv_style_set_pad_top(style, 0);
     lv_style_set_pad_bottom(style, 0);
@@ -587,8 +592,12 @@ void init_style_device_tile_MAIN_CHECKED(lv_style_t *style) {
     lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][10]));
     lv_style_set_bg_opa(style, 255);
     lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][9]));
-    lv_style_set_border_width(style, 3);
+    lv_style_set_border_width(style, 2);
     lv_style_set_border_opa(style, 255);
+    lv_style_set_shadow_color(style, lv_color_hex(theme_colors[active_theme_index][9]));
+    lv_style_set_shadow_opa(style, 128);
+    lv_style_set_shadow_width(style, 30);
+    lv_style_set_shadow_spread(style, 0);
     lv_style_set_radius(style, 1000);
     lv_style_set_pad_top(style, 0);
     lv_style_set_pad_bottom(style, 0);

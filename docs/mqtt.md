@@ -165,8 +165,9 @@ incrementally. **Treat every field as optional on every message.**
 ```
 
 `time_remaining_minutes` is omitted when it is 0 or 0xFFFF. It is never
-cleared, so it goes stale while charging; the dial only shows it while
-`battery_watts` is negative.
+cleared, so it goes stale while charging: the dial shows "Charging" instead
+when `battery_watts` is positive, and the reported figure otherwise (an older
+Headwaters without `battery_watts` cannot say it is charging).
 
 **Watt signs.** `battery_watts` is the SmartShunt's `P`, relayed by Solstice on
 CAN 0x024 as a sign byte (0xFF = negative) and magnitude. Victron's convention:

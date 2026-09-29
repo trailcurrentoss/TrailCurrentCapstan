@@ -90,7 +90,6 @@ typedef struct _objects_t {
     lv_obj_t *cmode_item3_title;
     lv_obj_t *climate_mode_back;
     lv_obj_t *climate_mode_back_icon;
-    lv_obj_t *devices_title;
     lv_obj_t *devices_hero;
     lv_obj_t *devices_hero_icon;
     lv_obj_t *devices_prev;

@@ -222,11 +222,16 @@ static void refresh_energy(void)
         } else if (volts.valid) {
             snprintf(sub1, sizeof(sub1), "%.1f V", (double)volts.value);
         }
-        /* Time remaining only while actually discharging: Headwaters never
-         * clears it, so it is stale the moment charging starts. */
+        /* Time remaining whenever it is reported -- EXCEPT while the battery
+         * is known to be charging, when Headwaters' figure is stale (it never
+         * clears it) and "Charging" is the true answer. "Known" needs
+         * battery_watts > 0; without that field (an older Headwaters) a zero
+         * consumption cannot be told from idle, and the reported runtime is
+         * shown as before. */
         const capstan_value_t mins = capstan_model_runtime_min();
-        if (net_ok && net < 0.0f && mins.valid &&
-            fmt_runtime(rt, sizeof(rt), mins.value)) {
+        if (net_ok && net > 0.0f) {
+            snprintf(sub2, sizeof(sub2), "Charging");
+        } else if (mins.valid && fmt_runtime(rt, sizeof(rt), mins.value)) {
             snprintf(sub2, sizeof(sub2), "Time Remaining %s", rt);
         }
         break;
@@ -390,13 +395,13 @@ static void refresh_menu(void)
         float net;
         char rt[16];
         if (pct.valid) {
-            if (battery_net_watts(&net) && net < 0.0f && mins.valid &&
-                fmt_runtime(rt, sizeof(rt), mins.value)) {
-                snprintf(buf, sizeof(buf), "%.0f%% \xC2\xB7 %s",
-                         (double)pct.value, rt);
-            } else if (battery_net_watts(&net) && net > 0.0f) {
+            /* Same rule as the Battery page's time-remaining line. */
+            if (battery_net_watts(&net) && net > 0.0f) {
                 snprintf(buf, sizeof(buf), "%.0f%% \xC2\xB7 Charging",
                          (double)pct.value);
+            } else if (mins.valid && fmt_runtime(rt, sizeof(rt), mins.value)) {
+                snprintf(buf, sizeof(buf), "%.0f%% \xC2\xB7 %s",
+                         (double)pct.value, rt);
             } else {
                 snprintf(buf, sizeof(buf), "%.0f%%", (double)pct.value);
             }
