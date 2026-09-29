@@ -150,10 +150,18 @@ static void take(snapshot_t *s)
     if (s->time_ok) {
         const time_t now = time(NULL);
         localtime_r(&now, &s->lt);
-        const int h12 = (s->lt.tm_hour % 12) ? (s->lt.tm_hour % 12) : 12;
-        snprintf(s->hm, sizeof(s->hm), "%d:%02d", h12, s->lt.tm_min);
-        snprintf(s->ampm, sizeof(s->ampm), "%s",
-                 s->lt.tm_hour < 12 ? "AM" : "PM");
+        capstan_display_cfg_t dc;
+        capstan_config_get_display(&dc);
+        if (dc.clock_24h) {
+            /* "19:42", and no AM/PM: the label is left empty. */
+            snprintf(s->hm, sizeof(s->hm), "%02d:%02d", s->lt.tm_hour,
+                     s->lt.tm_min);
+        } else {
+            const int h12 = (s->lt.tm_hour % 12) ? (s->lt.tm_hour % 12) : 12;
+            snprintf(s->hm, sizeof(s->hm), "%d:%02d", h12, s->lt.tm_min);
+            snprintf(s->ampm, sizeof(s->ampm), "%s",
+                     s->lt.tm_hour < 12 ? "AM" : "PM");
+        }
         const char *m = MONTHS[s->lt.tm_mon % 12];
         const char *d = DAYS[s->lt.tm_wday % 7];
         snprintf(s->day, sizeof(s->day), "%s", d);
@@ -277,6 +285,7 @@ static void paint(face_t *f, int face, const snapshot_t *s)
         ui_lv_set_text(f->dg_date, s->date_short);
         ui_lv_set_text(f->dg_time, s->hm);
         ui_lv_set_text(f->dg_ampm, s->ampm);
+        ui_lv_set_hidden(f->dg_ampm, !s->ampm[0]);   /* 24 h: re-centres */
         ui_lv_set_text(f->dg_inside, s->inside);
         paint_mode(f->dg_mode_icon, f->dg_mode_text, s);
         /* EEZ also applies this range from get_var_clock_sec_max() in its
@@ -294,6 +303,7 @@ static void paint(face_t *f, int face, const snapshot_t *s)
         }
         ui_lv_set_text(f->br_time, s->hm);
         ui_lv_set_text(f->br_ampm, s->ampm);
+        ui_lv_set_hidden(f->br_ampm, !s->ampm[0]);
         ui_lv_set_text(f->br_date, s->date_short);
         ui_lv_set_text(f->br_inside, s->inside);
         paint_mode(f->br_mode_icon, f->br_mode_text, s);
@@ -311,7 +321,8 @@ static void paint(face_t *f, int face, const snapshot_t *s)
         ui_lv_set_text(f->rg_temp, s->inside_num);
         char t[16];
         if (s->time_ok) {
-            snprintf(t, sizeof(t), "%s %s", s->hm, s->ampm);
+            snprintf(t, sizeof(t), s->ampm[0] ? "%s %s" : "%s", s->hm,
+                     s->ampm);
         } else {
             snprintf(t, sizeof(t), "--:--");
         }

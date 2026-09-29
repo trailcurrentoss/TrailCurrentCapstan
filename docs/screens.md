@@ -67,7 +67,7 @@ The climate line is the Climate screen's state — "Heating to 72°",
 "Cooling to 72°", "Holding 72°", "Climate off" — in its readable colour. All
 four faces are authored on the Idle page (Classic visible) and `main/ui_clock.c`
 shows the chosen one and repaints it once a second. Time is 12-hour with
-AM/PM, as designed; a 12/24 h row can join Locale later. Without a time fix
+AM/PM as designed, or 24-hour per Settings > Locale. Without a time fix
 every field reads `--`.
 
 The picker is its own screen: a 60 % live preview of the face (the same face
@@ -377,7 +377,7 @@ a press acts on the centred item:
 | Wi-Fi | network name, or what is wrong | nothing -- status only |
 | MQTT | Connected / Offline / Not set | nothing -- status only |
 | Theme | Light / Dark | toggles; saved to NVS, restored at boot |
-| Locale | e.g. `°F · in` | opens the Locale screen |
+| Locale | e.g. `°F · in · 12 h` | opens the Locale screen |
 | Clock Face | Classic / Digital / TrailCurrent / Climate Ring | opens the face picker |
 | Getting Started | Shown / Hidden | toggles whether it appears in the app menu; saved to NVS, so a factory reset shows it again |
 | Alarm Snooze | 5 / 10 / 15 / 30 / 60 min | steps to the next |
@@ -405,6 +405,7 @@ Both are saved to NVS and apply everywhere on the next refresh.
 |---|---|---|
 | Temperature | °F / °C | Climate, the Air temperature, menu summaries |
 | Leveling | in / mm | the Level screen's height differences and its menu summary |
+| Clock | 12 h / 24 h | every clock face: "7:42 PM" or "19:42" (no AM/PM) |
 
 Metric heights default on with metric temperatures (`CONFIG_CAPSTAN_DEFAULT_UNITS_CELSIUS`).
 More units (distance, 12/24 h) belong here as further rows.

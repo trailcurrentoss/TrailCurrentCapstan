@@ -94,11 +94,12 @@ void ui_settings_refresh(void);
 enum {
     UI_LOCALE_TEMPERATURE = 0,
     UI_LOCALE_LEVELING,
+    UI_LOCALE_CLOCK,
     UI_LOCALE_ITEM_COUNT
 };
 
 /**
- * A press on Locale row `row`: flip that unit (°F/°C, in/mm), save it to
+ * A press on Locale row `row`: flip that unit (°F/°C, in/mm, 12/24 h), save it to
  * NVS and repaint. Everything that shows the unit reads the saved setting,
  * so the change shows everywhere on the next refresh. LVGL lock held.
  */
@@ -107,7 +108,7 @@ void ui_settings_locale_pressed(int row);
 /** Show or hide Getting Started in the app menu; saved to NVS. */
 void ui_settings_guide_pressed(void);
 
-/** "°F · in" -- the Locale item's value in the Settings carousel. */
+/** "°F · in · 12 h" -- the Locale item's value in the Settings carousel. */
 void ui_settings_locale_text(char *out, size_t len);
 
 /**

@@ -445,9 +445,9 @@ void ui_settings_locale_text(char *out, size_t len)
 {
     capstan_display_cfg_t d;
     capstan_config_get_display(&d);
-    snprintf(out, len, "%s \xC2\xB7 %s",
+    snprintf(out, len, "%s \xC2\xB7 %s \xC2\xB7 %s",
              d.celsius ? "\xC2\xB0" "C" : "\xC2\xB0" "F",
-             d.level_mm ? "mm" : "in");
+             d.level_mm ? "mm" : "in", d.clock_24h ? "24 h" : "12 h");
 }
 
 static void locale_refresh(void)
@@ -457,6 +457,7 @@ static void locale_refresh(void)
     ui_lv_set_text(objects.locale_item0_value,
                    d.celsius ? "\xC2\xB0" "C" : "\xC2\xB0" "F");
     ui_lv_set_text(objects.locale_item1_value, d.level_mm ? "mm" : "in");
+    ui_lv_set_text(objects.locale_item2_value, d.clock_24h ? "24 h" : "12 h");
 }
 
 /*
@@ -484,6 +485,7 @@ void ui_settings_locale_pressed(int row)
     switch (row) {
     case UI_LOCALE_TEMPERATURE: d.celsius  = !d.celsius;  break;
     case UI_LOCALE_LEVELING:    d.level_mm = !d.level_mm; break;
+    case UI_LOCALE_CLOCK:       d.clock_24h = !d.clock_24h; break;
     default: return;
     }
     const esp_err_t err = capstan_config_set_display(&d);
@@ -491,8 +493,8 @@ void ui_settings_locale_pressed(int row)
         ESP_LOGE(TAG, "locale save failed: %s", esp_err_to_name(err));
         return;
     }
-    ESP_LOGI(TAG, "locale -> %s, %s", d.celsius ? "C" : "F",
-             d.level_mm ? "mm" : "in");
+    ESP_LOGI(TAG, "locale -> %s, %s, %s", d.celsius ? "C" : "F",
+             d.level_mm ? "mm" : "in", d.clock_24h ? "24 h" : "12 h");
     locale_refresh();
 }
 

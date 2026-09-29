@@ -108,6 +108,8 @@ typedef struct {
     /** Leveling height differences in millimetres rather than inches
      *  (Settings > Locale). Tilt angles are always degrees. */
     bool level_mm;
+    /** 24-hour clock rather than 12-hour with AM/PM (Settings > Locale). */
+    bool clock_24h;
     /** Getting Started taken out of the app menu (Settings > Getting
      *  Started). Off by default, so a factory reset brings it back. */
     bool hide_guide;

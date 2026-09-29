@@ -271,6 +271,10 @@ typedef struct _objects_t {
     lv_obj_t *locale_item1_icon;
     lv_obj_t *locale_item1_title;
     lv_obj_t *locale_item1_value;
+    lv_obj_t *locale_item2;
+    lv_obj_t *locale_item2_icon;
+    lv_obj_t *locale_item2_title;
+    lv_obj_t *locale_item2_value;
     lv_obj_t *guide_step;
     lv_obj_t *guide_stack;
     lv_obj_t *guide_tile;

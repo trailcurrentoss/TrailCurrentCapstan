@@ -39,6 +39,7 @@ static const char *TAG = "config";
 #define K_MQTT_OK    "m_ok"
 #define K_DISP_C     "d_celsius"
 #define K_DISP_LVLMM "d_lvl_mm"
+#define K_DISP_24H   "d_24h"
 #define K_DISP_HIDEGD "d_hide_gd"
 #define K_DISP_FACE  "d_face"
 #define K_DISP_DARK  "d_dark"
@@ -292,6 +293,7 @@ static esp_err_t load_from_nvs(void)
 
     read_bool(h, K_DISP_C,    &s_display.celsius);
     read_bool(h, K_DISP_LVLMM, &s_display.level_mm);
+    read_bool(h, K_DISP_24H,   &s_display.clock_24h);
     read_bool(h, K_DISP_HIDEGD, &s_display.hide_guide);
     read_u8(h,   K_DISP_FACE, &s_display.clock_face);
     read_bool(h, K_DISP_DARK, &s_display.dark_theme);
@@ -600,6 +602,7 @@ esp_err_t capstan_config_set_display(const capstan_display_cfg_t *cfg)
     esp_err_t err = ESP_OK;
     err |= nvs_set_u8(h,  K_DISP_C,    cfg->celsius ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_LVLMM, cfg->level_mm ? 1 : 0);
+    err |= nvs_set_u8(h,  K_DISP_24H,   cfg->clock_24h ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_HIDEGD, cfg->hide_guide ? 1 : 0);
     err |= nvs_set_u8(h,  K_DISP_FACE, cfg->clock_face);
     err |= nvs_set_u8(h,  K_DISP_DARK, cfg->dark_theme ? 1 : 0);
