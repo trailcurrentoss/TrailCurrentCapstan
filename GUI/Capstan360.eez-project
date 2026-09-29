@@ -10817,7 +10817,7 @@
                 "border_opa": 255,
                 "shadow_color": "AccentPrimary",
                 "shadow_opa": 128,
-                "shadow_width": 30,
+                "shadow_width": 15,
                 "shadow_spread": 0,
                 "radius": 1000,
                 "pad_all": 0,

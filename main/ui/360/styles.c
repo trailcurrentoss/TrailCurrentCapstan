@@ -596,7 +596,7 @@ void init_style_device_tile_MAIN_CHECKED(lv_style_t *style) {
     lv_style_set_border_opa(style, 255);
     lv_style_set_shadow_color(style, lv_color_hex(theme_colors[active_theme_index][9]));
     lv_style_set_shadow_opa(style, 128);
-    lv_style_set_shadow_width(style, 30);
+    lv_style_set_shadow_width(style, 15);
     lv_style_set_shadow_spread(style, 0);
     lv_style_set_radius(style, 1000);
     lv_style_set_pad_top(style, 0);
