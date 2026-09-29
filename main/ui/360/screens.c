@@ -446,11 +446,11 @@ void create_screen_page_climate_mode() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.cmode_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Mode");
+            lv_label_set_text(obj, "MODE");
         }
         {
             // cmode_list
@@ -890,11 +890,11 @@ void create_screen_page_heater() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.heater_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Heater");
+            lv_label_set_text(obj, "DIESEL HEATER");
         }
         {
             // heater_level
@@ -963,11 +963,11 @@ void create_screen_page_energy() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.energy_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Battery");
+            lv_label_set_text(obj, "BATTERY");
         }
         {
             // energy_value
@@ -1091,12 +1091,12 @@ void create_screen_page_water() {
             // water_title
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.water_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(15));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Water");
+            lv_label_set_text(obj, "WATER TANKS");
         }
         {
             // water_fresh_value
@@ -1387,7 +1387,7 @@ void create_screen_page_air() {
                             lv_label_set_long_mode(obj, LV_LABEL_LONG_CLIP);
                             add_style_label_metric(obj);
                             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-                            lv_label_set_text_static(obj, "70 F");
+                            lv_label_set_text_static(obj, "70°F");
                         }
                     }
                 }
@@ -1437,8 +1437,8 @@ void create_screen_page_level() {
             // level_title
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.level_title = obj;
-            lv_obj_set_pos(obj, LV_PCT(25), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(50), LV_PCT(5));
+            lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
             add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
@@ -1564,11 +1564,11 @@ void create_screen_page_doors() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.doors_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Doors");
+            lv_label_set_text(obj, "DOORS");
         }
         {
             // doors_list
@@ -1892,11 +1892,11 @@ void create_screen_page_settings() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.settings_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Settings");
+            lv_label_set_text(obj, "SETTINGS");
         }
         {
             // settings_list
@@ -2235,11 +2235,11 @@ void create_screen_page_setup() {
             lv_obj_t *obj = lv_label_create(parent_obj);
             objects.setup_title = obj;
             lv_obj_set_pos(obj, LV_PCT(20), LV_PCT(13));
-            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(9));
+            lv_obj_set_size(obj, LV_PCT(60), LV_PCT(5));
             lv_label_set_long_mode(obj, LV_LABEL_LONG_DOT);
-            add_style_label_title(obj);
+            add_style_label_eyebrow(obj);
             lv_obj_set_style_text_align(obj, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN | LV_STATE_DEFAULT);
-            lv_label_set_text(obj, "Wi-Fi Setup");
+            lv_label_set_text(obj, "WI-FI SETUP");
         }
         {
             // setup_ssid_label

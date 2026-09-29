@@ -87,7 +87,7 @@ static void refresh_energy(void)
 {
     const int page = ui_nav_selection_of(CAPSTAN_SCREEN_ENERGY);
 
-    const char *title = "Battery";
+    const char *title = "BATTERY";   /* eyebrow: uppercase */
     const char *unit  = "V";
     capstan_value_t v = { 0.0f, false };
     const char *fmt = "%.1f";
@@ -96,7 +96,7 @@ static void refresh_energy(void)
     switch (page) {
     case 0:
         v = capstan_model_battery_volts();
-        title = "Battery"; unit = "V"; fmt = "%.1f";
+        title = "BATTERY"; unit = "V"; fmt = "%.1f";
         {
             const capstan_value_t pct = capstan_model_battery_pct();
             if (pct.valid) {
@@ -107,7 +107,7 @@ static void refresh_energy(void)
 
     case 1:
         v = capstan_model_battery_pct();
-        title = "Charge"; unit = "%"; fmt = "%.0f";
+        title = "CHARGE"; unit = "%"; fmt = "%.0f";
         /* The charger's own view of what it is doing -- bulk, float,
          * absorption. "--" when the MPPT has not reported. */
         snprintf(sub, sizeof(sub), "%s", capstan_model_charge_type());
@@ -115,12 +115,12 @@ static void refresh_energy(void)
 
     case 2:
         v = capstan_model_solar_watts();
-        title = "Solar"; unit = "W"; fmt = "%.0f";
+        title = "SOLAR"; unit = "W"; fmt = "%.0f";
         break;
 
     case 3:
         v = capstan_model_load_watts();
-        title = "Load"; unit = "W"; fmt = "%.0f";
+        title = "LOAD"; unit = "W"; fmt = "%.0f";
         break;
 
     case 4: {
@@ -132,7 +132,7 @@ static void refresh_energy(void)
          * number nobody reads at a glance.
          */
         const capstan_value_t mins = capstan_model_runtime_min();
-        title = "Runtime";
+        title = "RUNTIME";
         v = mins;
         if (mins.valid) {
             const float m = mins.value < 0.0f ? 0.0f : mins.value;
@@ -174,6 +174,26 @@ static void refresh_energy(void)
     set_value(objects.energy_value, v, fmt);
     set_text(objects.energy_unit, unit);
     set_text(objects.energy_sub, sub[0] ? sub : "--");
+}
+
+/*
+ * Levelling's status word, shared by the Level screen and its menu summary
+ * so the two can never disagree. `worst` is the larger absolute tilt.
+ */
+#define LEVEL_FULL_DEG 5.0f
+#define LEVEL_OK_DEG   0.5f
+
+static const char *level_word(float fb, float ss, float *worst)
+{
+    const float afb = fabsf(fb), ass = fabsf(ss);
+    *worst = afb > ass ? afb : ass;
+    if (*worst < LEVEL_OK_DEG) {
+        return "Level";
+    }
+    if (ass >= afb) {
+        return ss > 0 ? "Tilted right" : "Tilted left";
+    }
+    return fb > 0 ? "Tilted forward" : "Tilted back";
 }
 
 /*
@@ -237,7 +257,7 @@ static void refresh_menu(void)
     case 5: {   /* Air */
         const capstan_value_t t = capstan_model_temp_f();
         if (t.valid) {
-            snprintf(buf, sizeof(buf), "%.0f F", t.value);
+            snprintf(buf, sizeof(buf), "%.0f\xC2\xB0" "F", t.value);
         }
         break;
     }
@@ -246,9 +266,15 @@ static void refresh_menu(void)
         const capstan_value_t fb = capstan_model_tilt_front_back();
         const capstan_value_t ss = capstan_model_tilt_side_to_side();
         if (fb.valid && ss.valid) {
-            const float afb = fb.value < 0 ? -fb.value : fb.value;
-            const float ass = ss.value < 0 ? -ss.value : ss.value;
-            snprintf(buf, sizeof(buf), "%.1f deg", afb > ass ? afb : ass);
+            /* The prototype's "Tilted right 1.2°". */
+            float worst;
+            const char *word = level_word(fb.value, ss.value, &worst);
+            if (worst < LEVEL_OK_DEG) {
+                snprintf(buf, sizeof(buf), "%s", word);
+            } else {
+                snprintf(buf, sizeof(buf), "%s %.1f\xC2\xB0", word,
+                         (double)worst);
+            }
         }
         break;
     }
@@ -421,7 +447,7 @@ static void refresh_air(void)
      */
     set_value(objects.air_voc, capstan_model_tvoc(), "%.0f ppb");
     set_value(objects.air_humidity, capstan_model_humidity(), "%.0f%%");
-    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f F");
+    set_value(objects.air_temp, capstan_model_temp_f(), "%.0f\xC2\xB0" "F");
 }
 
 /*
@@ -443,9 +469,6 @@ static void refresh_air(void)
  * the canvas-correct rest state (level), and this is purely the live value,
  * like a clock hand. It is the one runtime geometry write on this screen.
  */
-#define LEVEL_FULL_DEG 5.0f
-#define LEVEL_OK_DEG   0.5f
-
 static void refresh_level(void)
 {
     const capstan_value_t fb = capstan_model_tilt_front_back();
@@ -511,17 +534,10 @@ static void refresh_level(void)
     }
 
     /* Status word: the dominant axis, as the prototype's "Tilted right". */
+    float worst;
+    const char *word = level_word(fb.value, ss.value, &worst);
     const float afb = fabsf(fb.value), ass = fabsf(ss.value);
-    const float worst = afb > ass ? afb : ass;
-    const char *word;
-    if (worst < LEVEL_OK_DEG) {
-        word = "Level";                                  /* DEFAULT: green */
-    } else {
-        if (ass >= afb) {
-            word = ss.value > 0 ? "Tilted right" : "Tilted left";
-        } else {
-            word = fb.value > 0 ? "Tilted forward" : "Tilted back";
-        }
+    if (worst >= LEVEL_OK_DEG) {                   /* DEFAULT is green */
         lv_obj_add_state(objects.level_status,
                          worst > LEVEL_FULL_DEG ? LV_STATE_DISABLED   /* red */
                                                 : LV_STATE_CHECKED);  /* amber */

@@ -2130,9 +2130,9 @@
               "objID": "624fd4ea-eaa8-289c-2244-37e055a20e63",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -2156,7 +2156,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "a0ff3c10-754c-f50f-b4a6-30aed3303164",
                 "definition": {
@@ -2173,7 +2173,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "cmode_title",
-              "text": "Mode",
+              "text": "MODE",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -4145,9 +4145,9 @@
               "objID": "1ab32015-0267-1a5d-1809-9535603c44ec",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -4171,7 +4171,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "e62f9506-adc5-383d-a68b-0dd32dd86fbe",
                 "definition": {
@@ -4188,7 +4188,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "heater_title",
-              "text": "Heater",
+              "text": "DIESEL HEATER",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -4459,9 +4459,9 @@
               "objID": "e290f89c-02ad-c0a6-bfdc-b5d5204209f0",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -4485,7 +4485,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "0363a257-35a3-3978-2a12-fba065c776d1",
                 "definition": {
@@ -4502,7 +4502,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "energy_title",
-              "text": "Battery",
+              "text": "BATTERY",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -5065,9 +5065,9 @@
               "objID": "9a1b4f64-e4d7-55f6-0532-3d90096dcb23",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 14.6,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -5091,7 +5091,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "4da59010-2095-239b-3c4e-26c73e9ec4c2",
                 "definition": {
@@ -5108,7 +5108,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "water_title",
-              "text": "Water",
+              "text": "WATER TANKS",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -6483,7 +6483,7 @@
                       "groupIndex": 0,
                       "children": [],
                       "identifier": "air_temp",
-                      "text": "70 F",
+                      "text": "70\u00b0F",
                       "textType": "literal",
                       "longMode": "CLIP",
                       "recolor": false
@@ -6655,9 +6655,9 @@
             {
               "objID": "80ccddd2-0bf0-a035-6eee-204c63ef58b4",
               "type": "LVGLLabelWidget",
-              "left": 25,
+              "left": 20,
               "top": 13.3,
-              "width": 50,
+              "width": 60,
               "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
@@ -7188,9 +7188,9 @@
               "objID": "b2269e51-b721-17ec-aa0e-8b1917cb0d88",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -7214,7 +7214,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "d43ca0cf-8a06-7324-e4ad-14afc9373517",
                 "definition": {
@@ -7231,7 +7231,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "doors_title",
-              "text": "Doors",
+              "text": "DOORS",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -8628,9 +8628,9 @@
               "objID": "76f9a140-b4f1-9d25-eebe-ca42bd35ac58",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -8654,7 +8654,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "2f7991c3-2b66-f75a-51e0-7694926ecd1d",
                 "definition": {
@@ -8671,7 +8671,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "settings_title",
-              "text": "Settings",
+              "text": "SETTINGS",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
@@ -10118,9 +10118,9 @@
               "objID": "6788236a-4e6b-8c11-a55d-284db557e865",
               "type": "LVGLLabelWidget",
               "left": 20,
-              "top": 13,
+              "top": 13.3,
               "width": 60,
-              "height": 9,
+              "height": 4.375,
               "leftUnit": "%",
               "topUnit": "%",
               "widthUnit": "%",
@@ -10144,7 +10144,7 @@
               "clickableFlag": false,
               "scrollSnapX": "",
               "scrollSnapY": "",
-              "useStyle": "LabelTitle",
+              "useStyle": "LabelEyebrow",
               "localStyles": {
                 "objID": "d3669d67-7009-d834-bb2f-fbad996bdfda",
                 "definition": {
@@ -10161,7 +10161,7 @@
               "groupIndex": 0,
               "children": [],
               "identifier": "setup_title",
-              "text": "Wi-Fi Setup",
+              "text": "WI-FI SETUP",
               "textType": "literal",
               "longMode": "DOT",
               "recolor": false
