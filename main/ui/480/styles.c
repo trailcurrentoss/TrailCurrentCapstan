@@ -1630,6 +1630,64 @@ void remove_style_energy_unit(lv_obj_t *obj) {
 };
 
 //
+// Style: MenuName
+//
+
+void init_style_menu_name_MAIN_DEFAULT(lv_style_t *style) {
+    lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][6]));
+    lv_style_set_text_font(style, &ui_font_rm34);
+};
+
+lv_style_t *get_style_menu_name_MAIN_DEFAULT() {
+    static lv_style_t *style;
+    if (!style) {
+        style = (lv_style_t *)lv_malloc(sizeof(lv_style_t));
+        lv_style_init(style);
+        init_style_menu_name_MAIN_DEFAULT(style);
+    }
+    return style;
+};
+
+void add_style_menu_name(lv_obj_t *obj) {
+    (void)obj;
+    lv_obj_add_style(obj, get_style_menu_name_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+void remove_style_menu_name(lv_obj_t *obj) {
+    (void)obj;
+    lv_obj_remove_style(obj, get_style_menu_name_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+//
+// Style: MenuSummary
+//
+
+void init_style_menu_summary_MAIN_DEFAULT(lv_style_t *style) {
+    lv_style_set_text_color(style, lv_color_hex(theme_colors[active_theme_index][7]));
+    lv_style_set_text_font(style, &ui_font_rr20);
+};
+
+lv_style_t *get_style_menu_summary_MAIN_DEFAULT() {
+    static lv_style_t *style;
+    if (!style) {
+        style = (lv_style_t *)lv_malloc(sizeof(lv_style_t));
+        lv_style_init(style);
+        init_style_menu_summary_MAIN_DEFAULT(style);
+    }
+    return style;
+};
+
+void add_style_menu_summary(lv_obj_t *obj) {
+    (void)obj;
+    lv_obj_add_style(obj, get_style_menu_summary_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+void remove_style_menu_summary(lv_obj_t *obj) {
+    (void)obj;
+    lv_obj_remove_style(obj, get_style_menu_summary_MAIN_DEFAULT(), LV_PART_MAIN | LV_STATE_DEFAULT);
+};
+
+//
 // Style: LabelBodyMuted
 //
 
@@ -2013,10 +2071,16 @@ void remove_style_bar_level(lv_obj_t *obj) {
 //
 
 void init_style_bar_fresh_MAIN_DEFAULT(lv_style_t *style) {
-    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][4]));
+    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][2]));
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
-    lv_style_set_border_width(style, 0);
+    lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][5]));
+    lv_style_set_border_width(style, 1);
+    lv_style_set_border_opa(style, 255);
+    lv_style_set_radius(style, 12);
+    lv_style_set_pad_top(style, 1);
+    lv_style_set_pad_bottom(style, 1);
+    lv_style_set_pad_left(style, 1);
+    lv_style_set_pad_right(style, 1);
 };
 
 lv_style_t *get_style_bar_fresh_MAIN_DEFAULT() {
@@ -2030,9 +2094,11 @@ lv_style_t *get_style_bar_fresh_MAIN_DEFAULT() {
 };
 
 void init_style_bar_fresh_INDICATOR_DEFAULT(lv_style_t *style) {
-    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][17]));
+    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][18]));
+    lv_style_set_bg_grad_color(style, lv_color_hex(theme_colors[active_theme_index][17]));
+    lv_style_set_bg_grad_dir(style, LV_GRAD_DIR_VER);
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
+    lv_style_set_radius(style, 0);
 };
 
 lv_style_t *get_style_bar_fresh_INDICATOR_DEFAULT() {
@@ -2062,10 +2128,16 @@ void remove_style_bar_fresh(lv_obj_t *obj) {
 //
 
 void init_style_bar_grey_MAIN_DEFAULT(lv_style_t *style) {
-    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][4]));
+    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][2]));
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
-    lv_style_set_border_width(style, 0);
+    lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][5]));
+    lv_style_set_border_width(style, 1);
+    lv_style_set_border_opa(style, 255);
+    lv_style_set_radius(style, 12);
+    lv_style_set_pad_top(style, 1);
+    lv_style_set_pad_bottom(style, 1);
+    lv_style_set_pad_left(style, 1);
+    lv_style_set_pad_right(style, 1);
 };
 
 lv_style_t *get_style_bar_grey_MAIN_DEFAULT() {
@@ -2081,7 +2153,7 @@ lv_style_t *get_style_bar_grey_MAIN_DEFAULT() {
 void init_style_bar_grey_INDICATOR_DEFAULT(lv_style_t *style) {
     lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][23]));
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
+    lv_style_set_radius(style, 0);
 };
 
 lv_style_t *get_style_bar_grey_INDICATOR_DEFAULT() {
@@ -2111,10 +2183,16 @@ void remove_style_bar_grey(lv_obj_t *obj) {
 //
 
 void init_style_bar_black_MAIN_DEFAULT(lv_style_t *style) {
-    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][4]));
+    lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][2]));
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
-    lv_style_set_border_width(style, 0);
+    lv_style_set_border_color(style, lv_color_hex(theme_colors[active_theme_index][5]));
+    lv_style_set_border_width(style, 1);
+    lv_style_set_border_opa(style, 255);
+    lv_style_set_radius(style, 12);
+    lv_style_set_pad_top(style, 1);
+    lv_style_set_pad_bottom(style, 1);
+    lv_style_set_pad_left(style, 1);
+    lv_style_set_pad_right(style, 1);
 };
 
 lv_style_t *get_style_bar_black_MAIN_DEFAULT() {
@@ -2130,7 +2208,7 @@ lv_style_t *get_style_bar_black_MAIN_DEFAULT() {
 void init_style_bar_black_INDICATOR_DEFAULT(lv_style_t *style) {
     lv_style_set_bg_color(style, lv_color_hex(theme_colors[active_theme_index][24]));
     lv_style_set_bg_opa(style, 255);
-    lv_style_set_radius(style, 6);
+    lv_style_set_radius(style, 0);
 };
 
 lv_style_t *get_style_bar_black_INDICATOR_DEFAULT() {
@@ -2617,6 +2695,8 @@ void add_style(lv_obj_t *obj, int32_t styleIndex) {
         add_style_energy_head,
         add_style_energy_head_icon,
         add_style_energy_unit,
+        add_style_menu_name,
+        add_style_menu_summary,
         add_style_label_body_muted,
         add_style_energy_dot,
         add_style_alert_icon,
@@ -2680,6 +2760,8 @@ void remove_style(lv_obj_t *obj, int32_t styleIndex) {
         remove_style_energy_head,
         remove_style_energy_head_icon,
         remove_style_energy_unit,
+        remove_style_menu_name,
+        remove_style_menu_summary,
         remove_style_label_body_muted,
         remove_style_energy_dot,
         remove_style_alert_icon,

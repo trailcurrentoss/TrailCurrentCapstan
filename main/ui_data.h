@@ -38,6 +38,14 @@ void ui_data_service_tick(void);
  */
 bool ui_data_energy_led(uint8_t *r, uint8_t *g, uint8_t *b);
 
+/**
+ * The LED ring colour the Water screen wants: orange when fresh is below
+ * 40 % or grey or black is above 60 %; green when fresh is above 40 % and
+ * grey and black are below 50 %; in between, the last colour (hysteresis).
+ * False (ring dark) with no tank readings. Consulted by ui_alerts.c.
+ */
+bool ui_data_water_led(uint8_t *r, uint8_t *g, uint8_t *b);
+
 #ifdef __cplusplus
 }
 #endif

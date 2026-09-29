@@ -37,7 +37,6 @@ first input after waking is consumed by the wake itself.
 | Water | ring | Menu | `local/water/status` |
 | Air quality | ring | Menu | `local/airquality/*` |
 | Levelling | ring | Menu | `local/level/*` |
-| Doors | ring | Menu | `local/picket/+/inputs` |
 | Settings | ring | Menu | NVS |
 | Wi-Fi list | ring | Settings | `esp_wifi_scan_get_ap_records` |
 | Wi-Fi security | ring | Wi-Fi list | — |
@@ -77,11 +76,12 @@ which the second hand's own redraws would otherwise keep resetting forever.
 
 ## Menu
 
-Eight faces plus Clock: Climate, Devices, Energy, Water Tanks, Air Quality,
-Levelling, Doors, Settings. (The prototype also has a Diesel Heater face;
-Capstan does not -- it has one thermostat control, and how heating and
-cooling are carried out is handled outside Capstan.) Each shows a one-line summary — `Heating · 72°`,
-`3 on`, `Fresh 72%`, `2 open`.
+Seven faces plus Clock: Climate, Devices, Energy, Water Tanks, Air Quality,
+Levelling, Settings. (The prototype also has Diesel Heater and Doors faces.
+Capstan has one thermostat control -- how heating and cooling are carried out
+is handled outside it -- and Doors is removed for now: nothing feeds it, and
+open inputs already raise the full-screen alert.) Each shows a one-line
+summary — `Heating · 72°`, `3 on`, `Fresh 72%`, `82% · 14h 20m`.
 
 **Wraps, like the prototype.** This screen is the one exception to the
 clamping rule — the carousel shows its two neighbouring items and a row of
@@ -316,19 +316,15 @@ they are visible on EEZ Studio's canvas. `main/ui_data.c` only calls
 the `ArcThin` style in `GUI/tmp/gen_eez_project.py` for the state mapping and
 why it is what it is.
 
-## Energy, Water, Levelling, Doors
+## Energy, Water, Levelling
 
 Read-only, laid out as in the prototype. On Energy the ring pages between
-Battery / Solar / Load.
+Battery / Solar Input / Loads.
 
 All of them show `--` until the first frame arrives, because **nothing on
 this platform is retained** — and again once a module goes stale. Timeouts
 per module are in [mqtt.md](mqtt.md#nothing-is-retained). A stale number that
 looks live is worse than no number.
-
-Doors are reed switches on Picket, arriving as a 12-bit mask in
-`local/picket/<addr>/inputs`. Labels live in Headwaters' Mongo, so the device
-carries its own until a config topic exposes them.
 
 ## Settings
 

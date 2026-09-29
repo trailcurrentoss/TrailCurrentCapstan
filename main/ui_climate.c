@@ -131,6 +131,7 @@ void ui_climate_summary(char *out, size_t len)
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 
 /* Mode glyphs, from the house subset: fire, snowflake, check, power. */
 #define G_HEAT  "\xEF\x81\xAD"   /* 0xF06D */
@@ -154,43 +155,38 @@ static void set_rim(lv_obj_t *line, lv_point_precise_t *pts, float f,
     float frac = (f - T_MIN_F) / (T_MAX_F - T_MIN_F);
     frac = frac < 0.0f ? 0.0f : frac > 1.0f ? 1.0f : frac;
     const float a = (135.0f + frac * 270.0f) * (float)M_PI / 180.0f;
-    pts[0].x = (lv_value_precise_t)(c + r1 * k * cosf(a));
-    pts[0].y = (lv_value_precise_t)(c + r1 * k * sinf(a));
-    pts[1].x = (lv_value_precise_t)(c + r2 * k * cosf(a));
-    pts[1].y = (lv_value_precise_t)(c + r2 * k * sinf(a));
+    const lv_point_precise_t p0 = {
+        (lv_value_precise_t)(c + r1 * k * cosf(a)),
+        (lv_value_precise_t)(c + r1 * k * sinf(a)) };
+    const lv_point_precise_t p1 = {
+        (lv_value_precise_t)(c + r2 * k * cosf(a)),
+        (lv_value_precise_t)(c + r2 * k * sinf(a)) };
+    /* Setting points redraws the line, so only when it has moved. */
+    if (lv_line_get_point_count(line) == 2 &&
+        pts[0].x == p0.x && pts[0].y == p0.y &&
+        pts[1].x == p1.x && pts[1].y == p1.y) {
+        return;
+    }
+    pts[0] = p0;
+    pts[1] = p1;
     lv_line_set_points(line, pts, 2);
 }
 
 static void set_text(lv_obj_t *label, const char *text)
 {
-    if (label) {
-        lv_label_set_text(label, text);
-    }
+    ui_lv_set_text(label, text);
 }
 
 static void set_hidden(lv_obj_t *obj, bool hidden)
 {
-    if (!obj) {
-        return;
-    }
-    if (hidden) {
-        lv_obj_add_flag(obj, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_remove_flag(obj, LV_OBJ_FLAG_HIDDEN);
-    }
+    ui_lv_set_hidden(obj, hidden);
 }
 
 /* Mode colour as a STATE (see ClimateModeText in gen_eez_project.py). */
 static void set_mode_state(lv_obj_t *obj, lv_state_t st)
 {
-    if (!obj) {
-        return;
-    }
-    lv_obj_remove_state(obj, LV_STATE_CHECKED | LV_STATE_PRESSED |
-                             LV_STATE_DISABLED);
-    if (st) {
-        lv_obj_add_state(obj, st);
-    }
+    ui_lv_set_state_in(obj, LV_STATE_CHECKED | LV_STATE_PRESSED |
+                            LV_STATE_DISABLED, st);
 }
 
 void ui_climate_refresh(void)
@@ -253,7 +249,10 @@ void ui_climate_refresh(void)
 
     /* Active range, in scale units: half degrees above 50 F, ticks whose
      * temperature lies within [lo-0.25, hi+0.25] as in P:626. */
+    int32_t prev_min[UI_CLIMATE_SEC_COUNT], prev_max[UI_CLIMATE_SEC_COUNT];
     for (int i = 0; i < UI_CLIMATE_SEC_COUNT; i++) {
+        prev_min[i] = s_sec_min[i];
+        prev_max[i] = s_sec_max[i];
         s_sec_min[i] = s_sec_max[i] = -1;
     }
     if (s_mode != UI_CLIMATE_OFF && in.valid) {
@@ -270,6 +269,28 @@ void ui_climate_refresh(void)
             s_sec_min[sec] = a;
             s_sec_max[sec] = b;
         }
+    }
+
+    /*
+     * EEZ applies these ranges in its tick, but lv_scale_section_set_range()
+     * does not invalidate, so the ticks only repainted when something else
+     * redrew the screen. Now that nothing redraws without a change, apply
+     * them here and invalidate the scale -- once, when a range moves.
+     */
+    bool moved = false;
+    for (int i = 0; i < UI_CLIMATE_SEC_COUNT; i++) {
+        moved |= prev_min[i] != s_sec_min[i] || prev_max[i] != s_sec_max[i];
+    }
+    if (moved && objects.climate_ticks) {
+        screen_page_climate_state_t *st = &screen_page_climate_state;
+        lv_scale_section_t *secs[UI_CLIMATE_SEC_COUNT] = {
+            st->scale_section, st->scale_section1, st->scale_section2 };
+        for (int i = 0; i < UI_CLIMATE_SEC_COUNT; i++) {
+            if (secs[i]) {
+                lv_scale_section_set_range(secs[i], s_sec_min[i], s_sec_max[i]);
+            }
+        }
+        lv_obj_invalidate(objects.climate_ticks);
     }
 }
 

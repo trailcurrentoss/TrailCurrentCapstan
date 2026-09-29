@@ -96,8 +96,6 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
                                       CAPSTAN_SCREEN_MENU,     "air" },
     [CAPSTAN_SCREEN_LEVEL]        = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_MENU,     "level" },
-    [CAPSTAN_SCREEN_DOORS]        = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_MENU,     "doors" },
 
     [CAPSTAN_SCREEN_SETTINGS]     = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_MENU,     "settings" },
@@ -163,7 +161,6 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_WATER]        = SCREEN_ID_PAGE_WATER,
     [CAPSTAN_SCREEN_AIR]          = SCREEN_ID_PAGE_AIR,
     [CAPSTAN_SCREEN_LEVEL]        = SCREEN_ID_PAGE_LEVEL,
-    [CAPSTAN_SCREEN_DOORS]        = SCREEN_ID_PAGE_DOORS,
     [CAPSTAN_SCREEN_SETTINGS]     = SCREEN_ID_PAGE_SETTINGS,
     [CAPSTAN_SCREEN_ALERT]        = SCREEN_ID_PAGE_ALERT,
     [CAPSTAN_SCREEN_SETUP]        = SCREEN_ID_PAGE_SETUP,
@@ -209,6 +206,49 @@ static int64_t s_back_us;
 static void refresh_selection(capstan_screen_t s);
 static int  selectable_count(capstan_screen_t s);
 
+#if HAVE_GENERATED_UI
+/*
+ * The Back chip is small -- about 38 x 26 px on the 240 -- and it is the one
+ * touch target on most screens, so give it the best chance of seeing a tap:
+ *
+ *   - An extended hit area, a twenty-fourth of the panel on every side
+ *     (10 / 15 / 20 px). Nothing else near it is touchable.
+ *   - No scrolling from it. A finger that drifts a few pixels on a
+ *     scrollable object becomes a scroll, and a scroll is not a click. With
+ *     SCROLLABLE and the scroll-chain flags off, LVGL stops looking for
+ *     something to scroll at the chip.
+ *
+ * Applied on each load because EEZ builds a screen on its first show.
+ */
+static lv_obj_t *back_chip(capstan_screen_t s)
+{
+    switch (s) {
+    case CAPSTAN_SCREEN_CLIMATE:      return objects.climate_back;
+    case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.climate_mode_back;
+    case CAPSTAN_SCREEN_DEVICES:      return objects.devices_back;
+    case CAPSTAN_SCREEN_ENERGY:       return objects.energy_back;
+    case CAPSTAN_SCREEN_WATER:        return objects.water_back;
+    case CAPSTAN_SCREEN_AIR:          return objects.air_back;
+    case CAPSTAN_SCREEN_LEVEL:        return objects.level_back;
+    case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_back;
+    default:                          return NULL;
+    }
+}
+
+static void prepare_back_chip(capstan_screen_t s)
+{
+    lv_obj_t *chip = back_chip(s);
+    if (!chip) {
+        return;
+    }
+    lv_obj_remove_flag(chip, LV_OBJ_FLAG_SCROLLABLE |
+                             LV_OBJ_FLAG_SCROLL_CHAIN_HOR |
+                             LV_OBJ_FLAG_SCROLL_CHAIN_VER);
+    lv_obj_set_ext_click_area(
+        chip, lv_display_get_horizontal_resolution(NULL) / 24);
+}
+#endif
+
 void ui_nav_goto(capstan_screen_t screen)
 {
     if (screen < 0 || screen >= CAPSTAN_SCREEN_COUNT) {
@@ -235,6 +275,7 @@ void ui_nav_goto(capstan_screen_t screen)
     const int id = eez_screen_id(screen);
     if (id >= 0) {
         loadScreen((enum ScreensEnum)id);
+        prepare_back_chip(screen);
     } else {
         ESP_LOGW(TAG, "screen '%s' has no generated page yet", p->name);
     }
@@ -304,11 +345,11 @@ void ui_nav_back(void)
 #if HAVE_GENERATED_UI
 
 /*
- * Nine carousel items -- the eight apps plus Clock. Must stay in step with
+ * Eight carousel items -- the seven apps plus Clock. Must stay in step with
  * MENU_ITEMS in GUI/tmp/screens_layout.py, which is what the tiles, the
  * labels and the page dots are all authored from.
  */
-#define MENU_ITEM_COUNT 9
+#define MENU_ITEM_COUNT 8
 
 /* Energy shows one reading at a time. Must match ENERGY_PAGES in
  * GUI/tmp/screens_layout.py -- the dots are authored from that list. */
@@ -375,10 +416,9 @@ static const struct {
     { UI_ICON_CLIMATE,  "Climate",  CAPSTAN_SCREEN_CLIMATE  },
     { UI_ICON_DEVICES,  "Devices",  CAPSTAN_SCREEN_DEVICES  },
     { UI_ICON_ENERGY,   "Energy",   CAPSTAN_SCREEN_ENERGY   },
-    { UI_ICON_WATER,    "Water",    CAPSTAN_SCREEN_WATER    },
-    { UI_ICON_AIR,      "Air",      CAPSTAN_SCREEN_AIR      },
-    { UI_ICON_LEVEL,    "Level",    CAPSTAN_SCREEN_LEVEL    },
-    { UI_ICON_DOORS,    "Doors",    CAPSTAN_SCREEN_DOORS    },
+    { UI_ICON_WATER,    "Water Tanks", CAPSTAN_SCREEN_WATER },
+    { UI_ICON_AIR,      "Air Quality", CAPSTAN_SCREEN_AIR   },
+    { UI_ICON_LEVEL,    "Leveling",    CAPSTAN_SCREEN_LEVEL },
     { UI_ICON_SETTINGS, "Settings", CAPSTAN_SCREEN_SETTINGS },
     { UI_ICON_CLOCK,    "Clock",    CAPSTAN_SCREEN_IDLE     },
 };
@@ -394,7 +434,6 @@ static lv_obj_t *menu_dot(int i)
     case 5: return objects.menu_dot5;
     case 6: return objects.menu_dot6;
     case 7: return objects.menu_dot7;
-    case 8: return objects.menu_dot8;
     default: return NULL;
     }
 }
@@ -470,7 +509,6 @@ static lv_obj_t *list_container(capstan_screen_t s)
 #if HAVE_GENERATED_UI
     switch (s) {
     case CAPSTAN_SCREEN_CLIMATE_MODE: return objects.cmode_list;
-    case CAPSTAN_SCREEN_DOORS:        return objects.doors_list;
     case CAPSTAN_SCREEN_SETTINGS:     return objects.settings_list;
     default:                          return NULL;
     }

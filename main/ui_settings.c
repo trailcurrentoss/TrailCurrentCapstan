@@ -23,6 +23,7 @@
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 #include "ui.h"
 
 static const char *TAG = "ui.settings";
@@ -50,9 +51,7 @@ static int64_t s_armed_us;
 
 static void set_row_label(const char *text)
 {
-    if (objects.settings_item4_title) {
-        lv_label_set_text(objects.settings_item4_title, text);
-    }
+    ui_lv_set_text(objects.settings_item4_title, text);
 }
 
 static bool armed(void)

@@ -20,11 +20,10 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_WATER = 7,
     SCREEN_ID_PAGE_AIR = 8,
     SCREEN_ID_PAGE_LEVEL = 9,
-    SCREEN_ID_PAGE_DOORS = 10,
-    SCREEN_ID_PAGE_SETTINGS = 11,
-    SCREEN_ID_PAGE_ALERT = 12,
-    SCREEN_ID_PAGE_SETUP = 13,
-    _SCREEN_ID_LAST = 13
+    SCREEN_ID_PAGE_SETTINGS = 10,
+    SCREEN_ID_PAGE_ALERT = 11,
+    SCREEN_ID_PAGE_SETUP = 12,
+    _SCREEN_ID_LAST = 12
 };
 
 typedef struct _objects_t {
@@ -37,7 +36,6 @@ typedef struct _objects_t {
     lv_obj_t *page_water;
     lv_obj_t *page_air;
     lv_obj_t *page_level;
-    lv_obj_t *page_doors;
     lv_obj_t *page_settings;
     lv_obj_t *page_alert;
     lv_obj_t *page_setup;
@@ -63,7 +61,6 @@ typedef struct _objects_t {
     lv_obj_t *menu_dot5;
     lv_obj_t *menu_dot6;
     lv_obj_t *menu_dot7;
-    lv_obj_t *menu_dot8;
     lv_obj_t *climate_ticks;
     lv_obj_t *climate_needle_inside;
     lv_obj_t *climate_needle_target;
@@ -169,34 +166,6 @@ typedef struct _objects_t {
     lv_obj_t *level_detail;
     lv_obj_t *level_back;
     lv_obj_t *level_back_icon;
-    lv_obj_t *doors_title;
-    lv_obj_t *doors_list;
-    lv_obj_t *doors_item0;
-    lv_obj_t *doors_item0_icon;
-    lv_obj_t *doors_item0_title;
-    lv_obj_t *doors_item0_value;
-    lv_obj_t *doors_item1;
-    lv_obj_t *doors_item1_icon;
-    lv_obj_t *doors_item1_title;
-    lv_obj_t *doors_item1_value;
-    lv_obj_t *doors_item2;
-    lv_obj_t *doors_item2_icon;
-    lv_obj_t *doors_item2_title;
-    lv_obj_t *doors_item2_value;
-    lv_obj_t *doors_item3;
-    lv_obj_t *doors_item3_icon;
-    lv_obj_t *doors_item3_title;
-    lv_obj_t *doors_item3_value;
-    lv_obj_t *doors_item4;
-    lv_obj_t *doors_item4_icon;
-    lv_obj_t *doors_item4_title;
-    lv_obj_t *doors_item4_value;
-    lv_obj_t *doors_item5;
-    lv_obj_t *doors_item5_icon;
-    lv_obj_t *doors_item5_title;
-    lv_obj_t *doors_item5_value;
-    lv_obj_t *doors_back;
-    lv_obj_t *doors_back_icon;
     lv_obj_t *settings_title;
     lv_obj_t *settings_list;
     lv_obj_t *settings_item0;
@@ -270,9 +239,6 @@ void tick_screen_page_air();
 
 void create_screen_page_level();
 void tick_screen_page_level();
-
-void create_screen_page_doors();
-void tick_screen_page_doors();
 
 void create_screen_page_settings();
 void tick_screen_page_settings();

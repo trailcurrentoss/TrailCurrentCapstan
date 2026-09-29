@@ -40,6 +40,7 @@
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 #include "ui.h"
 
 static const char *TAG = "ui.data";
@@ -63,19 +64,17 @@ static void set_value(lv_obj_t *label, capstan_value_t v,
         return;
     }
     if (!v.valid) {
-        lv_label_set_text(label, "--");
+        ui_lv_set_text(label, "--");
         return;
     }
     char buf[24];
     snprintf(buf, sizeof(buf), fmt, v.value);
-    lv_label_set_text(label, buf);
+    ui_lv_set_text(label, buf);
 }
 
 static void set_text(lv_obj_t *label, const char *text)
 {
-    if (label) {
-        lv_label_set_text(label, text ? text : "--");
-    }
+    ui_lv_set_text(label, text ? text : "--");
 }
 
 /*
@@ -148,10 +147,10 @@ static void show_line(lv_obj_t *label, const char *text)
         return;
     }
     if (text && text[0]) {
-        lv_label_set_text(label, text);
-        lv_obj_remove_flag(label, LV_OBJ_FLAG_HIDDEN);   /* flex re-centres */
+        ui_lv_set_text(label, text);
+        ui_lv_set_hidden(label, false);   /* flex re-centres */
     } else {
-        lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+        ui_lv_set_hidden(label, true);
     }
 }
 
@@ -159,14 +158,8 @@ static void show_line(lv_obj_t *label, const char *text)
  * DEFAULT battery, CHECKED solar, PRESSED loads, DISABLED (arc) no data. */
 static void energy_state(lv_obj_t *o, lv_state_t st)
 {
-    if (!o) {
-        return;
-    }
-    lv_obj_remove_state(o, LV_STATE_CHECKED | LV_STATE_PRESSED |
-                           LV_STATE_DISABLED);
-    if (st) {
-        lv_obj_add_state(o, st);
-    }
+    ui_lv_set_state_in(o, LV_STATE_CHECKED | LV_STATE_PRESSED |
+                          LV_STATE_DISABLED, st);
 }
 
 static void refresh_energy(void)
@@ -329,6 +322,48 @@ bool ui_data_energy_led(uint8_t *r, uint8_t *g, uint8_t *b)
     return true;
 }
 
+bool ui_data_water_led(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    /*
+     * Orange when any tank needs attention: fresh below 40 %, or grey or
+     * black above 60 %. Green when all are fine: fresh above 40 %, grey and
+     * black below 50 %. Between those (a waste tank at 50-60 %, fresh at
+     * exactly 40 %) the ring keeps its last colour, so a level wobbling on
+     * a threshold does not flicker it. A tank with no reading is left out;
+     * with none at all the ring is dark.
+     */
+    static enum { W_NONE, W_GREEN, W_ORANGE } s_state = W_NONE;
+
+    const capstan_value_t fresh = capstan_model_tank(CAPSTAN_TANK_FRESH);
+    const capstan_value_t grey  = capstan_model_tank(CAPSTAN_TANK_GREY);
+    const capstan_value_t black = capstan_model_tank(CAPSTAN_TANK_BLACK);
+    if (!fresh.valid && !grey.valid && !black.valid) {
+        s_state = W_NONE;
+        return false;
+    }
+
+    const bool attention = (fresh.valid && fresh.value < 40.0f) ||
+                           (grey.valid  && grey.value  > 60.0f) ||
+                           (black.valid && black.value > 60.0f);
+    const bool fine = (!fresh.valid || fresh.value > 40.0f) &&
+                      (!grey.valid  || grey.value  < 50.0f) &&
+                      (!black.valid || black.value < 50.0f);
+    if (attention) {
+        s_state = W_ORANGE;
+    } else if (fine) {
+        s_state = W_GREEN;
+    } else if (s_state == W_NONE) {
+        s_state = W_GREEN;         /* first reading lands in the band */
+    }
+
+    if (s_state == W_ORANGE) {
+        *r = 255; *g = 96; *b = 0;   /* the Climate screen's heating orange */
+    } else {
+        *r = 82; *g = 164; *b = 65;  /* AccentPrimary #52a441, brand green */
+    }
+    return true;
+}
+
 /*
  * Levelling's status word, shared by the Level screen and its menu summary
  * so the two can never disagree. `worst` is the larger absolute tilt.
@@ -442,15 +477,12 @@ static void refresh_menu(void)
         break;
     }
 
-    case 6:     /* Doors -- needs the Picket channel map to name a door. */
-        break;
-
-    case 7:     /* Settings */
+    case 6:     /* Settings */
         snprintf(buf, sizeof(buf), "%s",
                  capstan_mqtt_is_connected() ? "Connected" : "Offline");
         break;
 
-    case 8:     /* Clock. Says what pressing does, because nothing else does. */
+    case 7:     /* Clock. Says what pressing does, because nothing else does. */
         snprintf(buf, sizeof(buf), "Back to the clock");
         break;
 
@@ -484,9 +516,9 @@ static void refresh_water(void)
             if (v.valid) {
                 char buf[16];
                 snprintf(buf, sizeof(buf), "%.0f%%", v.value);
-                lv_label_set_text(*rows[i].value, buf);
+                ui_lv_set_text(*rows[i].value, buf);
             } else {
-                lv_label_set_text(*rows[i].value, "--");
+                ui_lv_set_text(*rows[i].value, "--");
             }
         }
         if (rows[i].bar && *rows[i].bar) {
@@ -539,17 +571,15 @@ static void air_arc_anim_cb(void *obj, int32_t v)
  */
 static void air_set_level(lv_obj_t *obj, capstan_air_level_t level)
 {
-    if (!obj) {
-        return;
-    }
-    lv_obj_remove_state(obj, LV_STATE_CHECKED | LV_STATE_DISABLED |
-                            LV_STATE_PRESSED);
+    lv_state_t st = 0;                   /* GOOD: DEFAULT */
     switch (level) {
-    case CAPSTAN_AIR_MODERATE:  lv_obj_add_state(obj, LV_STATE_CHECKED);  break;
-    case CAPSTAN_AIR_UNHEALTHY: lv_obj_add_state(obj, LV_STATE_DISABLED); break;
-    case CAPSTAN_AIR_UNKNOWN:   lv_obj_add_state(obj, LV_STATE_PRESSED);  break;
-    case CAPSTAN_AIR_GOOD:      break;   /* DEFAULT */
+    case CAPSTAN_AIR_MODERATE:  st = LV_STATE_CHECKED;  break;
+    case CAPSTAN_AIR_UNHEALTHY: st = LV_STATE_DISABLED; break;
+    case CAPSTAN_AIR_UNKNOWN:   st = LV_STATE_PRESSED;  break;
+    case CAPSTAN_AIR_GOOD:      break;
     }
+    ui_lv_set_state_in(obj, LV_STATE_CHECKED | LV_STATE_DISABLED |
+                            LV_STATE_PRESSED, st);
 }
 
 static void refresh_air(void)
@@ -639,17 +669,15 @@ static void refresh_level(void)
     lv_obj_t *const bubble = objects.level_bubble;
     lv_obj_t *const well   = objects.level_well;
 
-    lv_obj_remove_state(objects.level_status, LV_STATE_CHECKED |
-                        LV_STATE_DISABLED | LV_STATE_PRESSED);
+    const lv_state_t status_mask = LV_STATE_CHECKED | LV_STATE_DISABLED |
+                                   LV_STATE_PRESSED;
 
     if (!fb.valid || !ss.valid) {
-        lv_obj_add_state(objects.level_status, LV_STATE_PRESSED);  /* muted */
+        ui_lv_set_state_in(objects.level_status, status_mask,
+                           LV_STATE_PRESSED);                   /* muted */
         set_text(objects.level_status, "--");
         set_text(objects.level_detail, "No level data");
-        if (bubble) {
-            lv_obj_set_style_translate_x(bubble, 0, LV_PART_MAIN);
-            lv_obj_set_style_translate_y(bubble, 0, LV_PART_MAIN);
-        }
+        ui_lv_set_translate(bubble, 0, 0);
         return;
     }
 
@@ -675,10 +703,8 @@ static void refresh_level(void)
             dx /= mag;
             dy /= mag;
         }
-        lv_obj_set_style_translate_x(bubble, (int32_t)lroundf(dx * travel),
-                                     LV_PART_MAIN);
-        lv_obj_set_style_translate_y(bubble, (int32_t)lroundf(dy * travel),
-                                     LV_PART_MAIN);
+        ui_lv_set_translate(bubble, (int32_t)lroundf(dx * travel),
+                            (int32_t)lroundf(dy * travel));
         /* Trace, at most once a second and only when something moved by a
          * tenth of a degree: what arrived and where it put the bubble. */
         static int64_t s_last_us;
@@ -700,11 +726,10 @@ static void refresh_level(void)
     float worst;
     const char *word = level_word(fb.value, ss.value, &worst);
     const float afb = fabsf(fb.value), ass = fabsf(ss.value);
-    if (worst >= LEVEL_OK_DEG) {                   /* DEFAULT is green */
-        lv_obj_add_state(objects.level_status,
-                         worst > LEVEL_FULL_DEG ? LV_STATE_DISABLED   /* red */
-                                                : LV_STATE_CHECKED);  /* amber */
-    }
+    ui_lv_set_state_in(objects.level_status, status_mask,
+                       worst < LEVEL_OK_DEG   ? 0                  /* green */
+                       : worst > LEVEL_FULL_DEG ? LV_STATE_DISABLED  /* red */
+                                                : LV_STATE_CHECKED); /* amber */
     set_text(objects.level_status, word);
 
     char detail[48];
@@ -776,9 +801,10 @@ void ui_data_refresh(void)
      *
      * EEZ builds all screens up front, so every widget exists and
      * writing to a hidden one is cheap -- LVGL invalidates nothing that
-     * is not on screen. The alternative, refreshing only the current
-     * screen, means every screen needs a "fill me in" path on entry as
-     * well, and the two drift.
+     * is not on screen, and the setters in ui_lv.h make an unchanged
+     * value a no-op on the one that is. The alternative, refreshing only
+     * the current screen, means every screen needs a "fill me in" path on
+     * entry as well, and the two drift.
      */
     refresh_settings();
     ui_setup_tick();         /* portal progress while provisioning */

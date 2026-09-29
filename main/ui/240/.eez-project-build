@@ -20,6 +20,7 @@
     "ui_font_rl40.c",
     "ui_font_rm13.c",
     "ui_font_rm15.c",
+    "ui_font_rm17.c",
     "ui_font_rn60.c",
     "ui_font_rn75.c",
     "ui_font_rr11.c",

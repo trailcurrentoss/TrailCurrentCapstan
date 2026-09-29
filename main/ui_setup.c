@@ -21,6 +21,7 @@
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 #include "ui.h"
 
 static const char *TAG = "ui.setup";
@@ -41,9 +42,7 @@ static int64_t s_saved_ms;
 
 static void set(lv_obj_t *label, const char *text)
 {
-    if (label) {
-        lv_label_set_text(label, text ? text : "");
-    }
+    ui_lv_set_text(label, text ? text : "");
 }
 
 void ui_setup_enter(void)

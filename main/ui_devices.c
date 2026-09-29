@@ -23,6 +23,7 @@
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 #include "styles.h"
 #include "ui.h"
 
@@ -87,14 +88,7 @@ static lv_obj_t *device_dot(int slot)
 
 static void show(lv_obj_t *o, bool visible)
 {
-    if (!o) {
-        return;
-    }
-    if (visible) {
-        lv_obj_clear_flag(o, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_add_flag(o, LV_OBJ_FLAG_HIDDEN);
-    }
+    ui_lv_set_hidden(o, !visible);
 }
 
 static void set_checked(lv_obj_t *o, bool on)
@@ -111,9 +105,7 @@ static void set_checked(lv_obj_t *o, bool on)
 
 static void set_text(lv_obj_t *o, const char *s)
 {
-    if (o) {
-        lv_label_set_text(o, s);
-    }
+    ui_lv_set_text(o, s);
 }
 
 /*

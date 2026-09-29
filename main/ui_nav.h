@@ -42,7 +42,6 @@ typedef enum {
     CAPSTAN_SCREEN_WATER,
     CAPSTAN_SCREEN_AIR,
     CAPSTAN_SCREEN_LEVEL,
-    CAPSTAN_SCREEN_DOORS,
     CAPSTAN_SCREEN_SETTINGS,
     CAPSTAN_SCREEN_ALERT,      /* full-screen overlay */
     CAPSTAN_SCREEN_SETUP,      /* soft-AP provisioning instructions */

@@ -32,6 +32,7 @@
 #if CAPSTAN_HAVE_UI
 
 #include "screens.h"
+#include "ui_lv.h"
 
 static const char *TAG = "ui.alerts";
 
@@ -166,9 +167,7 @@ static uint16_t evaluate(const capstan_alarms_t *cfg, capstan_mode_t mode)
 
 static void set_text(lv_obj_t *label, const char *text)
 {
-    if (label) {
-        lv_label_set_text(label, text);
-    }
+    ui_lv_set_text(label, text);
 }
 
 static int popcount16(uint16_t v)
@@ -249,6 +248,8 @@ static void apply_leds(bool alarm)
      *      device is REPORTED on; dark again the moment it reports off.
      *   3b. Otherwise, on Energy's Battery page: the state of charge --
      *      green > 75 %, yellow 40-75 %, red < 40 %, brighter when fuller.
+     *   3c. Otherwise, on Water: orange when fresh < 40 % or grey/black
+     *      > 60 %, green when fresh > 40 % and grey/black < 50 %.
      *   4. Otherwise dark -- including the app carousel, deliberately: a
      *      colour left over from the last app would read as live status,
      *      and a dark ring is what makes an incoming alarm's red stand out.
@@ -265,6 +266,8 @@ static void apply_leds(bool alarm)
         lr = 82; lg = 164; lb = 65;     /* AccentPrimary #52a441, brand green */
     } else if (ui_nav_current() == CAPSTAN_SCREEN_ENERGY) {
         ui_data_energy_led(&lr, &lg, &lb);
+    } else if (ui_nav_current() == CAPSTAN_SCREEN_WATER) {
+        ui_data_water_led(&lr, &lg, &lb);
     }
     capstan_board_leds_set_all(lr, lg, lb);
 }
