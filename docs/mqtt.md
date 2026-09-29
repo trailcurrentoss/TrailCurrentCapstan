@@ -158,12 +158,28 @@ incrementally. **Treat every field as optional on every message.**
 { "battery_voltage": 13.42,
   "battery_percent": 87.5,
   "consumption_watts": 220,
+  "battery_watts": -220,
   "time_remaining_minutes": 430,
   "solar_watts": 640,
   "charge_type": "off|fault|bulk|absorption|float|equalize|unknown" }
 ```
 
-`time_remaining_minutes` is omitted when it is 0 or 0xFFFF.
+`time_remaining_minutes` is omitted when it is 0 or 0xFFFF. It is never
+cleared, so it goes stale while charging; the dial only shows it while
+`battery_watts` is negative.
+
+**Watt signs.** `battery_watts` is the SmartShunt's `P`, relayed by Solstice on
+CAN 0x024 as a sign byte (0xFF = negative) and magnitude. Victron's convention:
+**positive = battery charging, negative = discharging.** `consumption_watts` is
+the older, unsigned form -- the draw while discharging and 0 otherwise -- so it
+cannot tell charging from idle. `solar_watts` is the MPPT's panel input (PPV),
+always >= 0.
+
+There is no per-device load measurement. The Energy screen's Loads page derives
+total load as `solar_watts - battery_watts` (what the prototype's "Net" line
+assumes), which is exact while solar is the only charge source; with shore
+power or an alternator charging, that figure under-reads, and a negative result
+is shown as `--`.
 
 **`local/airquality/temphumid`** — the only ambient temperature on the bus.
 

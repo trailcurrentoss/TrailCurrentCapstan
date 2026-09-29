@@ -14,6 +14,7 @@
 #include "ui_clock.h"
 #include "ui_icons.h"
 #include "ui_alerts.h"
+#include "ui_climate.h"
 #include "ui_devices.h"
 #include "ui_settings.h"
 #include "ui_setup.h"
@@ -85,8 +86,6 @@ static const screen_policy_t s_policy[CAPSTAN_SCREEN_COUNT] = {
      * twice and land back where it started. See page_devices(). */
     [CAPSTAN_SCREEN_DEVICES]      = { CAPSTAN_INPUT_RING_AND_TOUCH,
                                       CAPSTAN_SCREEN_MENU,     "devices" },
-    [CAPSTAN_SCREEN_HEATER]       = { CAPSTAN_INPUT_RING_AND_TOUCH,
-                                      CAPSTAN_SCREEN_MENU,     "heater" },
 
     /* Read-only status screens. Nothing to press at all. */
     [CAPSTAN_SCREEN_ENERGY]       = { CAPSTAN_INPUT_RING_AND_TOUCH,
@@ -160,7 +159,6 @@ static const int s_eez_id[CAPSTAN_SCREEN_COUNT] = {
     [CAPSTAN_SCREEN_CLIMATE]      = SCREEN_ID_PAGE_CLIMATE,
     [CAPSTAN_SCREEN_CLIMATE_MODE] = SCREEN_ID_PAGE_CLIMATE_MODE,
     [CAPSTAN_SCREEN_DEVICES]      = SCREEN_ID_PAGE_DEVICES,
-    [CAPSTAN_SCREEN_HEATER]       = SCREEN_ID_PAGE_HEATER,
     [CAPSTAN_SCREEN_ENERGY]       = SCREEN_ID_PAGE_ENERGY,
     [CAPSTAN_SCREEN_WATER]        = SCREEN_ID_PAGE_WATER,
     [CAPSTAN_SCREEN_AIR]          = SCREEN_ID_PAGE_AIR,
@@ -244,6 +242,10 @@ void ui_nav_goto(capstan_screen_t screen)
 
     s_current = screen;
 
+    /* The LED ring follows the screen immediately: leaving an app for the
+     * carousel darkens it now, not on the next refresh (ui_alerts.c). */
+    ui_alerts_leds_now();
+
     /*
      * Re-apply the highlight AFTER the load. EEZ Studio's generated
      * create_screen_* runs on first show and builds the widgets with their
@@ -302,15 +304,15 @@ void ui_nav_back(void)
 #if HAVE_GENERATED_UI
 
 /*
- * Ten carousel items -- the nine apps plus Clock. Must stay in step with
+ * Nine carousel items -- the eight apps plus Clock. Must stay in step with
  * MENU_ITEMS in GUI/tmp/screens_layout.py, which is what the tiles, the
  * labels and the page dots are all authored from.
  */
-#define MENU_ITEM_COUNT 10
+#define MENU_ITEM_COUNT 9
 
 /* Energy shows one reading at a time. Must match ENERGY_PAGES in
  * GUI/tmp/screens_layout.py -- the dots are authored from that list. */
-#define ENERGY_PAGE_COUNT 5
+#define ENERGY_PAGE_COUNT 3   /* Battery, Solar Input, Loads */
 
 static lv_obj_t *energy_dot(int i)
 {
@@ -318,8 +320,6 @@ static lv_obj_t *energy_dot(int i)
     case 0: return objects.energy_dot0;
     case 1: return objects.energy_dot1;
     case 2: return objects.energy_dot2;
-    case 3: return objects.energy_dot3;
-    case 4: return objects.energy_dot4;
     default: return NULL;
     }
 }
@@ -374,7 +374,6 @@ static const struct {
 } s_menu[MENU_ITEM_COUNT] = {
     { UI_ICON_CLIMATE,  "Climate",  CAPSTAN_SCREEN_CLIMATE  },
     { UI_ICON_DEVICES,  "Devices",  CAPSTAN_SCREEN_DEVICES  },
-    { UI_ICON_HEATER,   "Heater",   CAPSTAN_SCREEN_HEATER   },
     { UI_ICON_ENERGY,   "Energy",   CAPSTAN_SCREEN_ENERGY   },
     { UI_ICON_WATER,    "Water",    CAPSTAN_SCREEN_WATER    },
     { UI_ICON_AIR,      "Air",      CAPSTAN_SCREEN_AIR      },
@@ -396,7 +395,6 @@ static lv_obj_t *menu_dot(int i)
     case 6: return objects.menu_dot6;
     case 7: return objects.menu_dot7;
     case 8: return objects.menu_dot8;
-    case 9: return objects.menu_dot9;
     default: return NULL;
     }
 }
@@ -603,6 +601,12 @@ void ui_nav_rotate(int diff)
         return;
     }
 
+    /* Climate: the ring IS the setpoint, as in the prototype. */
+    if (s_current == CAPSTAN_SCREEN_CLIMATE) {
+        ui_climate_rotate(diff);
+        return;
+    }
+
     const int n = selectable_count(s_current);
     if (n <= 0) {
         return;     /* nothing to move; the ring is simply inert here */
@@ -658,6 +662,7 @@ void ui_nav_rotate(int diff)
         }
         s_sel[s_current] = sel;
         refresh_selection(s_current);
+        ui_alerts_leds_now();   /* Devices: green follows the selection */
     }
 }
 
@@ -682,6 +687,18 @@ void ui_nav_press(void)
         }
         return;
     }
+
+    case CAPSTAN_SCREEN_CLIMATE:
+        /* Press opens Mode with the current mode highlighted (P:525). */
+        s_sel[CAPSTAN_SCREEN_CLIMATE_MODE] = (int)ui_climate_mode();
+        ui_nav_goto(CAPSTAN_SCREEN_CLIMATE_MODE);
+        return;
+
+    case CAPSTAN_SCREEN_CLIMATE_MODE:
+        /* Press applies the highlighted mode and returns. */
+        ui_climate_set_mode((ui_climate_mode_t)s_sel[CAPSTAN_SCREEN_CLIMATE_MODE]);
+        ui_nav_goto(CAPSTAN_SCREEN_CLIMATE);
+        return;
 
     case CAPSTAN_SCREEN_DEVICES:
         /* The carousel holds the controls Headwaters assigned to this dial;

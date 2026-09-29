@@ -7,6 +7,9 @@
  */
 #pragma once
 
+#include <stdbool.h>
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -26,6 +29,14 @@ void ui_data_refresh(void);
  * event callback -- see the note in ui_data.c about sys_evt's stack.
  */
 void ui_data_service_tick(void);
+
+/**
+ * The LED ring colour the Energy screen wants: on the Battery page, green
+ * above 75 %, yellow 40-75 %, red below 40 %, brightening with the charge
+ * within each band. False (ring dark) on the other pages or with no SOC.
+ * Consulted by ui_alerts.c, where an alarm's red takes priority.
+ */
+bool ui_data_energy_led(uint8_t *r, uint8_t *g, uint8_t *b);
 
 #ifdef __cplusplus
 }

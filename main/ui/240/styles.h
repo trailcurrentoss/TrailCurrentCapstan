@@ -127,6 +127,102 @@ lv_style_t *get_style_level_bubble_MAIN_DEFAULT();
 void add_style_level_bubble(lv_obj_t *obj);
 void remove_style_level_bubble(lv_obj_t *obj);
 
+// Style: ClimateTicks
+lv_style_t *get_style_climate_ticks_MAIN_DEFAULT();
+lv_style_t *get_style_climate_ticks_INDICATOR_DEFAULT();
+lv_style_t *get_style_climate_ticks_ITEMS_DEFAULT();
+void add_style_climate_ticks(lv_obj_t *obj);
+void remove_style_climate_ticks(lv_obj_t *obj);
+
+// Style: ClimateSectionHeat
+lv_style_t *get_style_climate_section_heat_MAIN_DEFAULT();
+lv_style_t *get_style_climate_section_heat_INDICATOR_DEFAULT();
+void add_style_climate_section_heat(lv_obj_t *obj);
+void remove_style_climate_section_heat(lv_obj_t *obj);
+
+// Style: ClimateSectionCool
+lv_style_t *get_style_climate_section_cool_MAIN_DEFAULT();
+lv_style_t *get_style_climate_section_cool_INDICATOR_DEFAULT();
+void add_style_climate_section_cool(lv_obj_t *obj);
+void remove_style_climate_section_cool(lv_obj_t *obj);
+
+// Style: ClimateSectionHold
+lv_style_t *get_style_climate_section_hold_MAIN_DEFAULT();
+lv_style_t *get_style_climate_section_hold_INDICATOR_DEFAULT();
+void add_style_climate_section_hold(lv_obj_t *obj);
+void remove_style_climate_section_hold(lv_obj_t *obj);
+
+// Style: ClimateNeedleInside
+lv_style_t *get_style_climate_needle_inside_MAIN_DEFAULT();
+void add_style_climate_needle_inside(lv_obj_t *obj);
+void remove_style_climate_needle_inside(lv_obj_t *obj);
+
+// Style: ClimateNeedleTarget
+lv_style_t *get_style_climate_needle_target_MAIN_DEFAULT();
+void add_style_climate_needle_target(lv_obj_t *obj);
+void remove_style_climate_needle_target(lv_obj_t *obj);
+
+// Style: ClimateNum
+lv_style_t *get_style_climate_num_MAIN_DEFAULT();
+void add_style_climate_num(lv_obj_t *obj);
+void remove_style_climate_num(lv_obj_t *obj);
+
+// Style: ClimateModeText
+lv_style_t *get_style_climate_mode_text_MAIN_DEFAULT();
+lv_style_t *get_style_climate_mode_text_MAIN_CHECKED();
+lv_style_t *get_style_climate_mode_text_MAIN_PRESSED();
+lv_style_t *get_style_climate_mode_text_MAIN_DISABLED();
+void add_style_climate_mode_text(lv_obj_t *obj);
+void remove_style_climate_mode_text(lv_obj_t *obj);
+
+// Style: ClimateModeIcon
+lv_style_t *get_style_climate_mode_icon_MAIN_DEFAULT();
+lv_style_t *get_style_climate_mode_icon_MAIN_CHECKED();
+lv_style_t *get_style_climate_mode_icon_MAIN_PRESSED();
+lv_style_t *get_style_climate_mode_icon_MAIN_DISABLED();
+void add_style_climate_mode_icon(lv_obj_t *obj);
+void remove_style_climate_mode_icon(lv_obj_t *obj);
+
+// Style: EnergyArc
+lv_style_t *get_style_energy_arc_MAIN_DEFAULT();
+lv_style_t *get_style_energy_arc_INDICATOR_DEFAULT();
+lv_style_t *get_style_energy_arc_INDICATOR_CHECKED();
+lv_style_t *get_style_energy_arc_INDICATOR_PRESSED();
+lv_style_t *get_style_energy_arc_INDICATOR_DISABLED();
+lv_style_t *get_style_energy_arc_KNOB_DEFAULT();
+void add_style_energy_arc(lv_obj_t *obj);
+void remove_style_energy_arc(lv_obj_t *obj);
+
+// Style: EnergyHead
+lv_style_t *get_style_energy_head_MAIN_DEFAULT();
+lv_style_t *get_style_energy_head_MAIN_CHECKED();
+lv_style_t *get_style_energy_head_MAIN_PRESSED();
+void add_style_energy_head(lv_obj_t *obj);
+void remove_style_energy_head(lv_obj_t *obj);
+
+// Style: EnergyHeadIcon
+lv_style_t *get_style_energy_head_icon_MAIN_DEFAULT();
+lv_style_t *get_style_energy_head_icon_MAIN_CHECKED();
+lv_style_t *get_style_energy_head_icon_MAIN_PRESSED();
+void add_style_energy_head_icon(lv_obj_t *obj);
+void remove_style_energy_head_icon(lv_obj_t *obj);
+
+// Style: EnergyUnit
+lv_style_t *get_style_energy_unit_MAIN_DEFAULT();
+void add_style_energy_unit(lv_obj_t *obj);
+void remove_style_energy_unit(lv_obj_t *obj);
+
+// Style: LabelBodyMuted
+lv_style_t *get_style_label_body_muted_MAIN_DEFAULT();
+void add_style_label_body_muted(lv_obj_t *obj);
+void remove_style_label_body_muted(lv_obj_t *obj);
+
+// Style: EnergyDot
+lv_style_t *get_style_energy_dot_MAIN_DEFAULT();
+lv_style_t *get_style_energy_dot_MAIN_CHECKED();
+void add_style_energy_dot(lv_obj_t *obj);
+void remove_style_energy_dot(lv_obj_t *obj);
+
 // Style: AlertIcon
 lv_style_t *get_style_alert_icon_MAIN_DEFAULT();
 void add_style_alert_icon(lv_obj_t *obj);

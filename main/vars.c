@@ -20,8 +20,29 @@
 #if CAPSTAN_HAVE_UI
 
 #include "vars.h"
+#include "ui_climate.h"
 
-/* Accessors land here as the data model is built out. */
+/*
+ * Climate: the three active-range sections' bounds (see GLOBAL_VARIABLES in
+ * GUI/tmp/gen_eez_project.py). EEZ calls these every ui_tick() and applies
+ * them with lv_scale_section_set_range(). The values are owned by
+ * ui_climate.c; the setters exist because EEZ declares them, and are unused.
+ */
+#define CLIMATE_SECTION_VAR(name, sec, which)                             \
+    int32_t get_var_##name(void)                                          \
+    {                                                                     \
+        int32_t lo, hi;                                                   \
+        ui_climate_section(sec, &lo, &hi);                                \
+        return which;                                                     \
+    }                                                                     \
+    void set_var_##name(int32_t value) { (void)value; }
+
+CLIMATE_SECTION_VAR(climate_heat_min, UI_CLIMATE_SEC_HEAT, lo)
+CLIMATE_SECTION_VAR(climate_heat_max, UI_CLIMATE_SEC_HEAT, hi)
+CLIMATE_SECTION_VAR(climate_cool_min, UI_CLIMATE_SEC_COOL, lo)
+CLIMATE_SECTION_VAR(climate_cool_max, UI_CLIMATE_SEC_COOL, hi)
+CLIMATE_SECTION_VAR(climate_hold_min, UI_CLIMATE_SEC_HOLD, lo)
+CLIMATE_SECTION_VAR(climate_hold_max, UI_CLIMATE_SEC_HOLD, hi)
 
 #else
 typedef int capstan_vars_placeholder;

@@ -29,7 +29,6 @@
 /* clang-format off */
 #define UI_ICON_CLIMATE   "\xEF\x8B\x87"   /* 0xF2C7 thermometer-half */
 #define UI_ICON_DEVICES   "\xEF\x83\xAB"   /* 0xF0EB lightbulb        */
-#define UI_ICON_HEATER    "\xEF\x81\xAD"   /* 0xF06D fire             */
 #define UI_ICON_ENERGY    "\xEF\x83\xA7"   /* 0xF0E7 bolt             */
 #define UI_ICON_WATER     "\xEF\x81\x83"   /* 0xF043 droplet          */
 #define UI_ICON_AIR       "\xEF\x83\x82"   /* 0xF0C2 cloud            */

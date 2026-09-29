@@ -31,6 +31,8 @@
  */
 #pragma once
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -57,6 +59,14 @@ void ui_devices_refresh(void);
  * Must be called with the LVGL lock held.
  */
 void ui_devices_press(void);
+
+/**
+ * True when the selected carousel item's last REPORTED state is on -- not
+ * the commanded state, so it follows the device when it is switched from
+ * elsewhere or fails to switch. False with no devices or no report yet.
+ * Drives the LED ring's green on this screen (see ui_alerts.c).
+ */
+bool ui_devices_selected_on(void);
 
 #ifdef __cplusplus
 }

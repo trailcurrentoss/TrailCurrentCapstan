@@ -22,6 +22,9 @@
 #include "capstan_board.h"
 #include "capstan_config.h"
 #include "capstan_model.h"
+#include "ui_climate.h"
+#include "ui_data.h"
+#include "ui_devices.h"
 #include "ui_alerts.h"
 #include "ui_light_icons.h"
 #include "ui_nav.h"
@@ -224,6 +227,53 @@ static void paint(const capstan_alarms_t *cfg, capstan_mode_t mode,
     set_text(objects.alert_hint, hint);
 }
 
+/*
+ * The LED ring, decided in one place. See the numbered rules inside.
+ * Called every tick, and again on every screen change (ui_alerts_leds_now)
+ * so leaving an app darkens the ring at once rather than on the next tick.
+ */
+static bool s_alarm_active;
+
+static void apply_leds(bool alarm)
+{
+    s_alarm_active = alarm;
+    /*
+     * The LED ring (on the boards that have one) is decided HERE and only
+     * here, so the features sharing it cannot fight over it:
+     *
+     *   1. Any alarm active -- snoozed or not -- solid red. Snoozing clears
+     *      the screen so the dial is usable; it does not pretend the door
+     *      is shut.
+     *   2. Otherwise, on the Climate screen: orange heating, blue cooling.
+     *   3. Otherwise, on the Devices screen: green while the selected
+     *      device is REPORTED on; dark again the moment it reports off.
+     *   3b. Otherwise, on Energy's Battery page: the state of charge --
+     *      green > 75 %, yellow 40-75 %, red < 40 %, brighter when fuller.
+     *   4. Otherwise dark -- including the app carousel, deliberately: a
+     *      colour left over from the last app would read as live status,
+     *      and a dark ring is what makes an incoming alarm's red stand out.
+     *
+     * Unchanged colours are not re-sent.
+     */
+    uint8_t lr = 0, lg = 0, lb = 0;
+    if (alarm) {
+        lr = 255;
+    } else if (ui_nav_current() == CAPSTAN_SCREEN_CLIMATE) {
+        ui_climate_led(&lr, &lg, &lb);
+    } else if (ui_nav_current() == CAPSTAN_SCREEN_DEVICES &&
+               ui_devices_selected_on()) {
+        lr = 82; lg = 164; lb = 65;     /* AccentPrimary #52a441, brand green */
+    } else if (ui_nav_current() == CAPSTAN_SCREEN_ENERGY) {
+        ui_data_energy_led(&lr, &lg, &lb);
+    }
+    capstan_board_leds_set_all(lr, lg, lb);
+}
+
+void ui_alerts_leds_now(void)
+{
+    apply_leds(s_alarm_active);
+}
+
 void ui_alerts_dismiss(void)
 {
     s_shown = -1;
@@ -311,15 +361,7 @@ void ui_alerts_tick(void)
         }
     }
 
-    /* The LED ring (on the boards that have one) is solid red while ANY
-     * alarm is active -- snoozed or not. Snoozing clears the screen so the
-     * dial is usable; it does not pretend the door is shut. Off when all
-     * clear. Unchanged colours are not re-sent. */
-    if (active) {
-        capstan_board_leds_set_all(255, 0, 0);
-    } else {
-        capstan_board_leds_set_all(0, 0, 0);
-    }
+    apply_leds(active != 0);
 
     const uint16_t attention = active & (uint16_t)~snoozed;
     const uint16_t raised = attention & (uint16_t)~s_prev_attention;
@@ -372,5 +414,6 @@ void ui_alerts_tick(void)
 void ui_alerts_tick(void) { }
 void ui_alerts_dismiss(void) { }
 void ui_alerts_acknowledge(void) { }
+void ui_alerts_leds_now(void) { }
 
 #endif

@@ -16,6 +16,7 @@
 
 #include <math.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -25,6 +26,7 @@
 #include "capstan_mqtt.h"
 #include "capstan_wifi.h"
 #include "ui_alerts.h"
+#include "ui_climate.h"
 #include "ui_data.h"
 #include "ui_devices.h"
 #include "ui_nav.h"
@@ -77,103 +79,249 @@ static void set_text(lv_obj_t *label, const char *text)
 }
 
 /*
- * Energy: one page at a time, chosen by the ring.
+ * Energy: the prototype's three pages (P:653-657), one at a time on the ring.
+ * ENERGY_PAGES in GUI/tmp/screens_layout.py and ENERGY_PAGE_COUNT in
+ * ui_nav.c must list the same three.
  *
- * The page list must match ENERGY_PAGES in GUI/tmp/screens_layout.py,
- * which is what the dots were authored from, and ENERGY_PAGE_COUNT in
- * ui_nav.c, which is how far the ring will turn.
+ * Watt signs are Victron's, relayed by Solstice: battery_watts is + while
+ * the battery charges and - while it discharges (docs/mqtt.md). Loads are not
+ * measured per device, or at all -- the Loads page derives the total as
+ * solar - net, exactly what the prototype's "Net" line assumes, and exact
+ * while solar is the only charger.
  */
+#define ENERGY_FULL_SCALE_W 600.0f   /* the prototype's arc scale for W */
+
+/* Signed battery power, or false if unknown. Prefers battery_watts; with a
+ * Headwaters that predates it, consumption_watts > 0 still means a draw of
+ * that size, but 0 cannot be told apart from charging. */
+static bool battery_net_watts(float *out)
+{
+    const capstan_value_t bw = capstan_model_battery_watts();
+    if (bw.valid) {
+        *out = bw.value;
+        return true;
+    }
+    const capstan_value_t cw = capstan_model_load_watts();
+    if (cw.valid && cw.value > 0.0f) {
+        *out = -cw.value;
+        return true;
+    }
+    return false;
+}
+
+/* "45 min", "14h 20m", "2d 4h". False past 99 days: that is not draining in
+ * any meaningful sense, and a four-digit day count is noise. */
+static bool fmt_runtime(char *out, size_t len, float mins)
+{
+    const float m = mins < 0.0f ? 0.0f : mins;
+    const unsigned t = (unsigned)lroundf(m);
+    if (m < 60.0f) {
+        snprintf(out, len, "%u min", t);
+    } else if (m < 48.0f * 60.0f) {
+        snprintf(out, len, "%uh %um", t / 60u, t % 60u);
+    } else if (m <= 99.0f * 24.0f * 60.0f) {
+        snprintf(out, len, "%ud %uh", t / 1440u, (t % 1440u) / 60u);
+    } else {
+        return false;
+    }
+    return true;
+}
+
+/* The charger's state word, capitalised, or NULL when there is nothing
+ * worth saying ("--" before the MPPT reports, "unknown"). */
+static const char *charge_word(char *buf, size_t len)
+{
+    const char *ct = capstan_model_charge_type();
+    if (!ct || !ct[0] || strcmp(ct, "--") == 0 || strcmp(ct, "unknown") == 0) {
+        return NULL;
+    }
+    snprintf(buf, len, "%s", ct);
+    if (buf[0] >= 'a' && buf[0] <= 'z') {
+        buf[0] = (char)(buf[0] - 'a' + 'A');
+    }
+    return buf;
+}
+
+static void show_line(lv_obj_t *label, const char *text)
+{
+    if (!label) {
+        return;
+    }
+    if (text && text[0]) {
+        lv_label_set_text(label, text);
+        lv_obj_remove_flag(label, LV_OBJ_FLAG_HIDDEN);   /* flex re-centres */
+    } else {
+        lv_obj_add_flag(label, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+/* Page colour as a state on the arc and the eyebrow (EnergyArc/EnergyHead):
+ * DEFAULT battery, CHECKED solar, PRESSED loads, DISABLED (arc) no data. */
+static void energy_state(lv_obj_t *o, lv_state_t st)
+{
+    if (!o) {
+        return;
+    }
+    lv_obj_remove_state(o, LV_STATE_CHECKED | LV_STATE_PRESSED |
+                           LV_STATE_DISABLED);
+    if (st) {
+        lv_obj_add_state(o, st);
+    }
+}
+
 static void refresh_energy(void)
 {
     const int page = ui_nav_selection_of(CAPSTAN_SCREEN_ENERGY);
+    char val[16] = "--", sub1[48] = "", sub2[48] = "", cw[16], rt[16];
+    const char *title, *unit, *glyph;
+    lv_state_t st;
+    float frac = -1.0f;                          /* < 0: no data, track only */
+    float net;
+    const bool net_ok = battery_net_watts(&net);
 
-    const char *title = "BATTERY";   /* eyebrow: uppercase */
-    const char *unit  = "V";
-    capstan_value_t v = { 0.0f, false };
-    const char *fmt = "%.1f";
-    char sub[32] = "";
+    /* Trace, at most every 10 s: what the energy fields are, so "why is a
+     * line missing" can be answered from a serial log. */
+    {
+        static int64_t s_last_trace;
+        const int64_t now = esp_timer_get_time();
+        if (now - s_last_trace > 10000000) {
+            s_last_trace = now;
+            const capstan_value_t bw = capstan_model_battery_watts();
+            const capstan_value_t cw = capstan_model_load_watts();
+            const capstan_value_t rm = capstan_model_runtime_min();
+            const capstan_value_t sw = capstan_model_solar_watts();
+            ESP_LOGI(TAG, "energy: battery_watts=%s%.0f consumption=%s%.0f "
+                          "solar=%s%.0f runtime_min=%s%.0f charge=%s",
+                     bw.valid ? "" : "?", (double)bw.value,
+                     cw.valid ? "" : "?", (double)cw.value,
+                     sw.valid ? "" : "?", (double)sw.value,
+                     rm.valid ? "" : "?", (double)rm.value,
+                     capstan_model_charge_type());
+        }
+    }
 
     switch (page) {
-    case 0:
-        v = capstan_model_battery_volts();
-        title = "BATTERY"; unit = "V"; fmt = "%.1f";
-        {
-            const capstan_value_t pct = capstan_model_battery_pct();
-            if (pct.valid) {
-                snprintf(sub, sizeof(sub), "%.0f%%", pct.value);
-            }
+    default:
+    case 0: {   /* Battery */
+        const capstan_value_t pct = capstan_model_battery_pct();
+        const capstan_value_t volts = capstan_model_battery_volts();
+        title = "BATTERY"; unit = "%"; st = 0;
+        /* The battery glyph follows the charge, from the house subset. */
+        const float p = pct.valid ? pct.value : 50.0f;
+        glyph = p > 87.5f ? "\xEF\x89\x80" : p > 62.5f ? "\xEF\x89\x81" :
+                p > 37.5f ? "\xEF\x89\x82" : p > 12.5f ? "\xEF\x89\x83" :
+                            "\xEF\x89\x84";           /* F240..F244 */
+        if (pct.valid) {
+            snprintf(val, sizeof(val), "%.0f", (double)pct.value);
+            frac = pct.value / 100.0f;
         }
-        break;
-
-    case 1:
-        v = capstan_model_battery_pct();
-        title = "CHARGE"; unit = "%"; fmt = "%.0f";
-        /* The charger's own view of what it is doing -- bulk, float,
-         * absorption. "--" when the MPPT has not reported. */
-        snprintf(sub, sizeof(sub), "%s", capstan_model_charge_type());
-        break;
-
-    case 2:
-        v = capstan_model_solar_watts();
-        title = "SOLAR"; unit = "W"; fmt = "%.0f";
-        break;
-
-    case 3:
-        v = capstan_model_load_watts();
-        title = "LOAD"; unit = "W"; fmt = "%.0f";
-        break;
-
-    case 4: {
-        /*
-         * Time-to-go arrives in minutes. Shown in whichever unit keeps the
-         * number short -- minutes, then hours, then days -- with the unit
-         * label following it and the exact breakdown on the line below.
-         * Stopping at hours gave "240.0 hours" for ten days, which is a
-         * number nobody reads at a glance.
-         */
+        /* "13.4 V · Float" */
+        const char *w = charge_word(cw, sizeof(cw));
+        if (volts.valid && w) {
+            snprintf(sub1, sizeof(sub1), "%.1f V \xC2\xB7 %s", (double)volts.value, w);
+        } else if (volts.valid) {
+            snprintf(sub1, sizeof(sub1), "%.1f V", (double)volts.value);
+        }
+        /* Time remaining only while actually discharging: Headwaters never
+         * clears it, so it is stale the moment charging starts. */
         const capstan_value_t mins = capstan_model_runtime_min();
-        title = "RUNTIME";
-        v = mins;
-        if (mins.valid) {
-            const float m = mins.value < 0.0f ? 0.0f : mins.value;
-            const unsigned total = (unsigned)lroundf(m);
-            if (m < 60.0f) {
-                unit = "min"; fmt = "%.0f";
-                snprintf(sub, sizeof(sub), "%u min left", total);
-            } else if (m < 48.0f * 60.0f) {
-                v.value = m / 60.0f;
-                unit = "hours"; fmt = v.value < 10.0f ? "%.1f" : "%.0f";
-                snprintf(sub, sizeof(sub), "%uh %um left",
-                         total / 60u, total % 60u);
-            } else {
-                v.value = m / (24.0f * 60.0f);
-                unit = "days"; fmt = v.value < 10.0f ? "%.1f" : "%.0f";
-                if (v.value > 99.0f) {
-                    /* Not draining in any meaningful sense (charging, or a
-                     * near-zero load); a four-digit day count is noise. */
-                    set_text(objects.energy_title, title);
-                    set_text(objects.energy_value, ">99");
-                    set_text(objects.energy_unit, unit);
-                    set_text(objects.energy_sub, "Not draining");
-                    return;
-                }
-                snprintf(sub, sizeof(sub), "%ud %uh left",
-                         total / 1440u, (total % 1440u) / 60u);
-            }
-        } else {
-            unit = "min";
+        if (net_ok && net < 0.0f && mins.valid &&
+            fmt_runtime(rt, sizeof(rt), mins.value)) {
+            snprintf(sub2, sizeof(sub2), "Time Remaining %s", rt);
         }
         break;
     }
 
-    default:
+    case 1: {   /* Solar Input */
+        const capstan_value_t w = capstan_model_solar_watts();
+        title = "SOLAR INPUT"; unit = "W"; st = LV_STATE_CHECKED;
+        glyph = "\xEF\x86\x85";                        /* F185 sun */
+        if (w.valid) {
+            snprintf(val, sizeof(val), "%.0f", (double)w.value);
+            frac = w.value / ENERGY_FULL_SCALE_W;
+        }
+        const char *c = charge_word(cw, sizeof(cw));
+        if (c) {
+            snprintf(sub1, sizeof(sub1), "Charge Status \xC2\xB7 %s", c);
+        }
+        /* The prototype's "Today 1.8 kWh" has no data on the bus: Solstice
+         * reads the MPPT's yield (H20) but does not transmit it. */
         break;
+    }
+
+    case 2: {   /* Loads = solar - net */
+        const capstan_value_t sw = capstan_model_solar_watts();
+        title = "LOADS"; unit = "W"; st = LV_STATE_PRESSED;
+        glyph = "\xEF\x83\xA7";                        /* F0E7 bolt */
+        if (sw.valid && net_ok) {
+            const float loads = sw.value - net;
+            /* Negative means another charger (shore, alternator) is
+             * feeding the battery: the derivation no longer holds. */
+            if (loads >= 0.0f) {
+                snprintf(val, sizeof(val), "%.0f", (double)loads);
+                frac = loads / ENERGY_FULL_SCALE_W;
+            }
+        }
+        /* The prototype's first line is a per-device load, which does not
+         * exist here; its "Net" line moves up and the second is hidden. */
+        if (net_ok) {
+            snprintf(sub1, sizeof(sub1), "Net %s%.0f W",
+                     net >= 0.0f ? "+" : "-", (double)fabsf(net));
+        }
+        break;
+    }
     }
 
     set_text(objects.energy_title, title);
-    set_value(objects.energy_value, v, fmt);
+    set_text(objects.energy_head_icon, glyph);
+    energy_state(objects.energy_title, st);
+    energy_state(objects.energy_head_icon, st);
+    set_text(objects.energy_value, val);
     set_text(objects.energy_unit, unit);
-    set_text(objects.energy_sub, sub[0] ? sub : "--");
+    show_line(objects.energy_sub1, sub1);
+    show_line(objects.energy_sub2, sub2);
+
+    if (objects.energy_arc) {
+        if (frac < 0.0f) {
+            energy_state(objects.energy_arc, LV_STATE_DISABLED);
+            lv_arc_set_value(objects.energy_arc, 0);
+        } else {
+            energy_state(objects.energy_arc, st);
+            lv_arc_set_value(objects.energy_arc,
+                             (int32_t)lroundf(fminf(frac, 1.0f) * 100.0f));
+        }
+    }
+}
+
+bool ui_data_energy_led(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    /*
+     * Battery page only: green above 75 %, yellow 40-75 %, red below 40 %,
+     * each brightening as the charge rises within its band -- so a nearly
+     * flat battery is a dim red and a full one a bright green. The ring's
+     * global cap (CONFIG_CAPSTAN_RGB_LEDS_MAX_BRIGHTNESS) still applies.
+     */
+    if (ui_nav_selection_of(CAPSTAN_SCREEN_ENERGY) != 0) {
+        return false;
+    }
+    const capstan_value_t pct = capstan_model_battery_pct();
+    if (!pct.valid) {
+        return false;
+    }
+    const float p = fminf(fmaxf(pct.value, 0.0f), 100.0f);
+    /* The house colours, as the palette defines them: AccentPrimary
+     * #52a441 (the brand green -- never the bright `Success`), Solar
+     * #ffc107, Danger #ff5453. */
+    float t;
+    uint8_t R, G, B;
+    if (p > 75.0f)       { t = (p - 75.0f) / 25.0f; R = 82;  G = 164; B = 65; }
+    else if (p >= 40.0f) { t = (p - 40.0f) / 35.0f; R = 255; G = 193; B = 7;  }
+    else                 { t = p / 40.0f;           R = 255; G = 84;  B = 83; }
+    const float k = 0.25f + 0.75f * t;           /* 25 % .. 100 % */
+    *r = (uint8_t)lroundf(R * k);
+    *g = (uint8_t)lroundf(G * k);
+    *b = (uint8_t)lroundf(B * k);
+    return true;
 }
 
 /*
@@ -224,7 +372,8 @@ static void refresh_menu(void)
     char buf[32] = "";
 
     switch (sel) {
-    case 0:     /* Climate -- no thermostat topic exists yet. See docs/mqtt.md. */
+    case 0:     /* Climate -- local setpoint; see ui_climate.h. */
+        ui_climate_summary(buf, sizeof(buf));
         break;
 
     case 1: {   /* Devices */
@@ -235,18 +384,27 @@ static void refresh_menu(void)
         break;
     }
 
-    case 2:     /* Heater -- no topic yet. */
-        break;
-
-    case 3: {   /* Energy -- battery volts, the one number worth a glance. */
-        const capstan_value_t v = capstan_model_battery_volts();
-        if (v.valid) {
-            snprintf(buf, sizeof(buf), "%.1f V", v.value);
+    case 2: {   /* Energy -- the prototype's "82% · 14h 20m" */
+        const capstan_value_t pct = capstan_model_battery_pct();
+        const capstan_value_t mins = capstan_model_runtime_min();
+        float net;
+        char rt[16];
+        if (pct.valid) {
+            if (battery_net_watts(&net) && net < 0.0f && mins.valid &&
+                fmt_runtime(rt, sizeof(rt), mins.value)) {
+                snprintf(buf, sizeof(buf), "%.0f%% \xC2\xB7 %s",
+                         (double)pct.value, rt);
+            } else if (battery_net_watts(&net) && net > 0.0f) {
+                snprintf(buf, sizeof(buf), "%.0f%% \xC2\xB7 Charging",
+                         (double)pct.value);
+            } else {
+                snprintf(buf, sizeof(buf), "%.0f%%", (double)pct.value);
+            }
         }
         break;
     }
 
-    case 4: {   /* Water -- fresh is the tank people care about. */
+    case 3: {   /* Water -- fresh is the tank people care about. */
         const capstan_value_t v = capstan_model_tank(CAPSTAN_TANK_FRESH);
         if (v.valid) {
             snprintf(buf, sizeof(buf), "Fresh %.0f%%", v.value);
@@ -254,7 +412,7 @@ static void refresh_menu(void)
         break;
     }
 
-    case 5: {   /* Air */
+    case 4: {   /* Air */
         const capstan_value_t t = capstan_model_temp_f();
         if (t.valid) {
             snprintf(buf, sizeof(buf), "%.0f\xC2\xB0" "F", t.value);
@@ -262,7 +420,7 @@ static void refresh_menu(void)
         break;
     }
 
-    case 6: {   /* Level -- the larger of the two tilts is the actionable one. */
+    case 5: {   /* Level -- the larger of the two tilts is the actionable one. */
         const capstan_value_t fb = capstan_model_tilt_front_back();
         const capstan_value_t ss = capstan_model_tilt_side_to_side();
         if (fb.valid && ss.valid) {
@@ -279,15 +437,15 @@ static void refresh_menu(void)
         break;
     }
 
-    case 7:     /* Doors -- needs the Picket channel map to name a door. */
+    case 6:     /* Doors -- needs the Picket channel map to name a door. */
         break;
 
-    case 8:     /* Settings */
+    case 7:     /* Settings */
         snprintf(buf, sizeof(buf), "%s",
                  capstan_mqtt_is_connected() ? "Connected" : "Offline");
         break;
 
-    case 9:     /* Clock. Says what pressing does, because nothing else does. */
+    case 8:     /* Clock. Says what pressing does, because nothing else does. */
         snprintf(buf, sizeof(buf), "Back to the clock");
         break;
 
@@ -625,6 +783,7 @@ void ui_data_refresh(void)
     refresh_water();
     refresh_air();
     refresh_level();
+    ui_climate_refresh();
     ui_alerts_tick();        /* last: may switch to the alert overlay */
 }
 
@@ -719,5 +878,10 @@ void ui_data_init(void)
 void ui_data_init(void) { }
 void ui_data_refresh(void) { }
 void ui_data_service_tick(void) { }
+bool ui_data_energy_led(uint8_t *r, uint8_t *g, uint8_t *b)
+{
+    (void)r; (void)g; (void)b;
+    return false;
+}
 
 #endif

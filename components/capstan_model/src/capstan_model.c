@@ -38,6 +38,7 @@ typedef struct {
 static SemaphoreHandle_t s_lock;
 
 static metric_t m_batt_v, m_batt_pct, m_load_w, m_solar_w, m_runtime;
+static metric_t m_batt_w;
 static metric_t m_temp_f, m_temp_c, m_humid, m_tvoc, m_eco2, m_co;
 static metric_t m_tank[CAPSTAN_TANK_COUNT];
 static metric_t m_tilt_fb, m_tilt_ss;
@@ -95,6 +96,7 @@ void capstan_model_init(void)
     }
     /* Everything starts unseen, which renders as `--`. That is the correct
      * boot state: nothing is retained, so we genuinely do not know. */
+    m_batt_w.mod = CAPSTAN_MOD_ENERGY;
     m_batt_v.mod = m_batt_pct.mod = m_load_w.mod = m_solar_w.mod =
         m_runtime.mod = CAPSTAN_MOD_ENERGY;
     m_temp_f.mod = m_temp_c.mod = m_humid.mod = m_tvoc.mod =
@@ -135,6 +137,7 @@ static capstan_value_t get(const metric_t *m)
 void capstan_model_set_battery_volts(double v) { put(&m_batt_v, v); }
 void capstan_model_set_battery_pct(double v)   { put(&m_batt_pct, v); }
 void capstan_model_set_load_watts(double v)    { put(&m_load_w, v); }
+void capstan_model_set_battery_watts(double v) { put(&m_batt_w, v); }
 void capstan_model_set_solar_watts(double v)   { put(&m_solar_w, v); }
 void capstan_model_set_runtime_min(double v)   { put(&m_runtime, v); }
 
@@ -378,6 +381,7 @@ bool capstan_model_time_valid(void) { return s_time_valid; }
 capstan_value_t capstan_model_battery_volts(void) { return get(&m_batt_v); }
 capstan_value_t capstan_model_battery_pct(void)   { return get(&m_batt_pct); }
 capstan_value_t capstan_model_load_watts(void)    { return get(&m_load_w); }
+capstan_value_t capstan_model_battery_watts(void) { return get(&m_batt_w); }
 capstan_value_t capstan_model_solar_watts(void)   { return get(&m_solar_w); }
 capstan_value_t capstan_model_runtime_min(void)   { return get(&m_runtime); }
 capstan_value_t capstan_model_temp_f(void)        { return get(&m_temp_f); }

@@ -38,6 +38,10 @@ void ui_alerts_dismiss(void);
 /** The user pressed the overlay: snooze what it shows, then close it. */
 void ui_alerts_acknowledge(void);
 
+/** Re-decide the LED ring now (alarm red > Climate > Devices > dark).
+ *  ui_nav calls it on every screen change. LVGL lock held. */
+void ui_alerts_leds_now(void);
+
 #ifdef __cplusplus
 }
 #endif

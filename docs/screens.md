@@ -33,7 +33,6 @@ first input after waking is consumed by the wake itself.
 | Climate | ring | Menu | **none — stubbed** |
 | Climate mode | ring | Climate | **none — stubbed** |
 | Devices | ring | Menu | `local/lights/+/status` |
-| Heater | ring | Menu | a PDM/relay channel |
 | Energy | ring | Menu | `local/energy/status` |
 | Water | ring | Menu | `local/water/status` |
 | Air quality | ring | Menu | `local/airquality/*` |
@@ -78,8 +77,10 @@ which the second hand's own redraws would otherwise keep resetting forever.
 
 ## Menu
 
-Nine faces: Climate, Devices, Heater, Energy, Water Tanks, Air Quality,
-Levelling, Doors, Settings. Each shows a one-line summary — `Heating · 72°`,
+Eight faces plus Clock: Climate, Devices, Energy, Water Tanks, Air Quality,
+Levelling, Doors, Settings. (The prototype also has a Diesel Heater face;
+Capstan does not -- it has one thermostat control, and how heating and
+cooling are carried out is handled outside Capstan.) Each shows a one-line summary — `Heating · 72°`,
 `3 on`, `Fresh 72%`, `2 open`.
 
 **Wraps, like the prototype.** This screen is the one exception to the
@@ -130,12 +131,21 @@ Behaviour, from the prototype:
   - setpoint > current + 0.2 → **Heating**, `#FF5453`, flame
   - setpoint < current − 0.2 → **Cooling**, `#48E6FE`, snowflake
   - otherwise → **Holding**, `#52A441`, check
-- Modes: Heat, Cool, Auto, Off. A press opens the mode screen.
+- Modes: Heat, Cool, Auto, Off. A press opens the mode screen. As in the
+  prototype, only Off changes what the screen shows; heating vs cooling is
+  decided outside Capstan.
 - An ETA is shown while actively heating or cooling.
 - °F/°C is a setting; the ring step follows the unit.
 
 The only ambient temperature available today is `tempInC` / `tempInF` from
-`local/airquality/temphumid`.
+`local/airquality/temphumid`, and it is the only live value on the screen.
+The setpoint and mode are held in RAM by `main/ui_climate.c` and published
+nowhere: the screen is visual for now.
+
+Layout is the prototype's face A: an 81-tick Scale (50–90 °F at 0.5°, 270°)
+with the inside→target range coloured by Scale **sections** (Heating Danger,
+Cooling Info, Holding AccentPrimary), rim marks for inside and target, the
+mode line, a 150 px setpoint and "Inside 67°  (clock) 28 min".
 
 ## Devices
 
@@ -239,14 +249,6 @@ The ceiling is the MQTT buffer limit, mirrored from Headwaters' own
 `MAX_CONTROLS`; the generator refuses to build a project where the two
 disagree, and there is a `_Static_assert` in `ui_devices.c` for the case it
 cannot see.
-
-## Heater
-
-Level 0–5, ring-adjusted, press toggles between off and the last non-zero
-level. Rendered as an arc of five segments.
-
-Not a distinct platform entity — a heater is a PDM or Switchback channel with
-a flame icon, commanded like any other light.
 
 ## Air quality
 

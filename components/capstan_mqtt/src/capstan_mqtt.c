@@ -856,6 +856,7 @@ static void apply(const msg_t *m)
         if (num(root, "battery_voltage", &v))       capstan_model_set_battery_volts(v);
         if (num(root, "battery_percent", &v))       capstan_model_set_battery_pct(v);
         if (num(root, "consumption_watts", &v))     capstan_model_set_load_watts(v);
+        if (num(root, "battery_watts", &v))         capstan_model_set_battery_watts(v);
         if (num(root, "solar_watts", &v))           capstan_model_set_solar_watts(v);
         if (num(root, "time_remaining_minutes", &v))capstan_model_set_runtime_min(v);
         const cJSON *ct = cJSON_GetObjectItemCaseSensitive(root, "charge_type");

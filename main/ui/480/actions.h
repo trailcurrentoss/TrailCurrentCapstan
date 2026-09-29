@@ -15,7 +15,6 @@ extern void action_climate_setpoint_down(lv_event_t * e);
 extern void action_climate_mode_select(lv_event_t * e);
 extern void action_device_toggle(lv_event_t * e);
 extern void action_scene_apply(lv_event_t * e);
-extern void action_heater_level(lv_event_t * e);
 extern void action_energy_page(lv_event_t * e);
 extern void action_settings_toggle_units(lv_event_t * e);
 extern void action_settings_toggle_theme(lv_event_t * e);

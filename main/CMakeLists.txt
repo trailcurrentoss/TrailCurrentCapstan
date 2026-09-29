@@ -94,6 +94,7 @@ idf_component_register(
         "ui_clock.c"
         "ui_devices.c"
         "ui_alerts.c"
+        "ui_climate.c"
         "discovery.c"
         "actions.c"
         "vars.c"

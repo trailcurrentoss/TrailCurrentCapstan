@@ -80,6 +80,13 @@ void capstan_model_init(void);
 void capstan_model_set_battery_volts(double v);
 void capstan_model_set_battery_pct(double v);
 void capstan_model_set_load_watts(double v);
+/**
+ * Battery power, SIGNED, from the SmartShunt via Solstice: positive while the
+ * battery is charging, negative while it is discharging (Victron's `P`).
+ * `battery_watts` on local/energy/status; a Headwaters that predates the
+ * field never sets it, and it then reads invalid.
+ */
+void capstan_model_set_battery_watts(double v);
 void capstan_model_set_solar_watts(double v);
 void capstan_model_set_runtime_min(double v);
 void capstan_model_set_charge_type(const char *s);
@@ -159,6 +166,7 @@ bool capstan_model_timezone_known(void);
 capstan_value_t capstan_model_battery_volts(void);
 capstan_value_t capstan_model_battery_pct(void);
 capstan_value_t capstan_model_load_watts(void);
+capstan_value_t capstan_model_battery_watts(void);
 capstan_value_t capstan_model_solar_watts(void);
 capstan_value_t capstan_model_runtime_min(void);
 const char     *capstan_model_charge_type(void);   /**< "--" when unknown */

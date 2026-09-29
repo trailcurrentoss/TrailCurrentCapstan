@@ -160,6 +160,18 @@ int ui_devices_count(void)
     return (int)c.count;
 }
 
+bool ui_devices_selected_on(void)
+{
+    capstan_controls_t c;
+    controls(&c);
+    const int sel = ui_nav_selection_of(CAPSTAN_SCREEN_DEVICES);
+    if (sel < 0 || sel >= (int)c.count) {
+        return false;
+    }
+    const uint16_t id = c.items[sel].id;
+    return capstan_model_light_known(id) && capstan_model_light_on(id);
+}
+
 /* Index `i` places along the ring, wrapping. The carousel shows its
  * neighbours, so the wrap is visible -- see ui_nav_rotate(). */
 static int wrap(int i, int n)
@@ -302,6 +314,7 @@ void ui_devices_press(void)
 #else
 
 int  ui_devices_count(void)   { return 0; }
+bool ui_devices_selected_on(void) { return false; }
 void ui_devices_refresh(void) { }
 void ui_devices_press(void)   { }
 

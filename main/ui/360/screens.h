@@ -16,16 +16,15 @@ enum ScreensEnum {
     SCREEN_ID_PAGE_CLIMATE = 3,
     SCREEN_ID_PAGE_CLIMATE_MODE = 4,
     SCREEN_ID_PAGE_DEVICES = 5,
-    SCREEN_ID_PAGE_HEATER = 6,
-    SCREEN_ID_PAGE_ENERGY = 7,
-    SCREEN_ID_PAGE_WATER = 8,
-    SCREEN_ID_PAGE_AIR = 9,
-    SCREEN_ID_PAGE_LEVEL = 10,
-    SCREEN_ID_PAGE_DOORS = 11,
-    SCREEN_ID_PAGE_SETTINGS = 12,
-    SCREEN_ID_PAGE_ALERT = 13,
-    SCREEN_ID_PAGE_SETUP = 14,
-    _SCREEN_ID_LAST = 14
+    SCREEN_ID_PAGE_ENERGY = 6,
+    SCREEN_ID_PAGE_WATER = 7,
+    SCREEN_ID_PAGE_AIR = 8,
+    SCREEN_ID_PAGE_LEVEL = 9,
+    SCREEN_ID_PAGE_DOORS = 10,
+    SCREEN_ID_PAGE_SETTINGS = 11,
+    SCREEN_ID_PAGE_ALERT = 12,
+    SCREEN_ID_PAGE_SETUP = 13,
+    _SCREEN_ID_LAST = 13
 };
 
 typedef struct _objects_t {
@@ -34,7 +33,6 @@ typedef struct _objects_t {
     lv_obj_t *page_climate;
     lv_obj_t *page_climate_mode;
     lv_obj_t *page_devices;
-    lv_obj_t *page_heater;
     lv_obj_t *page_energy;
     lv_obj_t *page_water;
     lv_obj_t *page_air;
@@ -66,15 +64,18 @@ typedef struct _objects_t {
     lv_obj_t *menu_dot6;
     lv_obj_t *menu_dot7;
     lv_obj_t *menu_dot8;
-    lv_obj_t *menu_dot9;
-    lv_obj_t *climate_arc;
-    lv_obj_t *climate_setpoint;
-    lv_obj_t *climate_unit;
-    lv_obj_t *climate_current;
-    lv_obj_t *climate_state_icon;
-    lv_obj_t *climate_state;
-    lv_obj_t *climate_eta;
+    lv_obj_t *climate_ticks;
+    lv_obj_t *climate_needle_inside;
+    lv_obj_t *climate_needle_target;
+    lv_obj_t *climate_mode_row;
+    lv_obj_t *climate_mode_icon;
     lv_obj_t *climate_mode;
+    lv_obj_t *climate_setpoint;
+    lv_obj_t *climate_info_row;
+    lv_obj_t *climate_inside;
+    lv_obj_t *climate_eta_group;
+    lv_obj_t *climate_eta_icon;
+    lv_obj_t *climate_eta;
     lv_obj_t *climate_back;
     lv_obj_t *climate_back_icon;
     lv_obj_t *cmode_title;
@@ -115,21 +116,19 @@ typedef struct _objects_t {
     lv_obj_t *devices_dot14;
     lv_obj_t *devices_back;
     lv_obj_t *devices_back_icon;
-    lv_obj_t *heater_arc;
-    lv_obj_t *heater_title;
-    lv_obj_t *heater_level;
-    lv_obj_t *heater_state;
-    lv_obj_t *heater_back;
-    lv_obj_t *heater_back_icon;
+    lv_obj_t *energy_arc;
+    lv_obj_t *energy_stack;
+    lv_obj_t *energy_head;
+    lv_obj_t *energy_head_icon;
     lv_obj_t *energy_title;
+    lv_obj_t *energy_value_row;
     lv_obj_t *energy_value;
     lv_obj_t *energy_unit;
-    lv_obj_t *energy_sub;
+    lv_obj_t *energy_sub1;
+    lv_obj_t *energy_sub2;
     lv_obj_t *energy_dot0;
     lv_obj_t *energy_dot1;
     lv_obj_t *energy_dot2;
-    lv_obj_t *energy_dot3;
-    lv_obj_t *energy_dot4;
     lv_obj_t *energy_back;
     lv_obj_t *energy_back_icon;
     lv_obj_t *water_title;
@@ -238,6 +237,14 @@ typedef struct _objects_t {
 
 extern objects_t objects;
 
+typedef struct {
+    lv_scale_section_t *scale_section;
+    lv_scale_section_t *scale_section1;
+    lv_scale_section_t *scale_section2;
+} screen_page_climate_state_t;
+
+extern screen_page_climate_state_t screen_page_climate_state;
+
 void create_screen_page_idle();
 void tick_screen_page_idle();
 
@@ -252,9 +259,6 @@ void tick_screen_page_climate_mode();
 
 void create_screen_page_devices();
 void tick_screen_page_devices();
-
-void create_screen_page_heater();
-void tick_screen_page_heater();
 
 void create_screen_page_energy();
 void tick_screen_page_energy();
@@ -320,9 +324,13 @@ enum Colors {
     COLOR_ID_GRID_LINE,
     COLOR_ID_FOREGROUND_WHITE,
     COLOR_ID_FOREGROUND_BLACK,
+    COLOR_ID_ACCENT_TEXT,
+    COLOR_ID_SOLAR_TEXT,
+    COLOR_ID_INFO_TEXT,
+    COLOR_ID_DANGER_TEXT,
 };
 void change_color_theme(uint32_t themeIndex);
-extern uint32_t theme_colors[2][28];
+extern uint32_t theme_colors[2][32];
 extern uint32_t active_theme_index;
 
 #ifdef __cplusplus
