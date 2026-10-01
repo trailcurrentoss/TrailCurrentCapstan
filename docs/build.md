@@ -39,6 +39,51 @@ Capstan  --->
 Switching boards changes the panel driver, the pin map, and which generated
 UI variant is compiled (`main/ui/480`, `360` or `240`).
 
+### Building from an IDE's build button
+
+An IDE extension's build and flash buttons run a plain `idf.py build`
+against the single `sdkconfig` in the project root. That build never reads
+`boards/*.defaults`, and it reuses whatever `sdkconfig` already holds.
+
+Settings that have a menuconfig prompt are **sticky**: once written to
+`sdkconfig` they keep their value when the board choice changes, even though
+their default is different for the new board. Two of them decide whether a
+board works at all:
+
+| Setting | MaTouch 2.1" | CrowPanel 1.46" | CrowPanel 1.28" |
+|---------|--------------|-----------------|-----------------|
+| `CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM` | 44 | 44 | 80 |
+| `CONFIG_CAPSTAN_LCD_SWAP_RB` | y | — | — |
+
+A MaTouch built with transmit power left at 80 boots normally, reports its
+setup access point as up, and cannot be seen by any phone or joined to any
+network. With `SWAP_RB` unset its reds and blues are transposed.
+
+So after switching boards, or after pulling a change to the Kconfig
+defaults, regenerate the config instead of trusting the existing one:
+
+```sh
+rm sdkconfig
+idf.py menuconfig          # pick the board, save
+```
+
+A regenerated config starts as the MaTouch, so its transmit power of 44
+carries over to whichever board is picked next. That is right for the
+CrowPanel 1.46"; on the 1.28" it works at reduced range until
+`Wi-Fi maximum transmit power` is set back to 80 in the same menuconfig
+session.
+
+Then build from the IDE as usual, and confirm on the MaTouch's boot log:
+
+```
+board.disp: ST7701S 480x480 RGB up, pclk 12 MHz, R/B swapped
+wifi: tx power limited to 11.0 dBm (asked 11.0)
+```
+
+If either line is missing or says otherwise, the `sdkconfig` is stale. The
+per-board recipe below avoids the problem entirely, because each board
+keeps its own config file.
+
 ### Building several boards without re-running menuconfig
 
 `menuconfig` is fine when you work on one board at a time, but it writes the

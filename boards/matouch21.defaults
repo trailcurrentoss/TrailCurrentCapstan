@@ -1,36 +1,8 @@
 # Board selection for 'matouch21'.
 #
-# Everything else board-specific (element order, mirroring, pin map) comes
-# from the Kconfig defaults keyed off this symbol, so this file stays a
-# one-line board pick and the verified values live in one place.
+# Everything else board-specific (element order, mirroring, pin map,
+# transmit power) comes from the Kconfig defaults keyed off this symbol, so
+# this file stays a one-line board pick and the verified values live in one
+# place -- and a plain `idf.py build`, which never reads this file, gets the
+# same firmware.
 CONFIG_CAPSTAN_BOARD_MATOUCH_21=y
-
-# MaTouch only. Its channel order is fixed by how the parallel data pins are
-# grouped, not by a controller register, so it has its own control rather
-# than sharing CAPSTAN_LCD_BGR with the SPI panels.
-CONFIG_CAPSTAN_LCD_SWAP_RB=y
-
-# ---------------------------------------------------------------------------
-# Keep Wi-Fi and lwIP buffers in INTERNAL RAM on this board.
-#
-# The shared default puts them in PSRAM, which is fine for the two SPI
-# panels. The MaTouch drives a 480x480 RGB panel whose framebuffer is
-# DMA'd out of PSRAM continuously, and that contention appears to starve
-# the Wi-Fi MAC of timely buffer access.
-#
-# The symptom was one-sided and misleading: this board had the BEST
-# receive of the three (-13 dBm, 7 networks) while its soft AP never
-# appeared in any scan. Reception is handled without tight deadlines;
-# beacons are periodic and must go out on schedule, so PSRAM contention
-# hits transmission first and leaves reception looking healthy. That is
-# what made it read as a dead antenna when the antenna was the best of
-# the set.
-#
-# Costs internal RAM, which this board can afford -- it has no LED ring
-# and its UI variant is the same size as the others.
-CONFIG_SPIRAM_TRY_ALLOCATE_WIFI_LWIP=n
-
-# Back transmit off to 11 dBm while the supply behaviour is understood.
-# See CAPSTAN_WIFI_TX_POWER_QDBM's help: this board receives better than
-# either CrowPanel but could not be heard by anything at full power.
-CONFIG_CAPSTAN_WIFI_TX_POWER_QDBM=44

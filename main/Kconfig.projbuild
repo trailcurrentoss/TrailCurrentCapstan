@@ -131,7 +131,7 @@ config CAPSTAN_LCD_SWAP_XY
 config CAPSTAN_LCD_SWAP_RB
     bool "Swap the red and blue channels"
     depends on CAPSTAN_BOARD_MATOUCH_21
-    default n
+    default y
     help
       The MaTouch 2.1in colour-channel order cannot be settled from the
       vendor documentation: the vendor's own firmware comments label GPIO
@@ -141,10 +141,10 @@ config CAPSTAN_LCD_SWAP_RB
       is simply wrong, and which one can only be settled by looking at the
       panel.
 
-      The pin map follows the wiki convention. If the boot test screen shows
-      its red and blue bars swapped, enable this and rebuild. That is a
-      one-line change here rather than an edit to the pin map, which should
-      keep matching the schematic.
+      The pin map follows the wiki convention, and the panel settled it:
+      the boot test screen shows red and blue transposed without the swap,
+      so it is on by default. It stays a switch here rather than an edit
+      to the pin map, which should keep matching the schematic.
 
 comment "Addressable RGB LED ring"
 
@@ -439,10 +439,16 @@ endmenu
 config CAPSTAN_WIFI_TX_POWER_QDBM
     int "Wi-Fi maximum transmit power (quarter-dBm)"
     range 8 80
+    default 44 if CAPSTAN_BOARD_MATOUCH_21 || CAPSTAN_BOARD_CROWPANEL_146
     default 80
     help
       esp_wifi_set_max_tx_power() takes quarter-dBm, so 80 is 20 dBm
-      (the default and the maximum) and 40 is 10 dBm.
+      (the driver's default and the maximum) and 44 is 11 dBm.
+
+      The per-board default lives here, keyed off the board symbol, and
+      not in boards/*.defaults: a plain `idf.py build` -- which is what an
+      IDE's build button runs -- never reads those files, and a MaTouch
+      built that way came up at 20 dBm with a setup AP nothing could see.
 
       Lower this only to diagnose or work around a board whose supply
       cannot sustain transmit bursts. A radio that receives well but
@@ -453,4 +459,16 @@ config CAPSTAN_WIFI_TX_POWER_QDBM
       The MaTouch showed exactly that -- the best receive of the three
       boards (-13 dBm, 7 networks) while its soft AP never appeared in
       any scan and it could not associate with a network the other two
-      could see.
+      could see. Tested in isolation on that board: 11 dBm alone makes
+      the AP visible, and moving the Wi-Fi/lwIP buffers out of PSRAM at
+      20 dBm does not.
+
+      The CrowPanel 1.46in has the same signature in a milder form:
+      beacons intermittently visible, associations accepted, then the
+      WPA2 four-way handshake times out (802.11 reason 15). EAPOL frames
+      are unicast and must be acknowledged, so they fail before beacons
+      do -- which is why the AP can look present and still be unusable.
+
+      Two of three boards needing this suggests the common factor is the
+      USB supply rather than the boards themselves; if a powered hub
+      fixes it, the reduced defaults can come back out.
