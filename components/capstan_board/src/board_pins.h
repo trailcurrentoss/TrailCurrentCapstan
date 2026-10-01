@@ -207,6 +207,13 @@
  * the bottom centre). Mapped on hardware 2026-09-29 by lighting each index
  * its own colour: 0 at 4 o'clock, 1 at 1, 2 at 11, 3 just shy of 9, 4 at 6. */
 #define BOARD_WS2812_SIDE       { +1, +1, -1, -1, 0 }
+/* Where each LED sits, in chain order: degrees clockwise from 12 o'clock,
+ * seen from the front. The clock positions above, snapped to the even 72
+ * degree spacing they describe. */
+#define BOARD_WS2812_ANGLE      { 108, 36, 324, 252, 180 }
+/* Detents in one lap of the ring (EC3501: 30). The turn feedback on the LED
+ * ring moves at this rate, keeping pace with the ring itself. */
+#define BOARD_ENC_DETENTS_PER_REV 30
 #define BOARD_WS2812_EN         -1   /* No enable rail on this board. */
 #define BOARD_PWR_LED           40   /* Active low. */
 
@@ -272,6 +279,12 @@
  * 1 at 4, 2 at 5, 3 at 7, 4 at 8, 5 at 10, 6 at 11, 7 at 1. The two at 5
  * and 7 are the bottom pair, dark in a two-sided pattern. */
 #define BOARD_WS2812_SIDE       { +1, +1, 0, 0, -1, -1, -1, +1 }
+/* See the 1.28" entry: the clock positions above on an even 45 degree
+ * spacing. */
+#define BOARD_WS2812_ANGLE      { 68, 113, 158, 203, 248, 293, 338, 23 }
+/* ASSUMED 30, as on the 1.28" -- the encoder part is undocumented (see
+ * above). It only sets how fast the turn feedback travels round the LED ring. */
+#define BOARD_ENC_DETENTS_PER_REV 30
 #define BOARD_WS2812_EN         17   /* Ring stays dark without this high.
                                         Not present on the 1.28". */
 #define BOARD_PWR_LED           40   /* Active low. */

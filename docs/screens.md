@@ -489,6 +489,16 @@ order, so features cannot fight over it:
 
 Brightness is capped by `CONFIG_CAPSTAN_RGB_LEDS_MAX_BRIGHTNESS`.
 
+**Turn feedback.** On top of whatever the table gives, every detent of the
+ring darkens one LED for about a quarter of a second — the same colour at a
+fifth of its brightness, never a different one. A clockwise turn darkens LEDs
+on the right half, starting beside 12 o'clock and working down as the turn
+continues; a counter-clockwise turn does the same on the left. So on Climate
+a turn toward warmer dips the red side and a turn toward cooler dips the blue
+side. A reversal, or a pause of 1.5 s, starts again from the top. A dark ring
+(the Menu) has nothing to darken and stays dark. This is done by the board
+layer (`board_leds_turn()` in `board_leds.c`) on every screen.
+
 ## Theme and formatting
 
 Light by default; Theme in Settings switches to dark, saved to NVS and applied
